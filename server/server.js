@@ -7,6 +7,14 @@ const crypto=require("crypto");
 const app=express(),server=http.createServer(app),io=new Server(server);
 app.use(express.static(path.join(__dirname,"../public")));
 const rooms=new Map();
+function makeCode(){
+  let c;
+  do{
+    c=Math.random().toString(36).slice(2,8).toUpperCase();
+  }while(rooms.has(c));
+  return c;
+}
+
 const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 function code(){let c;do c=crypto.randomBytes(3).toString("hex").toUpperCase();while(rooms.has(c));return c}
 function randomCoins(){return 20+Math.floor(Math.random()*21)}
