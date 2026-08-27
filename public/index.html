@@ -83,6 +83,11 @@ function goNextRound(){
 function chooseMatch(c){s.emit("matchChoice",{choice:c});$("matchActions").innerHTML=`<p class="waitChoice">相手の選択を待っています…</p>`}
 function diamonds(w){let h="";for(let i=0;i<2;i++)h+=`<span class="diamond ${i<w?"lit":""}">♦</span>`;return h}
 function render(){if(!state)return;
+  // 通常ゲーム進行に戻ったら、結果/連戦ポップアップを必ず閉じる
+  if(!["roundEnd","matchEnd"].includes(state.phase)){
+    $("modal").classList.add("hidden");
+  }
+
   if(state.phase!=="countdown") $("countdownOverlay").classList.add("hidden");
 
   $("hudCoins0").textContent=state.coins[0];
