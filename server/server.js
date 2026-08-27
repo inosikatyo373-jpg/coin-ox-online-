@@ -37,26 +37,74 @@ function beginRoundAfterCountdown(r){
 function startMatch(r){r.matchWins=[0,0];r.matchWinner=null;r.roundWinner=null;r.roundNumber=0;setupRound(r);log(r,"連戦を開始しました。");send(r)}
 function resetRoom(r){r.phase="waiting";r.matchWins=[0,0];r.matchWinner=null;r.roundWinner=null;r.roundNumber=0;r.coins=[0,0];r.board=Array(9).fill(null);r.first=null;r.selector=null;r.selected=null;r.deadline=0;r.bids=[null,null];r.bidDrafts=[0,0];r.auctionCount=0;r.middleUnlocked=false;r.gameOver=false;r.choice=[null,null];send(r)}
 io.on("connection",s=>{
- s.on("create",({name},cb)=>{const id=code(),r={id,players:[{id:s.id,name:name||"プレイヤー1"},null],phase:"waiting",matchWins:[0,0],matchWinner:null,roundWinner:null,roundNumber:0,choice:[null,null],readyNext:[false,false],countdownUntil:0,coins:[0,0],board:Array(9).fill(null),first:null,selector:null,selected:null,auctionCount:0,middleUnlocked:false,gameOver:false,deadline:0,bids:[null,null],bidDrafts:[0,0]};rooms.set(id,r);s.join(id);s.data={room:id,slot:0};cb({ok:true,room:id,slot:0});send(r);log(r,"ルームを作成しました。友達の入室を待っています。")});
- s.on("join",({room,name},cb)=>{const r=rooms.get((room||"").toUpperCase());if(!r)return cb({ok:false,error:"ルームが見つかりません。"});if(r.players[1])return cb({ok:false,error:"このルームは満員です。"});r.players[1]={id:s.id,name:name||"プレイヤー2"};s.join(r.id);s.data={room:r.id,slot:1};cb({ok:true,room:r.id,slot:1});setupRound(r);log(r,"2人そろいました。先手・後手が決定しました！");send(r)});
- s.on("select",({cell})=>{const r=rooms.get(s.data.room);if(!r||r.phase!=="select"||r.gameOver||s.data.slot!==r.selector||!Number.isInteger(cell)||cell<0||cell>8||r.board[cell]!==null||(cell===4&&!r.middleUnlocked))return;r.selected=cell;r.phase="bid";r.bids=[null,null];r.bidDrafts=[0,0];r.deadline=Date.now()+60000;io.to(r.id).emit("selected",{cell,auto:false});send(r)});
- s.on("bidDraft",({amount})=>{
+  s.on("create",({name},cb)=>{
+    const id=makeCode();
+    const r=newRoom(id,{id:s.id,name:name||"プレイヤー1"});
+    rooms.set(id,r);
+    s.join(id);
+    s.data={room:id,slot:0};
+    cb({ok:true,room:id,slot:0});
+    send(r);
+  });
 
-   const r=rooms.get(s.data.room);
+  s.on("join",({room,name},cb)=>{
+    const r=rooms.get((room||"").toUpperCase());
+    if(!r) return cb({ok:false,error:"ルームが見つかりません。"});
+    if(r.players[1]) return cb({ok:false,error:"このルームは満員です。"});
+    r.players[1]={id:s.id,name:name||"プレイヤー2"};
+    s.join(r.id);
+    s.data={room:r.id,slot:1};
+    cb({ok:true,room:r.id,slot:1});
 
-   if(!r || r.phase!=="bid" || r.gameOver) return;
+    if(r.phase==="waiting"){
+      r.matchWins=[0,0];
+      r.roundNumber=0;
+      newRound(r);
+      log(r,"2人そろいました。先手・後手が決定しました！");
+    }
+    send(r);
+  });
 
-   const i=s.data.slot;
+  s.on("select",({cell})=>{
+    const r=rooms.get(s.data.room);
+    if(!r || r.phase!=="select" || r.gameOver) return;
+    if(s.data.slot!==r.selector) return;
+    if(!Number.isInteger(cell) || cell<0 || cell>8) return;
+    if(r.board[cell]!==null) return;
+    if(cell===4 && !r.middleUnlocked) return;
 
-   const n=Number(amount);
+    r.selected=cell;
+    r.phase="bid";
+    r.bids=[null,null];
+    r.bidDrafts=[0,0];
+    r.deadline=Date.now()+60000;
+    io.to(r.id).emit("selected",{cell,auto:false});
+    send(r);
+  });
 
-   if(Number.isInteger(n) && n>=0 && n<=r.coins[i]) r.bidDrafts[i]=n;
+  s.on("bidDraft",({amount})=>{
+    const r=rooms.get(s.data.room);
+    if(!r || r.phase!=="bid" || r.gameOver) return;
+    const i=s.data.slot;
+    const n=Number(amount);
+    if(Number.isInteger(n) && n>=0 && n<=r.coins[i]) r.bidDrafts[i]=n;
+  });
 
- });
+  s.on("bid",({amount})=>{
+    const r=rooms.get(s.data.room);
+    if(!r || r.phase!=="bid" || r.gameOver) return;
+    const i=s.data.slot;
+    const n=Number(amount);
+    if(r.bids[i]!==null) return;
+    if(!Number.isInteger(n) || n<0 || n>r.coins[i]){
+      return s.emit("errorMsg","入札額が不正です。");
+    }
+    r.bids[i]=n;
+    r.bidDrafts[i]=n;
+    s.emit("bidAccepted");
+    if(r.bids[0]!==null && r.bids[1]!==null) resolveBid(r,r.bids);
+  });
 
-
- s.on("bid",({amount})=>{const r=rooms.get(s.data.room);if(!r||r.phase!=="bid"||r.gameOver)return;const i=s.data.slot,n=Number(amount);if(r.bids[i]!==null)return;if(!Number.isInteger(n)||n<0||n>r.coins[i])return s.emit("errorMsg","入札額が不正です。");r.bids[i]=n;
-    r.bidDrafts[i]=n;s.emit("bidAccepted");if(r.bids[0]!==null&&r.bids[1]!==null)resolve(r,r.bids)});
   s.on("nextRound",()=>{
     const r=rooms.get(s.data.room);
     if(!r || r.phase!=="roundEnd") return;
@@ -65,6 +113,27 @@ io.on("connection",s=>{
     send(r);
     if(r.readyNext[0] && r.readyNext[1]) startCountdown(r);
   });
+
+  s.on("matchChoice",({choice})=>{
+    const r=rooms.get(s.data.room);
+    if(!r || r.phase!=="matchEnd") return;
+    if(choice!=="rematch" && choice!=="room") return;
+    r.choice[s.data.slot]=choice;
+
+    if(r.choice[0]===choice && r.choice[1]===choice){
+      if(choice==="rematch") startMatch(r);
+      else returnToRoom(r);
+    }else{
+      send(r);
+    }
+  });
+
+  s.on("disconnect",()=>{
+    const r=rooms.get(s.data.room);
+    if(r) io.to(r.id).emit("playerDisconnected");
+  });
+});
+
 setInterval(()=>{
   for(const r of rooms.values()){
     if(r.phase==="countdown"){
@@ -75,6 +144,7 @@ setInterval(()=>{
       }
       continue;
     }
+
     if((r.phase==="select" || r.phase==="bid") && r.deadline && Date.now()>=r.deadline){
       timeout(r);
     }else if((r.phase==="select" || r.phase==="bid") && r.deadline){
@@ -82,4 +152,6 @@ setInterval(()=>{
     }
   }
 },250);
-server.listen(process.env.PORT||3000,()=>console.log("Coin OX server listening"));
+
+const PORT=process.env.PORT||3000;
+server.listen(PORT,()=>console.log(`Coin OX server listening on ${PORT}`));
