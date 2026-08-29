@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>コイン競売〇×ゲーム ONLINE v2.5.1</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>コイン競売〇×ゲーム ONLINE v2.5.2</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:sticky;top:0;z-index:12;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:8px 0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -21,7 +21,7 @@
 .rulesTitle{font-size:25px;font-weight:1000;margin-bottom:8px}
 .rulesNote{font-size:13px;color:#9ca3af}
 
-</style></head><body><main class="app"><h1>コイン競売〇×ゲーム</h1><div class="muted">ONLINE v2.5.1 / 2本先取・最大3戦</div>
+</style></head><body><main class="app"><h1>コイン競売〇×ゲーム</h1><div class="muted">ONLINE v2.5.2 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel">
 <h2>オンライン対戦</h2>
 <input id="name" placeholder="名前（任意）">
@@ -118,7 +118,19 @@ $("pasteRoom").onclick=async()=>{
 };
 $("rulesBtn").onclick=()=>$("rulesOverlay").classList.remove("hidden");
 $("closeRules").onclick=()=>$("rulesOverlay").classList.add("hidden");
-function handle(r){if(!r.ok)return $("lobbyMsg").textContent=r.error;slot=r.slot;room=r.room;$("lobby").classList.add("hidden");$("game").classList.remove("hidden");$("code").textContent=room;history.replaceState(null,"","?room="+room);if(slot===0)navigator.clipboard?.writeText(location.href).catch(()=>{}
+function handle(r){
+  if(!r.ok){
+    $("lobbyMsg").textContent=r.error;
+    return;
+  }
+  slot=r.slot;
+  room=r.room;
+  $("lobby").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  $("code").textContent=room;
+  history.replaceState(null,"","?room="+room);
+}
+
 async function copyText(text,msg){
   try{
     await navigator.clipboard.writeText(text);
@@ -128,14 +140,22 @@ async function copyText(text,msg){
     $("copyMsg").textContent="コピーできませんでした。コードを長押ししてコピーしてください。";
   }
 }
-$("copyCode").onclick=()=>copyText(room||$("code").textContent,"ルームコードをコピーしました。");
-$("copyInvite").onclick=()=>copyText(`${location.origin}/?room=${encodeURIComponent(room||$("code").textContent)}`,"招待URLをコピーしました。");
+
+$("copyCode").onclick=()=>copyText(
+  room||$("code").textContent,
+  "ルームコードをコピーしました。"
+);
+
+$("copyInvite").onclick=()=>copyText(
+  `${location.origin}/?room=${encodeURIComponent(room||$("code").textContent)}`,
+  "招待URLをコピーしました。"
+);
 
 function backToTitle(){
   s.emit("leaveRoom");
   location.href=location.origin;
 }
-)}
+
 s.on("state",x=>{state=x;render()});s.on("tick",t=>{$("timer").textContent=t+"秒";$("hudTimer").textContent=t+"秒";});s.on("log",m=>$("log").insertAdjacentHTML("afterbegin","<div>"+m+"</div>"));s.on("selected",x=>{$("bidPanel").classList.remove("hidden");$("bidTarget").textContent="現在の競売対象：マス"+(x.cell+1);$("bidMsg").textContent=x.auto?"選択時間切れのため自動選択されました。":"入札額を決めてください。"});
 s.on("auctionResult",r=>{
   const msg=r.winner===0
