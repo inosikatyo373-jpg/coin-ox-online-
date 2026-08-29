@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>コイン競売〇×ゲーム ONLINE v2.2</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>コイン競売〇×ゲーム ONLINE v2.5.1</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:sticky;top:0;z-index:12;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:8px 0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -12,8 +12,30 @@
 @media (prefers-reduced-motion: reduce){.cell.auction{animation:none}}
 .cell.auction::after{content:"競売中";position:absolute;left:6px;right:6px;bottom:6px;background:#f59e0b;color:#111827;border-radius:7px;font-size:clamp(11px,2.5vw,14px);line-height:1.7;font-weight:900;box-shadow:0 2px 6px #0003}.bidTarget{text-align:center;font-weight:900;margin:0 0 8px;color:#fbbf24}.log{max-height:180px;overflow:auto}.log div{padding:5px;border-bottom:1px solid #374151}.hidden{display:none!important}.code{font-size:30px;text-align:center;font-weight:900;letter-spacing:5px}.modal{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}.modal>div{background:#1f2937;border-radius:18px;padding:24px;max-width:460px;width:100%;text-align:center}.modal .choiceRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.resultBig{font-size:30px;font-weight:1000}.matchScore{font-size:22px;font-weight:900}.waitChoice{color:#fbbf24;font-weight:900}
 @media(max-width:600px){body{padding-top:88px}.stickyHud{position:fixed;top:0;left:0;right:0;margin:0;padding:7px 10px;border-radius:0 0 14px 14px;z-index:50}.hudPlayer{font-size:15px}.hudTimer{font-size:27px;min-width:70px}.hudBid{font-size:12px}.app{padding:8px}h1{font-size:24px}.panel{padding:10px;margin:8px 0;border-radius:13px}.player{padding:8px}.coins{font-size:21px}.status{font-size:16px}.timer{font-size:28px;min-width:70px}.timerRow{gap:8px}.diamonds{font-size:21px;min-width:70px;gap:4px}.board{width:min(94vw,430px);gap:5px}.cell{border-radius:9px;font-size:clamp(38px,18vw,72px)}.cell.auction{box-shadow:0 0 0 3px #f59e0b inset,0 0 13px #f59e0b}.cell.auction::after{left:3px;right:3px;bottom:3px;padding:1px 0;font-size:11px;border-radius:5px}.row{gap:6px}.row button{padding:10px 8px;font-size:14px}#bidPanel{position:sticky;bottom:8px;z-index:5;box-shadow:0 -4px 18px #0006}#bid{min-width:0}.modal .choiceRow{grid-template-columns:1fr}}
-</style></head><body><main class="app"><h1>コイン競売〇×ゲーム</h1><div class="muted">ONLINE v2.2 / 2本先取・最大3戦</div>
-<section id="lobby" class="panel"><h2>オンライン対戦</h2><input id="name" placeholder="名前（任意）"><div class="row" style="margin-top:8px"><button id="create" class="primary">ルームを作る</button><button id="join">ルームに入る</button></div><input id="room" class="hidden" placeholder="ルームコード" style="margin-top:8px"><p id="lobbyMsg" class="muted"></p></section>
+
+.roomCodeRow{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
+.roomCodeRow .code{margin:0}
+.copyBtn{min-height:38px;padding:8px 12px}
+.rulesList{text-align:left;line-height:1.65;color:#e5e7eb;padding-left:22px}
+.rulesList li{margin:5px 0}
+.rulesTitle{font-size:25px;font-weight:1000;margin-bottom:8px}
+.rulesNote{font-size:13px;color:#9ca3af}
+
+</style></head><body><main class="app"><h1>コイン競売〇×ゲーム</h1><div class="muted">ONLINE v2.5.1 / 2本先取・最大3戦</div>
+<section id="lobby" class="panel">
+<h2>オンライン対戦</h2>
+<input id="name" placeholder="名前（任意）">
+<div class="row" style="margin-top:8px">
+  <button id="create" class="primary">ルームを作る</button>
+  <button id="rulesBtn">ルール説明を見る</button>
+</div>
+<div class="row" style="margin-top:8px">
+  <input id="room" placeholder="ルームコードを入力 / 貼り付け">
+  <button id="pasteRoom">貼り付け</button>
+  <button id="join">入室</button>
+</div>
+<p class="muted">ルールは「ルール説明を見る」からいつでも確認できます。</p><p id="lobbyMsg" class="muted"></p>
+</section>
 <section id="game" class="hidden">
 <div id="stickyHud" class="stickyHud">
   <div class="hudRound" id="hudRound">待機中</div>
@@ -23,11 +45,41 @@
     <div class="hudPlayer">× <b id="hudCoins1">--</b>枚</div>
   </div>
   <div class="hudBid" id="hudBid">入札額は相手には表示されません</div>
-</div><section class="panel"><div>ルームコード</div><div id="code" class="code"></div><div id="players" class="players"></div></section>
+</div><section class="panel">
+<div>ルームコード</div>
+<div class="roomCodeRow">
+  <div id="code" class="code"></div>
+  <button id="copyCode" class="copyBtn">コードをコピー</button>
+  <button id="copyInvite" class="copyBtn primary">招待URLをコピー</button>
+</div>
+<div id="copyMsg" class="muted"></div>
+<div id="players" class="players"></div>
+</section>
 <section class="panel"><div id="roundLabel" class="status"></div><div id="roleLabel" class="muted"></div><div id="turnBox" class="turnBox"></div><div class="timerRow"><div id="diamondsLeft" class="diamonds left"></div><div id="timer" class="timer">--</div><div id="diamondsRight" class="diamonds right"></div></div><div id="scoreLine" class="scoreLine"></div></section>
 <section class="panel"><div id="board" class="board"></div></section>
 <section id="bidPanel" class="panel hidden"><div id="bidTarget" class="bidTarget"></div><div id="bidLimit" class="bidLimit"></div><p class="muted">入札額は所持コイン以内です。時間切れ時は最後に入力していた金額を自動入札します。</p><div class="row"><input id="bid" type="number" min="0" placeholder="入札枚数"><button id="sendBid" class="primary">入札する</button></div><p id="bidMsg" class="muted"></p></section>
 <section class="panel"><b>競売履歴</b><div id="log" class="log"></div></section></section>
+
+<div id="rulesOverlay" class="modal hidden">
+  <div>
+    <div class="rulesTitle">コイン競売〇×ゲーム</div>
+    <p class="muted">競売でマスを奪い、3目ならべを完成させる対戦ゲームです。</p>
+    <ol class="rulesList">
+      <li>3×3の盤面で〇と×が対戦します。</li>
+      <li>各戦の開始時、両者に同じ枚数（20〜40枚）のコインが配られます。</li>
+      <li>手番のプレイヤーが競売するマスを選び、両者が同時にコインを入札します。</li>
+      <li>多く入札した側がそのマスを獲得。入札したコインは勝敗に関係なく消費します。</li>
+      <li>同額なら両者のコインを没収し、そのマスは空白のままです。</li>
+      <li>最初の2回の競売が終わるまで中央マスは選べません。</li>
+      <li>マス選択・入札は各60秒。入札時間切れ時は最後に入力していた金額を自動入札します。</li>
+      <li>3目を先に作った側がその戦の勝者。9マス埋まった場合は残りコインが多い側が勝者です。</li>
+      <li>2本先取・最大3戦で、先に2勝したプレイヤーがマッチ勝者です。</li>
+    </ol>
+    <p class="rulesNote">競売では、相手の入札額は結果が出るまで表示されません。</p>
+    <button id="closeRules" class="primary">閉じる</button>
+  </div>
+</div>
+
 <div id="modal" class="modal hidden"><div><div id="resultBig" class="resultBig"></div><p id="resultText"></p><div id="matchActions"></div></div></div>
 <div id="auctionOverlay" class="modal hidden">
   <div>
@@ -47,8 +99,43 @@
 </main>
 <script src="/socket.io/socket.io.js"></script><script>
 const s=io();let slot=null,room=null,state=null;const $=x=>document.getElementById(x);
-$("create").onclick=()=>s.emit("create",{name:$("name").value},handle);$("join").onclick=()=>{const r=$("room");if(r.classList.contains("hidden")){r.classList.remove("hidden");return}if(r.value)s.emit("join",{room:r.value,name:$("name").value},handle)};
-function handle(r){if(!r.ok)return $("lobbyMsg").textContent=r.error;slot=r.slot;room=r.room;$("lobby").classList.add("hidden");$("game").classList.remove("hidden");$("code").textContent=room;history.replaceState(null,"","?room="+room);if(slot===0)navigator.clipboard?.writeText(location.href).catch(()=>{})}
+$("create").onclick=()=>s.emit("create",{name:$("name").value},handle);
+$("join").onclick=()=>{
+  const code=$("room").value.trim().toUpperCase();
+  if(!code){$("lobbyMsg").textContent="ルームコードを入力してください。";return}
+  s.emit("join",{room:code,name:$("name").value},handle);
+};
+$("pasteRoom").onclick=async()=>{
+  try{
+    let t=(await navigator.clipboard.readText()).trim();
+    const m=t.match(/[?&]room=([A-Z0-9]+)/i);
+    if(m)t=m[1];
+    $("room").value=t.toUpperCase();
+    $("lobbyMsg").textContent="クリップボードから貼り付けました。";
+  }catch(e){
+    $("lobbyMsg").textContent="貼り付けできませんでした。入力欄を長押しして貼り付けてください。";
+  }
+};
+$("rulesBtn").onclick=()=>$("rulesOverlay").classList.remove("hidden");
+$("closeRules").onclick=()=>$("rulesOverlay").classList.add("hidden");
+function handle(r){if(!r.ok)return $("lobbyMsg").textContent=r.error;slot=r.slot;room=r.room;$("lobby").classList.add("hidden");$("game").classList.remove("hidden");$("code").textContent=room;history.replaceState(null,"","?room="+room);if(slot===0)navigator.clipboard?.writeText(location.href).catch(()=>{}
+async function copyText(text,msg){
+  try{
+    await navigator.clipboard.writeText(text);
+    $("copyMsg").textContent=msg;
+    setTimeout(()=>{if($("copyMsg"))$("copyMsg").textContent=""},1800);
+  }catch(e){
+    $("copyMsg").textContent="コピーできませんでした。コードを長押ししてコピーしてください。";
+  }
+}
+$("copyCode").onclick=()=>copyText(room||$("code").textContent,"ルームコードをコピーしました。");
+$("copyInvite").onclick=()=>copyText(`${location.origin}/?room=${encodeURIComponent(room||$("code").textContent)}`,"招待URLをコピーしました。");
+
+function backToTitle(){
+  s.emit("leaveRoom");
+  location.href=location.origin;
+}
+)}
 s.on("state",x=>{state=x;render()});s.on("tick",t=>{$("timer").textContent=t+"秒";$("hudTimer").textContent=t+"秒";});s.on("log",m=>$("log").insertAdjacentHTML("afterbegin","<div>"+m+"</div>"));s.on("selected",x=>{$("bidPanel").classList.remove("hidden");$("bidTarget").textContent="現在の競売対象：マス"+(x.cell+1);$("bidMsg").textContent=x.auto?"選択時間切れのため自動選択されました。":"入札額を決めてください。"});
 s.on("auctionResult",r=>{
   const msg=r.winner===0
@@ -71,10 +158,11 @@ s.on("countdownTick",n=>{
   $("countdownNum").textContent=n;
 });
 
-s.on("bidAccepted",()=>{$("bidMsg").textContent="入札を受け付けました。相手を待っています。";$("sendBid").disabled=true});s.on("errorMsg",m=>alert(m));s.on("playerDisconnected",()=>$("turnBox").textContent="相手が切断しました。");
+s.on("bidAccepted",()=>{$("bidMsg").textContent="入札を受け付けました。相手を待っています。";$("sendBid").disabled=true});s.on("errorMsg",m=>alert(m));s.on("roomClosed",()=>{location.href=location.origin;});
+s.on("playerDisconnected",()=>$("turnBox").textContent="相手が切断しました。");
 s.on("roundResult",r=>showRoundResult(r));
 function showRoundResult(r){$("resultBig").textContent=r.winner===0?"〇の勝利！":r.winner===1?"×の勝利！":"引き分け";$("resultText").innerHTML=`第${r.roundNumber}戦の結果<br>残りコイン：〇 ${r.coins[0]}枚 / × ${r.coins[1]}枚<br><span class="matchScore">現在の戦績　〇 ${r.matchWins[0]}勝 - ${r.matchWins[1]}勝 ×</span>`;if(r.matchWinner!==null)showMatchEnd(r.matchWinner,r.matchWins);else $("matchActions").innerHTML=`<p>次の第${r.roundNumber+1}戦へ進みます。</p><button class="primary" onclick="goNextRound()">次の戦へ</button>`;$("modal").classList.remove("hidden")}
-function showMatchEnd(w,wins){const name=state?.players?.[w]?.name||(w===0?"〇":"×");$("resultBig").textContent=`${name} の勝利！`;$("resultText").innerHTML=`2本先取で対戦終了<br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>`;$("matchActions").innerHTML=`<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="chooseMatch('room')">ルームに戻る</button></div>`}
+function showMatchEnd(w,wins){const name=state?.players?.[w]?.name||(w===0?"〇":"×");$("resultBig").textContent=`${name} の勝利！`;$("resultText").innerHTML=`2本先取で対戦終了<br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>`;$("matchActions").innerHTML=`<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`}
 function goNextRound(){
   s.emit("nextRound");
   $("matchActions").innerHTML=`<p class="waitChoice">あなた：準備OK ✅<br>相手：準備待ち…</p>`;
@@ -139,5 +227,5 @@ $("sendBid").onclick=()=>{
   const n=Number($("bid").value);
   const max=state?.coins?.[slot]??0;
   if(Number.isInteger(n)&&n>=0&&n<=max)s.emit("bid",{amount:n});
-};let q=new URLSearchParams(location.search).get("room");if(q){$("room").classList.remove("hidden");$("room").value=q.toUpperCase()}
+};let q=new URLSearchParams(location.search).get("room");if(q){$("room").value=q.toUpperCase()}
 </script></body></html>
