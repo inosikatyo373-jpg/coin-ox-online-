@@ -367,6 +367,15 @@ function nextTurn(r){
   send(r);
 }
 
+function revealDurationMs(maxBid){
+  let total=0;
+  for(let i=1;i<=maxBid;i++){
+    total+=Math.max(105,720*Math.pow(.90,i-1));
+  }
+  // コイン着地後の結果表示分を加える。
+  return Math.ceil(total+1700);
+}
+
 function resolveBid(r,b){
   if(r.phase!=="bid" || r.gameOver) return;
 
@@ -412,8 +421,8 @@ function resolveBid(r,b){
   r.bids=[null,null];
   r.bidDrafts=[0,0];
 
-  // v2.8: 1枚約0.5秒のコイン演出に合わせ、入札額が大きいほど結果待機を長くする。
-  const revealMs=Math.max(b[0],b[1])*500+1500;
+  // v2.9.3: 1枚目から徐々に加速するコイン演出に同期。
+  const revealMs=revealDurationMs(Math.max(b[0],b[1]));
   r.phase="auctionPause";
   r.deadline=0;
   r.pendingDeadlockDraw=deadlockDraw;
