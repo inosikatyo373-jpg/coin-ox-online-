@@ -192,7 +192,7 @@ function resolveBid(r,b){
   r.bids=[null,null];
   r.bidDrafts=[0,0];
 
-  // 競売結果を2秒見せてから次のターンへ
+  // v2.6: 3Dコイン積み上げ演出を最後まで見せてから次のターンへ
   r.phase="auctionPause";
   r.deadline=0;
   send(r);
@@ -200,7 +200,7 @@ function resolveBid(r,b){
   setTimeout(()=>{
     if(!rooms.has(r.id) || r.phase!=="auctionPause") return;
     nextTurn(r);
-  },2000);
+  },3600);
 }
 
 function timeout(r){
@@ -379,6 +379,15 @@ io.on("connection",s=>{
     }else{
       send(r);
     }
+  });
+
+  s.on("leaveRoom",()=>{
+    const r=rooms.get(s.data.room);
+    if(!r) return;
+    io.to(r.id).emit("roomClosed");
+    rooms.delete(r.id);
+    s.leave(r.id);
+    s.data={};
   });
 
   s.on("disconnect",()=>{
