@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v2.7</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v2.9</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:sticky;top:0;z-index:12;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:8px 0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -391,20 +391,326 @@ input::placeholder{color:#6c5a37}
   }
 }
 
-</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v2.7 / 2本先取・最大3戦</div>
-<section id="lobby" class="panel">
-<h2>オンライン対戦</h2>
-<input id="name" placeholder="名前（任意）">
-<div class="row" style="margin-top:8px">
-  <button id="create" class="primary">ルームを作る</button>
-  <button id="rulesBtn">ルール説明を見る</button>
-</div>
-<div class="row" style="margin-top:8px">
-  <input id="room" placeholder="ルームコードを入力 / 貼り付け">
-  <button id="pasteRoom">貼り付け</button>
-  <button id="join">入室</button>
-</div>
-<p class="muted">ルールは「ルール説明を見る」からいつでも確認できます。</p><p id="lobbyMsg" class="muted"></p>
+
+/* ===== v2.7.1 rules modal usability fix ===== */
+#rulesOverlay{
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  align-items:flex-start;
+}
+#rulesOverlay>div{
+  max-height:calc(100dvh - 28px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  margin:auto;
+  padding-bottom:14px;
+}
+#closeRules{
+  position:sticky;
+  bottom:0;
+  width:100%;
+  margin-top:12px;
+  z-index:2;
+}
+@media(max-width:600px){
+  #rulesOverlay{padding:8px}
+  #rulesOverlay>div{
+    max-height:calc(100dvh - 16px);
+    padding:16px 12px 12px;
+  }
+}
+
+
+/* ===== v2.7.3 bid change ===== */
+.changeBidRow{
+  margin-top:10px;
+  display:flex;
+  justify-content:center;
+}
+.changeBidBtn{
+  width:min(100%,360px);
+  background:linear-gradient(180deg,#4d3b24,#2c2115 58%,#18120c)!important;
+  border-color:#b49355!important;
+  color:#f1dfb8!important;
+}
+#bid:disabled{
+  opacity:.68;
+  filter:saturate(.75);
+  cursor:not-allowed;
+}
+.bidLockedNotice{
+  color:#f0d27c;
+  font-weight:900;
+}
+
+
+/* ===== BID GRID v2.8 ===== */
+.surrenderRow{display:flex;justify-content:center;margin-top:12px}
+.surrenderBtn{
+  min-height:40px!important;
+  padding:8px 16px!important;
+  font-size:13px!important;
+  background:linear-gradient(180deg,#512824,#321713 60%,#1d0e0c)!important;
+  border-color:#9e534b!important;
+  color:#f4c8c2!important;
+}
+.roundDivider{
+  margin:10px 0 8px;
+  padding:8px 4px;
+  color:#efd07d;
+  text-align:center;
+  font-family:"Cormorant Garamond","Times New Roman",serif;
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:.08em;
+  border-top:1px solid #8e6a31;
+  border-bottom:1px solid #8e6a31;
+  background:#b0833210;
+}
+.disconnectText{font-weight:900;color:#f1dfb8;margin-top:8px}
+.disconnectSeconds{
+  font-family:"Cormorant Garamond","Times New Roman",serif;
+  font-size:82px;font-weight:700;color:#ffdf75;
+  text-shadow:0 0 18px #f0b52d55;
+  line-height:1.05;margin:8px 0;
+}
+.cell.blocked{
+  font-size:clamp(11px,2.2vw,15px)!important;
+  letter-spacing:.04em;
+}
+@media(max-width:600px){
+  .cell.blocked{
+    font-size:clamp(10px,3.2vw,13px)!important;
+    line-height:1.05!important;
+    padding:2px!important;
+  }
+}
+
+
+/* ===== BID GRID v2.9 : streamlined lobby / invite UI ===== */
+.lobbyPanel{
+  max-width:560px;
+  margin:22px auto 12px;
+  padding:28px 26px 22px!important;
+  text-align:center;
+  animation:lobbyEnter .42s ease-out both;
+}
+@keyframes lobbyEnter{
+  from{opacity:0;transform:translateY(10px) scale(.99)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.lobbyKicker{
+  color:#b99b61;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.22em;
+  margin-bottom:2px;
+}
+.lobbyPanel h2{
+  margin-bottom:2px!important;
+}
+.lobbyLead{
+  color:#b7ab91;
+  font-size:13px;
+  margin:0 auto 20px;
+  max-width:430px;
+}
+.lobbyField{
+  text-align:left;
+  margin:0 auto 12px;
+}
+.lobbyField label{
+  display:block;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.14em;
+  color:#a98d59;
+  margin:0 0 6px 4px;
+}
+.lobbyField input{
+  width:100%;
+}
+.lobbyActions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
+.lobbyPrimary,.lobbySecondary{
+  min-height:56px!important;
+}
+.joinArea{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid #73562c66;
+  animation:joinReveal .2s ease-out both;
+}
+@keyframes joinReveal{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.joinCodeRow{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+}
+.joinButton{
+  width:100%;
+  margin-top:8px;
+}
+.smallAction{
+  min-width:92px;
+}
+.quietLink{
+  margin-top:16px;
+  min-height:34px!important;
+  padding:5px 10px!important;
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  color:#bca979!important;
+  font-size:12px!important;
+}
+.quietLink:hover{
+  color:#f0d893!important;
+  transform:none!important;
+}
+.lobbyMsg{
+  min-height:18px;
+  margin:8px 0 0;
+}
+
+/* Room/share controls are invitation-only UI. */
+.playerPanel{
+  padding:12px!important;
+}
+.inviteTools{
+  margin-bottom:10px;
+  border-bottom:1px solid #775b2d55;
+  padding:2px 2px 12px;
+  transition:opacity .2s ease,transform .2s ease;
+}
+.inviteTop{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:8px;
+}
+.roomBadge{
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+  padding:8px 11px;
+  border-radius:12px;
+  background:#0d131d;
+  border:1px solid #6e542b;
+  box-shadow:inset 0 0 0 1px #24170c;
+}
+.roomBadgeLabel{
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.14em;
+  color:#a78a55;
+}
+.roomBadgeCode{
+  font-family:"Cormorant Garamond","Times New Roman",serif;
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:.08em;
+  color:#f2d990;
+}
+.inviteCopyBtn{
+  min-height:42px!important;
+  padding:9px 14px!important;
+}
+.roomMoreBtn{
+  min-width:44px;
+  width:44px;
+  min-height:42px!important;
+  padding:4px!important;
+  letter-spacing:.08em;
+}
+.roomTools{
+  display:flex;
+  justify-content:flex-end;
+  padding-top:8px;
+}
+.roomTools .copyBtn{
+  min-height:34px!important;
+  padding:6px 10px!important;
+  font-size:12px!important;
+}
+.copyMsg{
+  min-height:16px;
+  font-size:11px;
+  margin-top:5px;
+}
+.waitingHint{
+  color:#7f755f;
+  text-align:center;
+  font-size:10px;
+  margin-top:2px;
+}
+.inviteTools.collapsing{
+  opacity:0;
+  transform:translateY(-5px);
+}
+.players{
+  margin-top:0!important;
+}
+
+@media(max-width:600px){
+  .lobbyPanel{
+    margin:12px auto 8px;
+    padding:22px 14px 18px!important;
+  }
+  .lobbyActions{
+    grid-template-columns:1fr;
+  }
+  .joinCodeRow{
+    grid-template-columns:1fr 86px;
+  }
+  .inviteTop{
+    grid-template-columns:auto 1fr 40px;
+    gap:6px;
+  }
+  .roomBadge{
+    padding:7px 8px;
+  }
+  .roomBadgeCode{font-size:18px}
+  .inviteCopyBtn{
+    font-size:12px!important;
+    padding:7px 8px!important;
+  }
+  .waitingHint{display:none}
+}
+
+</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v2.9 / 2本先取・最大3戦</div>
+<section id="lobby" class="panel lobbyPanel">
+  <div class="lobbyKicker">PRIVATE MATCH</div>
+  <h2>友達と対戦</h2>
+  <p class="lobbyLead">ルームを作るか、招待されたルームに参加してください。</p>
+
+  <div class="lobbyField">
+    <label for="name">PLAYER NAME</label>
+    <input id="name" placeholder="名前（任意）" autocomplete="nickname">
+  </div>
+
+  <div class="lobbyActions">
+    <button id="create" class="primary lobbyPrimary">ルームを作る</button>
+    <button id="toggleJoin" class="lobbySecondary">ルームに参加</button>
+  </div>
+
+  <div id="joinArea" class="joinArea hidden">
+    <div class="joinCodeRow">
+      <input id="room" placeholder="ルームコード" autocomplete="off" maxlength="12">
+      <button id="pasteRoom" class="smallAction">貼り付け</button>
+    </div>
+    <button id="join" class="primary joinButton">入室する</button>
+  </div>
+
+  <button id="rulesBtn" class="quietLink">ルール説明</button>
+  <p id="lobbyMsg" class="muted lobbyMsg"></p>
 </section>
 <section id="game" class="hidden">
 <div id="stickyHud" class="stickyHud">
@@ -415,20 +721,33 @@ input::placeholder{color:#6c5a37}
     <div class="hudPlayer">× <b id="hudCoins1">--</b>枚</div>
   </div>
   <div class="hudBid" id="hudBid">入札額は相手には表示されません</div>
-</div><section class="panel">
-<div>ルームコード</div>
-<div class="roomCodeRow">
-  <div id="code" class="code"></div>
-  <button id="copyCode" class="copyBtn">コードをコピー</button>
-  <button id="copyInvite" class="copyBtn primary">招待URLをコピー</button>
 </div>
-<div id="copyMsg" class="muted"></div>
-<div id="players" class="players"></div>
+<section class="panel playerPanel">
+  <div id="inviteTools" class="inviteTools">
+    <div class="inviteTop">
+      <div class="roomBadge">
+        <span class="roomBadgeLabel">ROOM</span>
+        <span id="code" class="roomBadgeCode"></span>
+      </div>
+      <button id="copyInvite" class="primary inviteCopyBtn">招待リンクをコピー</button>
+      <button id="toggleRoomTools" class="roomMoreBtn" aria-label="その他のルーム操作">•••</button>
+    </div>
+    <div id="roomTools" class="roomTools hidden">
+      <button id="copyCode" class="copyBtn">ルームIDをコピー</button>
+    </div>
+    <div id="copyMsg" class="muted copyMsg"></div>
+    <div class="waitingHint">相手が入室すると、この招待欄は自動で閉じます。</div>
+  </div>
+  <div id="players" class="players"></div>
 </section>
-<section class="panel"><div id="roundLabel" class="status"></div><div id="roleLabel" class="muted"></div><div id="turnBox" class="turnBox"></div><div class="timerRow"><div id="diamondsLeft" class="diamonds left"></div><div id="timer" class="timer">--</div><div id="diamondsRight" class="diamonds right"></div></div><div id="scoreLine" class="scoreLine"></div></section>
+<section class="panel"><div id="roundLabel" class="status"></div><div id="roleLabel" class="muted"></div><div id="turnBox" class="turnBox"></div><div class="timerRow"><div id="diamondsLeft" class="diamonds left"></div><div id="timer" class="timer">--</div><div id="diamondsRight" class="diamonds right"></div></div><div id="scoreLine" class="scoreLine"></div><div class="surrenderRow"><button id="surrenderRound" class="surrenderBtn hidden">この戦を降参</button></div></section>
 <section class="panel"><div id="board" class="board"></div></section>
-<section id="bidPanel" class="panel hidden"><div id="bidTarget" class="bidTarget"></div><div id="bidLimit" class="bidLimit"></div><p class="muted">入札額は所持コイン以内です。時間切れ時は最後に入力していた金額を自動入札します。</p><div class="row"><input id="bid" type="number" min="0" placeholder="入札枚数"><button id="sendBid" class="primary">入札する</button></div><p id="bidMsg" class="muted"></p></section>
-<section class="panel"><b>競売履歴</b><div id="log" class="log"></div></section></section>
+<section id="bidPanel" class="panel hidden"><div id="bidTarget" class="bidTarget"></div><div id="bidLimit" class="bidLimit"></div><p class="muted">入札額は所持コイン以内です。時間切れ時は最後に入力していた金額を自動入札します。</p><div class="row"><input id="bid" type="number" min="0" placeholder="入札枚数"><button id="sendBid" class="primary">入札する</button></div>
+<div id="changeBidRow" class="changeBidRow hidden">
+  <button id="changeBid" class="changeBidBtn">入札を変更する</button>
+</div>
+<p id="bidMsg" class="muted"></p></section>
+<section class="panel"><b>競売履歴（試合別）</b><div id="log" class="log"></div></section></section>
 
 <div id="rulesOverlay" class="modal hidden">
   <div>
@@ -439,10 +758,12 @@ input::placeholder{color:#6c5a37}
       <li>各戦の開始時、両者に同じ枚数（20〜40枚）のコインが配られます。</li>
       <li>手番のプレイヤーが競売するマスを選び、両者が同時にコインを入札します。</li>
       <li>多く入札した側がそのマスを獲得。入札したコインは勝敗に関係なく消費します。</li>
-      <li>同額なら両者のコインを没収し、そのマスは空白のままです。</li><li>入札結果ではコインが1枚ずつ積み上がります。1枚差なら「JUST BID!」、同額なら「DRAW」が表示されます。</li>
+      <li>同額なら両者のコインを没収し、そのマスは空白のままです。</li><li><b>同額入札が4回連続</b>すると、その戦は引き分けです。両者を1勝扱いとして♦を1個ずつ追加します。0-0なら1-1で次の戦へ進み、1-1の状態で発生した場合のみマッチ全体が引き分けになります。</li>
       <li>最初の2回の競売が終わるまで中央マスは選べません。</li>
-      <li>マス選択・入札は各60秒。入札時間切れ時は最後に入力していた金額を自動入札します。</li>
+      <li>マス選択・入札は各60秒。入札時間切れ時は最後に入力していた金額を自動入札します。</li><li>入札を確定した後でも、<b>相手がまだ確定していない間</b>は「入札を変更する」で確定を取り消し、金額を変更できます。制限時間はそのまま進みます。</li>
       <li>3目を先に作った側がその戦の勝者。9マス埋まった場合は残りコインが多い側が勝者です。</li>
+      <li>「この戦を降参」を押すと、<b>現在の1戦だけ</b>を相手の勝利として終了します。マッチ全体の降参ではありません。</li>
+      <li>対戦中に切断したプレイヤーが<b>20秒以内に復帰しなかった場合</b>、接続を維持している側がマッチ勝者になります。20秒以内に戻れば対戦を再開します。</li><li>同じマッチ中に<b>2回目の切断</b>が発生した場合は、復帰猶予なしでそのプレイヤーの<b>マッチ敗北</b>になります。</li>
       <li>2本先取・最大3戦で、先に2勝したプレイヤーがマッチ勝者です。</li>
     </ol>
     <p class="rulesNote">競売では、相手の入札額は結果が出るまで表示されません。</p>
@@ -474,6 +795,16 @@ input::placeholder{color:#6c5a37}
   </div>
 </div>
 
+
+<div id="disconnectOverlay" class="modal hidden">
+  <div>
+    <div class="rulesTitle">CONNECTION LOST</div>
+    <div id="disconnectText" class="disconnectText">相手の復帰を待っています。</div>
+    <div id="disconnectSeconds" class="disconnectSeconds">20</div>
+    <p class="muted">20秒以内に戻らなかった場合、接続中のプレイヤーの勝利になります。</p>
+  </div>
+</div>
+
 <div id="countdownOverlay" class="modal hidden">
   <div>
     <div class="muted" id="countdownRound">次の戦</div>
@@ -484,12 +815,37 @@ input::placeholder{color:#6c5a37}
 
 </main>
 <script src="/socket.io/socket.io.js"></script><script>
-const s=io();let slot=null,room=null,state=null;const $=x=>document.getElementById(x);
+const s=io();let slot=null,room=null,state=null,reconnectToken=null,localDisconnectTimer=null;const $=x=>document.getElementById(x);
+const SESSION_KEY="bidGridReconnect";
+function saveReconnectSession(){
+  if(room && reconnectToken){
+    localStorage.setItem(SESSION_KEY,JSON.stringify({room,token:reconnectToken}));
+  }
+}
+function clearReconnectSession(){
+  localStorage.removeItem(SESSION_KEY);
+}
+function loadReconnectSession(){
+  try{return JSON.parse(localStorage.getItem(SESSION_KEY)||"null")}catch(e){return null}
+}
 $("create").onclick=()=>s.emit("create",{name:$("name").value},handle);
 $("join").onclick=()=>{
   const code=$("room").value.trim().toUpperCase();
   if(!code){$("lobbyMsg").textContent="ルームコードを入力してください。";return}
   s.emit("join",{room:code,name:$("name").value},handle);
+};
+
+$("toggleJoin").onclick=()=>{
+  const area=$("joinArea");
+  const opening=area.classList.contains("hidden");
+  area.classList.toggle("hidden");
+  $("toggleJoin").textContent=opening?"参加欄を閉じる":"ルームに参加";
+  if(opening){
+    setTimeout(()=>$("room").focus(),50);
+  }
+};
+$("toggleRoomTools").onclick=()=>{
+  $("roomTools").classList.toggle("hidden");
 };
 $("pasteRoom").onclick=async()=>{
   try{
@@ -504,6 +860,9 @@ $("pasteRoom").onclick=async()=>{
 };
 $("rulesBtn").onclick=()=>$("rulesOverlay").classList.remove("hidden");
 $("closeRules").onclick=()=>$("rulesOverlay").classList.add("hidden");
+$("rulesOverlay").addEventListener("click",e=>{
+  if(e.target===$("rulesOverlay"))$("rulesOverlay").classList.add("hidden");
+});
 function handle(r){
   if(!r.ok){
     $("lobbyMsg").textContent=r.error;
@@ -511,7 +870,10 @@ function handle(r){
   }
   slot=r.slot;
   room=r.room;
+  if(r.reconnectToken) reconnectToken=r.reconnectToken;
+  saveReconnectSession();
   $("lobby").classList.add("hidden");
+  $("joinArea").classList.add("hidden");
   $("game").classList.remove("hidden");
   $("code").textContent=room;
   history.replaceState(null,"","?room="+room);
@@ -538,11 +900,23 @@ $("copyInvite").onclick=()=>copyText(
 );
 
 function backToTitle(){
+  clearReconnectSession();
   s.emit("leaveRoom");
   location.href=location.origin;
 }
 
-s.on("state",x=>{state=x;render()});s.on("tick",t=>{$("timer").textContent=t+"秒";$("hudTimer").textContent=t+"秒";});s.on("log",m=>$("log").insertAdjacentHTML("afterbegin","<div>"+m+"</div>"));s.on("selected",x=>{$("bidPanel").classList.remove("hidden");$("bidTarget").textContent="現在の競売対象：マス"+(x.cell+1);$("bidMsg").textContent=x.auto?"選択時間切れのため自動選択されました。":"入札額を決めてください。"});
+s.on("state",x=>{state=x;render()});
+s.on("tick",t=>{$("timer").textContent=t+"秒";$("hudTimer").textContent=t+"秒";});
+s.on("log",m=>{
+  $("log").insertAdjacentHTML("beforeend","<div>"+m+"</div>");
+  $("log").scrollTop=$("log").scrollHeight;
+});
+s.on("logReset",()=>{$("log").innerHTML=""});
+s.on("logRoundStart",({roundNumber})=>{
+  $("log").insertAdjacentHTML("beforeend",`<div class="roundDivider">────────　第${roundNumber}戦　────────</div>`);
+  $("log").scrollTop=$("log").scrollHeight;
+});
+s.on("selected",x=>{$("bidPanel").classList.remove("hidden");$("bidTarget").textContent="現在の競売対象：マス"+(x.cell+1);$("bidMsg").textContent=x.auto?"選択時間切れのため自動選択されました。":"入札額を決めてください。"});
 let auctionAnimToken=0;
 let audioCtx=null;
 
@@ -586,7 +960,8 @@ async function playAuctionReveal(r){
   const token=++auctionAnimToken;
   resetAuctionReveal();$("auctionOverlay").classList.remove("hidden");
   const a=r.bids[0], b=r.bids[1], maxBid=Math.max(a,b);
-  const step=maxBid<=5?145:Math.max(42,Math.min(105,1750/Math.max(1,maxBid)));
+  // 1枚ごとに約0.5秒。高額入札ほど結果が出るまで緊張感が続く。
+  const step=500;
 
   for(let i=1;i<=maxBid;i++){
     if(token!==auctionAnimToken)return;
@@ -605,7 +980,9 @@ async function playAuctionReveal(r){
     $("revealBanner").textContent="DRAW";
     $("revealBanner").className="revealBanner draw";
     $("auctionCard").classList.add("drawShake");
-    $("auctionResultText").textContent=`${a} - ${b}　同額入札 / マスは空白`;
+    $("auctionResultText").textContent=r.deadlockDraw
+      ? `${a} - ${b}　4連続同額 / この戦は引き分け`
+      : `${a} - ${b}　同額入札 / マスは空白`;
     coinClink(1.35);
   }else if(diff===1){
     $("revealBanner").textContent="JUST BID!";
@@ -636,11 +1013,111 @@ s.on("countdownTick",n=>{
   $("countdownNum").textContent=n;
 });
 
-s.on("bidAccepted",()=>{$("bidMsg").textContent="入札を受け付けました。相手を待っています。";$("sendBid").disabled=true});s.on("errorMsg",m=>alert(m));s.on("roomClosed",()=>{location.href=location.origin;});
-s.on("playerDisconnected",()=>$("turnBox").textContent="相手が切断しました。");
+s.on("bidAccepted",({amount}={})=>{
+  $("bidMsg").innerHTML='<span class="bidLockedNotice">入札を確定しました。</span> 相手が未確定なら変更できます。';
+  $("sendBid").disabled=true;
+  $("bid").disabled=true;
+  if(Number.isInteger(amount))$("bid").value=amount;
+});
+s.on("bidUnlocked",({amount}={})=>{
+  $("bid").disabled=false;
+  $("sendBid").disabled=false;
+  $("changeBidRow").classList.add("hidden");
+  if(Number.isInteger(amount))$("bid").value=amount;
+  $("bidMsg").textContent="確定を取り消しました。入札額を変更して、もう一度「入札する」を押してください。";
+  $("bid").focus();
+});
+s.on("bidChangeDenied",m=>{
+  $("bidMsg").textContent=m;
+});
+s.on("errorMsg",m=>alert(m));
+s.on("roomClosed",()=>{clearReconnectSession();location.href=location.origin;});
+s.on("playerDisconnected",({slot:disconnectedSlot,seconds=20}={})=>{
+  const who=disconnectedSlot===slot?"接続が切れました。復帰を試みています…":"相手が切断しました。復帰を待っています。";
+  $("disconnectText").textContent=who;
+  $("disconnectSeconds").textContent=seconds;
+  $("disconnectOverlay").classList.remove("hidden");
+});
+s.on("disconnectTick",({slot:disconnectedSlot,seconds})=>{
+  if(disconnectedSlot!==slot){
+    $("disconnectText").textContent="相手が切断しました。復帰を待っています。";
+  }else{
+    $("disconnectText").textContent="接続が切れました。復帰を試みています…";
+  }
+  $("disconnectSeconds").textContent=seconds;
+  $("disconnectOverlay").classList.remove("hidden");
+});
+s.on("playerReconnected",()=>{
+  if(localDisconnectTimer){clearInterval(localDisconnectTimer);localDisconnectTimer=null}
+  $("disconnectOverlay").classList.add("hidden");
+});
+s.on("secondDisconnectLoss",({slot:disconnectedSlot})=>{
+  if(localDisconnectTimer){clearInterval(localDisconnectTimer);localDisconnectTimer=null}
+  $("disconnectOverlay").classList.add("hidden");
+  if(disconnectedSlot!==slot){
+    $("turnBox").textContent="相手が2回目の切断。あなたのマッチ勝利です。";
+  }
+});
+s.on("disconnectForfeit",({winner,loser,reason,matchWins})=>{
+  if(localDisconnectTimer){clearInterval(localDisconnectTimer);localDisconnectTimer=null}
+  $("disconnectOverlay").classList.add("hidden");
+  const second=reason==="secondDisconnect";
+  if(winner===slot){
+    $("resultBig").textContent="不戦勝";
+    $("resultText").innerHTML=second
+      ? `相手が同一マッチ中に2回目の切断をしたため、あなたの勝利です。<br><span class="matchScore">〇 ${matchWins[0]}勝 - ${matchWins[1]}勝 ×</span>`
+      : `相手が20秒以内に復帰しなかったため、あなたの勝利です。<br><span class="matchScore">〇 ${matchWins[0]}勝 - ${matchWins[1]}勝 ×</span>`;
+  }else{
+    $("resultBig").textContent="切断負け";
+    $("resultText").textContent=second
+      ? "同一マッチ中に2回目の切断が発生したため、マッチ敗北です。"
+      : "20秒以内に復帰できなかったため、マッチ敗北です。";
+  }
+  $("matchActions").innerHTML=`<div class="choiceRow"><button onclick="backToTitle()">タイトルに戻る</button></div>`;
+  $("modal").classList.remove("hidden");
+});
 s.on("roundResult",r=>showRoundResult(r));
-function showRoundResult(r){$("resultBig").textContent=r.winner===0?"〇の勝利！":r.winner===1?"×の勝利！":"引き分け";$("resultText").innerHTML=`第${r.roundNumber}戦の結果<br>残りコイン：〇 ${r.coins[0]}枚 / × ${r.coins[1]}枚<br><span class="matchScore">現在の戦績　〇 ${r.matchWins[0]}勝 - ${r.matchWins[1]}勝 ×</span>`;if(r.matchWinner!==null)showMatchEnd(r.matchWinner,r.matchWins);else $("matchActions").innerHTML=`<p>次の第${r.roundNumber+1}戦へ進みます。</p><button class="primary" onclick="goNextRound()">次の戦へ</button>`;$("modal").classList.remove("hidden")}
-function showMatchEnd(w,wins){const name=state?.players?.[w]?.name||(w===0?"〇":"×");$("resultBig").textContent=`${name} の勝利！`;$("resultText").innerHTML=`2本先取で対戦終了<br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>`;$("matchActions").innerHTML=`<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`}
+function showRoundResult(r){
+  const deadlock=r.reason==="fourEqualBids";
+  const surrender=r.reason==="surrender";
+  $("resultBig").textContent=r.winner===0?"〇の勝利！":r.winner===1?"×の勝利！":deadlock?"膠着 DRAW":"引き分け";
+
+  const reasonText=deadlock
+    ? `<br><b>同額入札が4回連続したため、この戦は引き分け。</b><br>両者に1勝（♦1個）を付与しました。`
+    : surrender
+      ? `<br><b>降参により、この戦は終了しました。</b>`
+      : "";
+
+  $("resultText").innerHTML=`第${r.roundNumber}戦の結果${reasonText}<br>残りコイン：〇 ${r.coins[0]}枚 / × ${r.coins[1]}枚<br><span class="matchScore">現在の戦績　〇 ${r.matchWins[0]}勝 - ${r.matchWins[1]}勝 ×</span>`;
+
+  if(r.matchDraw){
+    showMatchDraw(r.matchWins);
+  }else if(r.matchWinner!==null){
+    showMatchEnd(r.matchWinner,r.matchWins);
+  }else{
+    $("matchActions").innerHTML=`<p>次の第${r.roundNumber+1}戦へ進みます。</p><button class="primary" onclick="goNextRound()">次の戦へ</button>`;
+  }
+  $("modal").classList.remove("hidden");
+}
+
+function showMatchEnd(w,wins){
+  const name=state?.players?.[w]?.name||(w===0?"〇":"×");
+  $("resultBig").textContent=`${name} の勝利！`;
+  const reason=state?.matchEndReason==="secondDisconnect"
+    ?"相手が同一マッチ中に2回目の切断をしたため不戦勝"
+    :state?.matchEndReason==="disconnect"
+      ?"相手が20秒以内に復帰しなかったため不戦勝"
+      :"2本先取で対戦終了";
+  $("resultText").innerHTML=`${reason}<br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>`;
+  $("matchActions").innerHTML=`<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;
+}
+
+function showMatchDraw(wins){
+  $("resultBig").textContent="MATCH DRAW";
+  $("resultText").innerHTML=`1勝 - 1勝の状態で4連続同額が発生したため<br><b>マッチ全体が引き分け</b><br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>`;
+  $("matchActions").innerHTML=`<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;
+}
+
 function goNextRound(){
   s.emit("nextRound");
   $("matchActions").innerHTML=`<p class="waitChoice">あなた：準備OK ✅<br>相手：準備待ち…</p>`;
@@ -648,6 +1125,32 @@ function goNextRound(){
 
 function chooseMatch(c){s.emit("matchChoice",{choice:c});$("matchActions").innerHTML=`<p class="waitChoice">相手の選択を待っています…</p>`}
 function diamonds(w){let h="";for(let i=0;i<2;i++)h+=`<span class="diamond ${i<w?"lit":""}">♦</span>`;return h}
+function renderBidControls(){
+  const inBid=state?.phase==="bid" && slot!==null && !state.pausedForDisconnect;
+  if(!inBid){
+    $("bid").disabled=false;
+    $("sendBid").disabled=false;
+    $("changeBidRow").classList.add("hidden");
+    return;
+  }
+
+  if(state.myBidLocked){
+    $("bid").disabled=true;
+    $("sendBid").disabled=true;
+
+    if(state.canChangeBid){
+      $("changeBidRow").classList.remove("hidden");
+      $("bidMsg").innerHTML='<span class="bidLockedNotice">入札確定済み。</span> 相手がまだ確定していないため変更できます。';
+    }else{
+      $("changeBidRow").classList.add("hidden");
+    }
+  }else{
+    $("bid").disabled=false;
+    $("sendBid").disabled=false;
+    $("changeBidRow").classList.add("hidden");
+  }
+}
+
 function render(){if(!state)return;
   // 通常ゲーム進行に戻ったら、結果/連戦ポップアップを必ず閉じる
   if(!["roundEnd","matchEnd"].includes(state.phase)){
@@ -655,6 +1158,7 @@ function render(){if(!state)return;
   }
 
   if(state.phase!=="countdown") $("countdownOverlay").classList.add("hidden");
+  if(!state.pausedForDisconnect) $("disconnectOverlay").classList.add("hidden");
 
   $("hudCoins0").textContent=state.coins[0];
   $("hudCoins1").textContent=state.coins[1];
@@ -662,13 +1166,33 @@ function render(){if(!state)return;
   $("hudTimer").textContent=(state.phase==="waiting"||state.phase==="countdown"||state.phase==="auctionPause")?"--":state.timeLeft+"秒";
   if(state.phase==="bid"&&slot!==null){
     const current=$("bid").value||0;
-    $("hudBid").textContent=`あなたの入力中：${current}枚 / 最大 ${state.coins[slot]}枚`;
+    if(state.myBidLocked){
+      $("hudBid").textContent=state.canChangeBid
+        ? `入札確定済み：${current}枚 / 相手未確定なら変更可能`
+        : "入札確定済み";
+    }else{
+      $("hudBid").textContent=`あなたの入力中：${current}枚 / 最大 ${state.coins[slot]}枚`;
+    }
   }else{
     $("hudBid").textContent="入札額は相手には表示されません";
   }
-  updateBidLimit();const ps=state.players;$("players").innerHTML=ps.map((p,i)=>{const role=state.first===i?"先手":state.first!==null?"後手":"";return `<div class="player ${i===slot?"you":""}"><span class="${i?"p2":"p1"}">${i?"×":"〇"} ${p?p.name:"待機中"}</span>${role?`<div class="role ${role==="先手"?"first":"second"}">${role}</div>`:""}<div class="coins">${state.coins[i]}枚</div><div class="score">戦績：${state.matchWins[i]}勝</div></div>`}).join("");
+  updateBidLimit();const ps=state.players;
+  const invite=$("inviteTools");
+  if(invite){
+    if(ps[1]){
+      invite.classList.add("hidden");
+      $("roomTools").classList.add("hidden");
+    }else{
+      invite.classList.remove("hidden");
+    }
+  }
+$("players").innerHTML=ps.map((p,i)=>{const role=state.first===i?"先手":state.first!==null?"後手":"";return `<div class="player ${i===slot?"you":""}"><span class="${i?"p2":"p1"}">${i?"×":"〇"} ${p?p.name:"待機中"}</span>${role?`<div class="role ${role==="先手"?"first":"second"}">${role}</div>`:""}<div class="coins">${state.coins[i]}枚</div><div class="score">戦績：${state.matchWins[i]}勝</div></div>`}).join("");
 $("roundLabel").textContent=state.phase==="waiting"?"対戦相手を待っています":`第${state.roundNumber}戦 / 2本先取`;
-if(state.phase==="waiting"){$("roleLabel").textContent="相手が入室するまで先手・後手もタイマーも開始しません。";$("turnBox").textContent="待機中";$("turnBox").className="turnBox"}else if(state.phase==="countdown"){
+if(state.pausedForDisconnect){
+    $("roleLabel").textContent="接続復帰待ち";
+    $("turnBox").textContent="切断したプレイヤーの復帰を待っています";
+    $("turnBox").className="turnBox";
+  }else if(state.phase==="waiting"){$("roleLabel").textContent="相手が入室するまで先手・後手もタイマーも開始しません。";$("turnBox").textContent="待機中";$("turnBox").className="turnBox"}else if(state.phase==="countdown"){
     $("roleLabel").textContent="両プレイヤー準備完了";
     $("turnBox").textContent=`開始まで ${state.countdownLeft||5} 秒`;
     $("turnBox").className="turnBox";
@@ -678,9 +1202,22 @@ if(state.phase==="waiting"){$("roleLabel").textContent="相手が入室するま
     $("turnBox").className="turnBox";
   }else if(state.phase==="select"){$("roleLabel").textContent=`あなたは ${state.first===slot?"先手":"後手"} です`;const mine=state.selector===slot;$("turnBox").textContent=mine?"あなたの手番：競売するマスを選択してください":"相手の手番：競売するマスを選択中";$("turnBox").className="turnBox "+(mine?"myTurn":"opponentTurn")}else if(state.phase==="bid"){$("roleLabel").textContent=`あなたは ${state.first===slot?"先手":"後手"} です`;$("turnBox").textContent="現在の手番：両者が同時入札中";$("turnBox").className="turnBox myTurn"}else{$("roleLabel").textContent=state.first!==null?`あなたは ${state.first===slot?"先手":"後手"} です`:"";$("turnBox").textContent="対戦結果を確認してください";$("turnBox").className="turnBox"}
 $("diamondsLeft").innerHTML=diamonds(state.matchWins[0]);$("diamondsRight").innerHTML=diamonds(state.matchWins[1]);$("scoreLine").textContent=`〇 ${state.matchWins[0]}勝　｜　× ${state.matchWins[1]}勝`;
-const b=$("board");b.innerHTML="";state.board.forEach((v,i)=>{const x=document.createElement("button");x.className="cell";if(v===0){x.textContent="〇";x.classList.add("o")}if(v===1){x.textContent="×";x.classList.add("x")}if(i===4&&!state.middleUnlocked&&v===null){x.textContent="中央";x.classList.add("blocked")}if(state.phase==="bid"&&state.selected===i)x.classList.add("auction");x.disabled=!ps[1]||state.phase!=="select"||state.selector!==slot||v!==null||(i===4&&!state.middleUnlocked);x.onclick=()=>s.emit("select",{cell:i});b.appendChild(x)});
-$("bidPanel").classList.toggle("hidden",state.phase!=="bid");if(state.phase!=="bid"){$("sendBid").disabled=false;$("bid").value=""}$("bidTarget").textContent=state.phase==="bid"&&state.selected!==null?"現在の競売対象：マス"+(state.selected+1):"";$("timer").textContent=(state.phase==="waiting"||state.phase==="countdown"||state.phase==="auctionPause")?"--":state.timeLeft+"秒";
-if(state.phase==="matchEnd"){$("modal").classList.remove("hidden");showMatchEnd(state.matchWinner,state.matchWins)}if(state.phase==="waiting")$("modal").classList.add("hidden")}
+$("surrenderRound").classList.toggle("hidden",!["select","bid","auctionPause"].includes(state.phase)||state.pausedForDisconnect);
+const b=$("board");b.innerHTML="";state.board.forEach((v,i)=>{const x=document.createElement("button");x.className="cell";if(v===0){x.textContent="〇";x.classList.add("o")}if(v===1){x.textContent="×";x.classList.add("x")}if(i===4&&!state.middleUnlocked&&v===null){x.textContent="中央";x.classList.add("blocked")}if(state.phase==="bid"&&state.selected===i)x.classList.add("auction");x.disabled=!ps[1]||state.pausedForDisconnect||state.phase!=="select"||state.selector!==slot||v!==null||(i===4&&!state.middleUnlocked);x.onclick=()=>s.emit("select",{cell:i});b.appendChild(x)});
+$("bidPanel").classList.toggle("hidden",state.phase!=="bid");
+if(state.phase!=="bid"){
+  $("bid").value="";
+  $("bidMsg").textContent="";
+}
+renderBidControls();
+$("bidTarget").textContent=state.phase==="bid"&&state.selected!==null?"現在の競売対象：マス"+(state.selected+1):"";
+$("timer").textContent=(state.phase==="waiting"||state.phase==="countdown"||state.phase==="auctionPause")?"--":state.timeLeft+"秒";
+if(state.phase==="matchEnd"){
+  $("modal").classList.remove("hidden");
+  if(state.matchDraw) showMatchDraw(state.matchWins);
+  else showMatchEnd(state.matchWinner,state.matchWins);
+}
+if(state.phase==="waiting")$("modal").classList.add("hidden")}
 function updateBidLimit(){
   if(!state || slot===null || state.phase!=="bid"){
     if($("bidLimit"))$("bidLimit").textContent="";
@@ -692,7 +1229,7 @@ function updateBidLimit(){
 }
 
 $("bid").addEventListener("input",()=>{
-  if(!state || slot===null || state.phase!=="bid") return;
+  if(!state || slot===null || state.phase!=="bid" || state.myBidLocked) return;
   let n=Number($("bid").value);
   if(!Number.isInteger(n) || n<0) n=0;
   const max=state.coins[slot]??0;
@@ -705,5 +1242,59 @@ $("sendBid").onclick=()=>{
   const n=Number($("bid").value);
   const max=state?.coins?.[slot]??0;
   if(Number.isInteger(n)&&n>=0&&n<=max)s.emit("bid",{amount:n});
-};let q=new URLSearchParams(location.search).get("room");if(q){$("room").value=q.toUpperCase()}
+};
+$("changeBid").onclick=()=>{
+  s.emit("changeBid");
+};
+$("surrenderRound").onclick=()=>{
+  if(confirm("現在の1戦だけを降参しますか？\nマッチ全体の降参ではありません。")){
+    s.emit("surrenderRound");
+  }
+};
+let q=new URLSearchParams(location.search).get("room");
+if(q){
+  $("room").value=q.toUpperCase();
+  $("joinArea").classList.remove("hidden");
+  $("toggleJoin").textContent="参加欄を閉じる";
+}
+
+function attemptRejoin(){
+  const saved=loadReconnectSession();
+  const target=(room||q||saved?.room||"").toUpperCase();
+  const token=reconnectToken||saved?.token;
+  if(!target || !token || !s.connected) return;
+  if(saved?.room && saved.room.toUpperCase()!==target) return;
+
+  s.emit("rejoin",{room:target,token},r=>{
+    if(r?.ok){
+      if(localDisconnectTimer){clearInterval(localDisconnectTimer);localDisconnectTimer=null}
+      handle(r);
+      $("disconnectOverlay").classList.add("hidden");
+    }else if(r?.error && room){
+      $("disconnectText").textContent=r.error;
+    }
+  });
+}
+
+s.on("disconnect",()=>{
+  if(!room)return;
+  $("disconnectText").textContent="接続が切れました。自動で復帰を試みています…";
+  $("disconnectSeconds").textContent="20";
+  $("disconnectOverlay").classList.remove("hidden");
+
+  if(localDisconnectTimer)clearInterval(localDisconnectTimer);
+  let left=20;
+  localDisconnectTimer=setInterval(()=>{
+    left=Math.max(0,left-1);
+    $("disconnectSeconds").textContent=left;
+    if(left<=0){
+      clearInterval(localDisconnectTimer);
+      localDisconnectTimer=null;
+    }
+  },1000);
+});
+
+s.on("connect",attemptRejoin);
+// 初回接続がイベント登録より先に完了していた場合にも復帰を試す。
+if(s.connected)setTimeout(attemptRejoin,0);
 </script></body></html>
