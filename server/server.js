@@ -24,10 +24,19 @@ function randomCoins(){
   return 20+Math.floor(Math.random()*21);
 }
 
+function makeReconnectToken(){
+  return crypto.randomBytes(18).toString("hex");
+}
+
 function newRoom(id,creator){
   return {
     id,
-    players:[{id:creator.id,name:creator.name||"プレイヤー1"},null],
+    players:[{
+      id:creator.id,
+      name:creator.name||"プレイヤー1",
+      token:creator.token||makeReconnectToken(),
+      connected:true
+    },null],
     phase:"waiting",
     roundNumber:0,
     matchWins:[0,0],
@@ -46,7 +55,18 @@ function newRoom(id,creator){
     gameOver:false,
     deadline:0,
     bids:[null,null],
-    bidDrafts:[0,0]
+    bidDrafts:[0,0],
+    equalBidStreak:0,
+    roundEndReason:null,
+    matchDraw:false,
+    matchEndReason:null,
+    disconnectDeadlines:[0,0],
+    disconnectCounts:[0,0],
+    pausedForDisconnect:false,
+    pausedDeadlineRemaining:0,
+    pausedCountdownRemaining:0,
+    auctionPauseUntil:0,
+    pendingDeadlockDraw:false
   };
 }
 
@@ -65,13 +85,25 @@ function setupRound(r){
   r.deadline=Date.now()+60000;
   r.bids=[null,null];
   r.bidDrafts=[0,0];
+  r.equalBidStreak=0;
   r.roundWinner=null;
+  r.roundEndReason=null;
+  r.matchEndReason=null;
   r.readyNext=[false,false];
   r.countdownUntil=0;
+  r.auctionPauseUntil=0;
+  r.pendingDeadlockDraw=false;
   r.roundNumber++;
 }
 
-function publicState(r){
+function publicState(r,viewerSlot=null){
+  const validViewer=viewerSlot===0 || viewerSlot===1;
+  const myBidLocked=validViewer ? r.bids[viewerSlot]!==null : false;
+  const canChangeBid=validViewer
+    && r.phase==="bid"
+    && myBidLocked
+    && r.bids[1-viewerSlot]===null;
+
   return {
     room:r.id,
     players:r.players.map(p=>p?{name:p.name}:null),
@@ -79,7 +111,14 @@ function publicState(r){
     roundNumber:r.roundNumber,
     matchWins:[...r.matchWins],
     matchWinner:r.matchWinner,
+    matchDraw:!!r.matchDraw,
     roundWinner:r.roundWinner,
+    roundEndReason:r.roundEndReason,
+    matchEndReason:r.matchEndReason,
+    equalBidStreak:r.equalBidStreak||0,
+    connected:r.players.map(p=>!!p?.connected),
+    disconnectCounts:[...(r.disconnectCounts||[0,0])],
+    pausedForDisconnect:!!r.pausedForDisconnect,
     coins:[...r.coins],
     board:[...r.board],
     first:r.first,
@@ -89,16 +128,132 @@ function publicState(r){
     middleUnlocked:r.middleUnlocked,
     readyNext:[...(r.readyNext||[false,false])],
     countdownLeft:r.countdownUntil?Math.max(0,Math.ceil((r.countdownUntil-Date.now())/1000)):0,
-    timeLeft:r.deadline?Math.max(0,Math.ceil((r.deadline-Date.now())/1000)):0
+    timeLeft:r.deadline?Math.max(0,Math.ceil((r.deadline-Date.now())/1000)):0,
+
+    // 入札額そのものや、未確定時の相手の確定状況は送らない。
+    myBidLocked,
+    canChangeBid
   };
 }
 
 function send(r){
-  io.to(r.id).emit("state",publicState(r));
+  // プレイヤーごとに必要最小限の入札状態だけ送る。
+  r.players.forEach((p,i)=>{
+    if(p?.id) io.to(p.id).emit("state",publicState(r,i));
+  });
 }
 
 function log(r,m){
   io.to(r.id).emit("log",m);
+}
+
+function logRoundStart(r){
+  io.to(r.id).emit("logRoundStart",{roundNumber:r.roundNumber});
+}
+
+function activeRoundPhase(r){
+  return ["select","bid","auctionPause"].includes(r.phase);
+}
+
+function scheduleAuctionAdvance(r,delayMs=null){
+  const remaining=delayMs===null
+    ? Math.max(0,(r.auctionPauseUntil||Date.now())-Date.now())
+    : Math.max(0,delayMs);
+
+  setTimeout(()=>{
+    if(!rooms.has(r.id) || r.phase!=="auctionPause") return;
+    if(r.pausedForDisconnect) return;
+
+    r.auctionPauseUntil=0;
+    if(r.pendingDeadlockDraw) endEqualBidDeadlock(r);
+    else nextTurn(r);
+  },remaining);
+}
+
+function pauseForDisconnect(r){
+  if(r.pausedForDisconnect) return;
+
+  r.pausedForDisconnect=true;
+  r.pausedDeadlineRemaining=r.deadline
+    ? Math.max(0,r.deadline-Date.now())
+    : 0;
+  r.pausedCountdownRemaining=r.countdownUntil
+    ? Math.max(0,r.countdownUntil-Date.now())
+    : 0;
+
+  r.deadline=0;
+  r.countdownUntil=0;
+}
+
+function resumeAfterDisconnect(r){
+  if(!r.pausedForDisconnect) return;
+  if(r.players.some(p=>p && !p.connected)) return;
+
+  r.pausedForDisconnect=false;
+
+  if(r.phase==="select" || r.phase==="bid"){
+    r.deadline=Date.now()+Math.max(1000,r.pausedDeadlineRemaining||60000);
+  }else if(r.phase==="countdown"){
+    r.countdownUntil=Date.now()+Math.max(1000,r.pausedCountdownRemaining||5000);
+  }else if(r.phase==="auctionPause"){
+    const remain=Math.max(200,r.auctionPauseUntil-Date.now());
+    r.auctionPauseUntil=Date.now()+remain;
+    scheduleAuctionAdvance(r,remain);
+  }
+
+  r.pausedDeadlineRemaining=0;
+  r.pausedCountdownRemaining=0;
+  io.to(r.id).emit("playerReconnected");
+  log(r,"切断していたプレイヤーが復帰しました。対戦を再開します。");
+  send(r);
+}
+
+function finishDisconnectForfeit(r,loserSlot,reason="timeout"){
+  if(!rooms.has(r.id)) return;
+  const loser=r.players[loserSlot];
+  if(!loser || loser.connected) return;
+
+  const winner=1-loserSlot;
+  const winnerPlayer=r.players[winner];
+
+  // 両者とも不在なら勝敗を付けず、ルームを閉じる。
+  if(!winnerPlayer || !winnerPlayer.connected){
+    if(r.players.every(p=>!p || !p.connected)){
+      io.to(r.id).emit("roomClosed");
+      rooms.delete(r.id);
+    }
+    return;
+  }
+
+  r.pausedForDisconnect=false;
+  r.disconnectDeadlines=[0,0];
+  r.deadline=0;
+  r.countdownUntil=0;
+  r.auctionPauseUntil=0;
+  r.gameOver=true;
+  r.roundWinner=winner;
+  r.matchWinner=winner;
+  r.matchDraw=false;
+  r.matchEndReason=reason==="secondDisconnect"?"secondDisconnect":"disconnect";
+  r.roundEndReason=r.matchEndReason;
+  r.phase="matchEnd";
+
+  // 表示上も勝者が2勝へ到達した形にする。
+  r.matchWins[winner]=Math.max(2,r.matchWins[winner]);
+
+  if(reason==="secondDisconnect"){
+    log(r,`${loser.name} が同一マッチ中に2回目の切断をしたため、${winnerPlayer.name} の不戦勝です。`);
+  }else{
+    log(r,`${loser.name} が20秒以内に復帰しなかったため、${winnerPlayer.name} の不戦勝です。`);
+  }
+
+  send(r);
+  io.to(r.id).emit("disconnectForfeit",{
+    winner,
+    loser:loserSlot,
+    reason,
+    matchWins:[...r.matchWins]
+  });
 }
 
 function boardWinner(board){
@@ -111,6 +266,7 @@ function boardWinner(board){
 }
 
 function endRound(r,w){
+  r.roundEndReason=r.roundEndReason||"normal";
   if(w===-1){
     if(r.coins[0]>r.coins[1]) w=0;
     else if(r.coins[1]>r.coins[0]) w=1;
@@ -118,6 +274,7 @@ function endRound(r,w){
 
   r.roundWinner=w;
   r.gameOver=true;
+  if(r.roundEndReason!=="disconnect") r.matchEndReason=null;
   r.deadline=0;
   r.readyNext=[false,false];
 
@@ -140,6 +297,55 @@ function endRound(r,w){
     coins:[...r.coins],
     matchWins:[...r.matchWins],
     matchWinner:r.matchWinner,
+    reason:r.roundEndReason,
+    roundNumber:r.roundNumber
+  });
+}
+
+
+function endEqualBidDeadlock(r){
+  if(r.gameOver) return;
+
+  const before=[...r.matchWins];
+
+  r.roundWinner=-1;
+  r.roundEndReason="fourEqualBids";
+  r.gameOver=true;
+  r.deadline=0;
+  r.readyNext=[false,false];
+
+  // この引き分けは両者1勝扱い（ダイヤを1個ずつ追加）
+  r.matchWins[0]++;
+  r.matchWins[1]++;
+
+  // 1勝-1勝の状態から発生した時だけ、マッチ全体を本当の引き分けにする
+  if(before[0]===1 && before[1]===1){
+    r.matchWinner=null;
+    r.matchDraw=true;
+    r.phase="matchEnd";
+  }else if(r.matchWins[0]>=2 && r.matchWins[1]<2){
+    r.matchWinner=0;
+    r.matchDraw=false;
+    r.phase="matchEnd";
+  }else if(r.matchWins[1]>=2 && r.matchWins[0]<2){
+    r.matchWinner=1;
+    r.matchDraw=false;
+    r.phase="matchEnd";
+  }else{
+    r.matchWinner=null;
+    r.matchDraw=false;
+    r.phase="roundEnd";
+  }
+
+  log(r,`第${r.roundNumber}戦：同額入札が4回連続したため引き分け。両者に1勝を付与しました。`);
+  send(r);
+  io.to(r.id).emit("roundResult",{
+    winner:-1,
+    reason:"fourEqualBids",
+    coins:[...r.coins],
+    matchWins:[...r.matchWins],
+    matchWinner:r.matchWinner,
+    matchDraw:!!r.matchDraw,
     roundNumber:r.roundNumber
   });
 }
@@ -185,22 +391,35 @@ function resolveBid(r,b){
     log(r,`両者 ${b[0]}枚 → 同額。双方没収、マス${c+1}は空白`);
   }
 
-  io.to(r.id).emit("auctionResult",{winner:auctionWinner,bids:[...b],cell:c});
+  if(b[0]===b[1]){
+    r.equalBidStreak=(r.equalBidStreak||0)+1;
+    log(r,`同額入札 ${r.equalBidStreak}/4`);
+  }else{
+    r.equalBidStreak=0;
+  }
+
+  const deadlockDraw=(r.equalBidStreak>=4);
+  io.to(r.id).emit("auctionResult",{
+    winner:auctionWinner,
+    bids:[...b],
+    cell:c,
+    equalBidStreak:r.equalBidStreak,
+    deadlockDraw
+  });
 
   r.auctionCount++;
   if(r.auctionCount>=2) r.middleUnlocked=true;
   r.bids=[null,null];
   r.bidDrafts=[0,0];
 
-  // v2.6: 3Dコイン積み上げ演出を最後まで見せてから次のターンへ
+  // v2.8: 1枚約0.5秒のコイン演出に合わせ、入札額が大きいほど結果待機を長くする。
+  const revealMs=Math.max(b[0],b[1])*500+1500;
   r.phase="auctionPause";
   r.deadline=0;
+  r.pendingDeadlockDraw=deadlockDraw;
+  r.auctionPauseUntil=Date.now()+revealMs;
   send(r);
-
-  setTimeout(()=>{
-    if(!rooms.has(r.id) || r.phase!=="auctionPause") return;
-    nextTurn(r);
-  },3600);
+  scheduleAuctionAdvance(r,revealMs);
 }
 
 function timeout(r){
@@ -227,6 +446,7 @@ function timeout(r){
 }
 
 function startCountdown(r){
+  if(r.players.some(p=>p && !p.connected)) return;
   r.phase="countdown";
   r.deadline=0;
   r.countdownUntil=Date.now()+5000;
@@ -238,18 +458,27 @@ function beginRoundAfterCountdown(r){
   if(r.phase!=="countdown") return;
   r.countdownUntil=0;
   setupRound(r);
+  logRoundStart(r);
   send(r);
 }
 
 function startMatch(r){
   r.matchWins=[0,0];
   r.matchWinner=null;
+  r.matchDraw=false;
   r.roundWinner=null;
+  r.roundEndReason=null;
+  r.matchEndReason=null;
+  r.equalBidStreak=0;
   r.roundNumber=0;
   r.choice=[null,null];
   r.readyNext=[false,false];
   r.countdownUntil=0;
+  r.disconnectCounts=[0,0];
+  r.disconnectDeadlines=[0,0];
+  io.to(r.id).emit("logReset");
   setupRound(r);
+  logRoundStart(r);
   log(r,"連戦を開始しました。");
   send(r);
 }
@@ -258,7 +487,11 @@ function returnToRoom(r){
   r.phase="waiting";
   r.matchWins=[0,0];
   r.matchWinner=null;
+  r.matchDraw=false;
   r.roundWinner=null;
+  r.roundEndReason=null;
+  r.matchEndReason=null;
+  r.equalBidStreak=0;
   r.roundNumber=0;
   r.coins=[0,0];
   r.board=Array(9).fill(null);
@@ -274,17 +507,25 @@ function returnToRoom(r){
   r.choice=[null,null];
   r.readyNext=[false,false];
   r.countdownUntil=0;
+  r.disconnectDeadlines=[0,0];
+  r.disconnectCounts=[0,0];
+  r.pausedForDisconnect=false;
+  r.pausedDeadlineRemaining=0;
+  r.pausedCountdownRemaining=0;
+  r.auctionPauseUntil=0;
+  r.pendingDeadlockDraw=false;
   send(r);
 }
 
 io.on("connection",s=>{
   s.on("create",({name},cb)=>{
     const id=makeCode();
-    const r=newRoom(id,{id:s.id,name:name||"プレイヤー1"});
+    const token=makeReconnectToken();
+    const r=newRoom(id,{id:s.id,name:name||"プレイヤー1",token});
     rooms.set(id,r);
     s.join(id);
     s.data={room:id,slot:0};
-    cb({ok:true,room:id,slot:0});
+    cb({ok:true,room:id,slot:0,reconnectToken:token});
     send(r);
     log(r,"ルームを作成しました。友達の入室を待っています。");
   });
@@ -294,13 +535,15 @@ io.on("connection",s=>{
     if(!r) return cb({ok:false,error:"ルームが見つかりません。"});
     if(r.players[1]) return cb({ok:false,error:"このルームは満員です。"});
 
-    r.players[1]={id:s.id,name:name||"プレイヤー2"};
+    const token=makeReconnectToken();
+    r.players[1]={id:s.id,name:name||"プレイヤー2",token,connected:true};
     s.join(r.id);
     s.data={room:r.id,slot:1};
-    cb({ok:true,room:r.id,slot:1});
+    cb({ok:true,room:r.id,slot:1,reconnectToken:token});
 
     if(r.phase==="waiting"){
       setupRound(r);
+      logRoundStart(r);
       log(r,"2人そろいました。先手・後手が決定しました！");
     }
     send(r);
@@ -308,7 +551,7 @@ io.on("connection",s=>{
 
   s.on("select",({cell})=>{
     const r=rooms.get(s.data.room);
-    if(!r || r.phase!=="select" || r.gameOver) return;
+    if(!r || r.phase!=="select" || r.gameOver || r.pausedForDisconnect) return;
     if(s.data.slot!==r.selector) return;
     if(!Number.isInteger(cell) || cell<0 || cell>8) return;
     if(r.board[cell]!==null) return;
@@ -325,7 +568,7 @@ io.on("connection",s=>{
 
   s.on("bidDraft",({amount})=>{
     const r=rooms.get(s.data.room);
-    if(!r || r.phase!=="bid" || r.gameOver) return;
+    if(!r || r.phase!=="bid" || r.gameOver || r.pausedForDisconnect) return;
     const i=s.data.slot;
     const n=Number(amount);
     if(Number.isInteger(n) && n>=0 && n<=r.coins[i]){
@@ -335,7 +578,7 @@ io.on("connection",s=>{
 
   s.on("bid",({amount})=>{
     const r=rooms.get(s.data.room);
-    if(!r || r.phase!=="bid" || r.gameOver) return;
+    if(!r || r.phase!=="bid" || r.gameOver || r.pausedForDisconnect) return;
 
     const i=s.data.slot;
     const n=Number(amount);
@@ -347,16 +590,83 @@ io.on("connection",s=>{
 
     r.bids[i]=n;
     r.bidDrafts[i]=n;
-    s.emit("bidAccepted");
+    s.emit("bidAccepted",{amount:n});
 
     if(r.bids[0]!==null && r.bids[1]!==null){
       resolveBid(r,[...r.bids]);
+    }else{
+      // 自分だけ確定している間は「入札を変更する」を表示できるよう更新。
+      send(r);
     }
+  });
+
+  s.on("changeBid",()=>{
+    const r=rooms.get(s.data.room);
+    const i=s.data.slot;
+
+    if(!r || r.phase!=="bid" || r.gameOver || r.pausedForDisconnect){
+      return s.emit("bidChangeDenied","すでに入札結果の処理が始まっているため変更できません。");
+    }
+    if(i!==0 && i!==1) return;
+    if(r.bids[i]===null){
+      return s.emit("bidChangeDenied","現在、確定済みの入札はありません。");
+    }
+
+    // 相手が確定した瞬間以降は変更不可。競合した場合もサーバー側判定を優先。
+    if(r.bids[1-i]!==null){
+      return s.emit("bidChangeDenied","相手も入札を確定したため、変更できません。");
+    }
+
+    const previous=r.bids[i];
+    r.bids[i]=null;
+    r.bidDrafts[i]=previous;
+    s.emit("bidUnlocked",{amount:previous});
+    send(r);
+  });
+
+
+  s.on("rejoin",({room,token},cb)=>{
+    const r=rooms.get((room||"").toUpperCase());
+    if(!r) return cb?.({ok:false,error:"ルームが見つかりません。"});
+    if(!token) return cb?.({ok:false,error:"復帰情報がありません。"});
+
+    const i=r.players.findIndex(p=>p && p.token===token);
+    if(i<0) return cb?.({ok:false,error:"この端末の復帰情報が一致しません。"});
+
+    const p=r.players[i];
+    p.id=s.id;
+    p.connected=true;
+    r.disconnectDeadlines[i]=0;
+
+    s.join(r.id);
+    s.data={room:r.id,slot:i};
+
+    cb?.({
+      ok:true,
+      room:r.id,
+      slot:i,
+      reconnectToken:p.token,
+      rejoined:true
+    });
+
+    resumeAfterDisconnect(r);
+    send(r);
+  });
+
+  s.on("surrenderRound",()=>{
+    const r=rooms.get(s.data.room);
+    const i=s.data.slot;
+    if(!r || r.gameOver || r.pausedForDisconnect || !activeRoundPhase(r)) return;
+    if(i!==0 && i!==1) return;
+
+    r.roundEndReason="surrender";
+    log(r,`${r.players[i]?.name||"プレイヤー"} が第${r.roundNumber}戦を降参しました。`);
+    endRound(r,1-i);
   });
 
   s.on("nextRound",()=>{
     const r=rooms.get(s.data.room);
-    if(!r || r.phase!=="roundEnd" || r.matchWinner!==null) return;
+    if(!r || r.phase!=="roundEnd" || r.matchWinner!==null || r.pausedForDisconnect) return;
 
     r.readyNext[s.data.slot]=true;
     send(r);
@@ -368,7 +678,7 @@ io.on("connection",s=>{
 
   s.on("matchChoice",({choice})=>{
     const r=rooms.get(s.data.room);
-    if(!r || r.phase!=="matchEnd") return;
+    if(!r || r.phase!=="matchEnd" || r.pausedForDisconnect) return;
     if(choice!=="rematch" && choice!=="room") return;
 
     r.choice[s.data.slot]=choice;
@@ -392,12 +702,63 @@ io.on("connection",s=>{
 
   s.on("disconnect",()=>{
     const r=rooms.get(s.data.room);
-    if(r) io.to(r.id).emit("playerDisconnected");
+    const i=s.data.slot;
+    if(!r || (i!==0 && i!==1)) return;
+
+    const p=r.players[i];
+    // 古いsocketの遅延disconnectが、新しい接続を切断扱いにしないようにする。
+    if(!p || p.id!==s.id) return;
+
+    p.connected=false;
+
+    // 対戦相手がまだいない待機中は、不戦勝処理も切断回数加算もしない。
+    if(!r.players[1] || r.phase==="waiting"){
+      send(r);
+      return;
+    }
+
+    // すでにマッチが終わっている場合も勝敗は変更しない。
+    if(r.phase==="matchEnd"){
+      send(r);
+      return;
+    }
+
+    r.disconnectCounts[i]=(r.disconnectCounts?.[i]||0)+1;
+
+    // 同一マッチ中の2回目の切断は、20秒猶予なしで即マッチ敗北。
+    if(r.disconnectCounts[i]>=2){
+      r.disconnectDeadlines[i]=0;
+      io.to(r.id).emit("secondDisconnectLoss",{slot:i});
+      finishDisconnectForfeit(r,i,"secondDisconnect");
+      return;
+    }
+
+    // 1回目だけ20秒の復帰猶予。
+    r.disconnectDeadlines[i]=Date.now()+20000;
+    pauseForDisconnect(r);
+    io.to(r.id).emit("playerDisconnected",{slot:i,seconds:20,disconnectCount:r.disconnectCounts[i]});
+    log(r,`${p.name} が切断しました。1回目の切断のため、20秒間だけ復帰を待ちます。`);
+    send(r);
   });
 });
 
 setInterval(()=>{
   for(const r of rooms.values()){
+    // 切断猶予20秒。期限切れで、残っている側をマッチ勝者にする。
+    for(let i=0;i<2;i++){
+      if(r.disconnectDeadlines?.[i]){
+        const left=Math.max(0,Math.ceil((r.disconnectDeadlines[i]-Date.now())/1000));
+        io.to(r.id).emit("disconnectTick",{slot:i,seconds:left});
+        if(Date.now()>=r.disconnectDeadlines[i]){
+          r.disconnectDeadlines[i]=0;
+          finishDisconnectForfeit(r,i,"timeout");
+        }
+      }
+    }
+
+    if(!rooms.has(r.id)) continue;
+    if(r.pausedForDisconnect) continue;
+
     if(r.phase==="countdown"){
       if(Date.now()>=r.countdownUntil){
         beginRoundAfterCountdown(r);
