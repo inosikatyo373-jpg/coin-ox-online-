@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v2.9.3</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.0</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:sticky;top:0;z-index:12;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:8px 0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -685,7 +685,111 @@ input::placeholder{color:#6c5a37}
   .waitingHint{display:none}
 }
 
-</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v2.9.3 / 2本先取・最大3戦</div>
+
+/* ===== BID GRID v3.0 : BOARD CLAIM DROP ===== */
+.claimChip{
+  position:fixed;
+  z-index:95;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  background:
+    radial-gradient(circle at 32% 24%,#3a4659 0 12%,#1c2635 38%,#0c111a 74%,#05080d 100%);
+  border:3px solid #d5ad53;
+  box-shadow:
+    inset 0 0 0 4px #33230e,
+    inset 0 0 18px #ffffff0d,
+    0 8px 0 #080b10,
+    0 18px 35px #000b,
+    0 0 22px #d8ad4b22;
+  font-family:"Noto Sans JP",system-ui,sans-serif;
+  font-weight:1000;
+  line-height:1;
+  will-change:transform,opacity,filter;
+}
+.claimChip::before{
+  content:"";
+  position:absolute;
+  inset:8%;
+  border-radius:50%;
+  border:1px solid #f2d67c55;
+  box-shadow:inset 0 0 10px #0008;
+}
+.claimChip.oChip{
+  color:#a9caff;
+  text-shadow:0 0 12px #6fa8ff55,0 2px 0 #0a1220;
+}
+.claimChip.xChip{
+  color:#ffaaaa;
+  text-shadow:0 0 12px #ff777755,0 2px 0 #220909;
+}
+.cell.claimPending{
+  color:transparent!important;
+  text-shadow:none!important;
+}
+.cell.claimImpact{
+  animation:claimCellImpact .58s cubic-bezier(.17,.84,.31,1.18) both!important;
+}
+@keyframes claimCellImpact{
+  0%{
+    transform:scale(.96);
+    filter:brightness(.85);
+    box-shadow:
+      inset 0 0 0 1px #2d1e0d,
+      0 8px 18px #0004!important;
+  }
+  32%{
+    transform:scale(1.055);
+    filter:brightness(1.32);
+    box-shadow:
+      inset 0 0 0 2px #f2cf70,
+      0 0 0 3px #c8993d77,
+      0 0 26px #e7b64d88,
+      0 8px 18px #0006!important;
+  }
+  100%{
+    transform:scale(1);
+    filter:brightness(1);
+  }
+}
+.board.claimBoardKick{
+  animation:claimBoardKick .24s ease-out 1;
+}
+@keyframes claimBoardKick{
+  0%{transform:translateY(0)}
+  35%{transform:translateY(3px)}
+  65%{transform:translateY(-1px)}
+  100%{transform:translateY(0)}
+}
+.claimStamp{
+  position:fixed;
+  z-index:96;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  padding:5px 10px;
+  border-radius:999px;
+  color:#2b1b08;
+  background:linear-gradient(180deg,#ffe595,#d6a43f);
+  border:1px solid #ffe6a0;
+  box-shadow:0 5px 18px #0008;
+  font-size:11px;
+  font-weight:1000;
+  letter-spacing:.12em;
+  opacity:0;
+  animation:claimStampPop .58s ease-out forwards;
+}
+@keyframes claimStampPop{
+  0%{opacity:0;transform:translate(-50%,-20%) scale(.7)}
+  35%{opacity:1;transform:translate(-50%,-115%) scale(1.06)}
+  100%{opacity:0;transform:translate(-50%,-155%) scale(.96)}
+}
+@media (prefers-reduced-motion: reduce){
+  .cell.claimImpact,.board.claimBoardKick,.claimStamp{animation:none!important}
+}
+
+</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.0 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel lobbyPanel">
   <div class="lobbyKicker">PRIVATE MATCH</div>
   <h2>友達と対戦</h2>
@@ -958,6 +1062,125 @@ function addCoin(side,index){
   requestAnimationFrame(()=>c.classList.add("drop"));
 }
 
+
+function claimImpactSound(){
+  // コイン音を少し強め・低めに再生して「駒が卓へ落ちる」衝撃を出す。
+  try{
+    const a=coinSoundPool[coinSoundCursor++%coinSoundPool.length];
+    a.pause();
+    a.currentTime=0;
+    a.volume=.52;
+    a.playbackRate=.82;
+    const p=a.play();
+    if(p?.catch)p.catch(()=>{});
+  }catch(e){}
+}
+
+async function playBoardClaim(r,token){
+  if(r.winner!==0 && r.winner!==1)return;
+  if(token!==auctionAnimToken)return;
+
+  // state描画が反映されるのを少し待つ。
+  await sleep(30);
+  if(token!==auctionAnimToken)return;
+
+  const cell=document.querySelector(`#board .cell[data-cell-index="${r.cell}"]`);
+  if(!cell)return;
+
+  const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  const rect=cell.getBoundingClientRect();
+  const cx=rect.left+rect.width/2;
+  const cy=rect.top+rect.height/2;
+  const size=Math.max(54,Math.min(96,rect.width*.62));
+
+  cell.classList.add("claimPending");
+
+  const chip=document.createElement("div");
+  chip.className=`claimChip ${r.winner===0?"oChip":"xChip"}`;
+  chip.textContent=r.winner===0?"〇":"×";
+  chip.style.left=cx+"px";
+  chip.style.top=cy+"px";
+  chip.style.width=size+"px";
+  chip.style.height=size+"px";
+  chip.style.fontSize=Math.round(size*.64)+"px";
+  document.body.appendChild(chip);
+
+  if(reduced){
+    cell.classList.remove("claimPending");
+    cell.classList.add("claimImpact");
+    claimImpactSound();
+    await sleep(180);
+    chip.remove();
+    cell.classList.remove("claimImpact");
+    return;
+  }
+
+  const startOffset=-Math.min(520,Math.max(260,cy+180));
+  const tilt=r.winner===0?-18:18;
+
+  const fall=chip.animate([
+    {
+      transform:`translate(-50%,calc(-50% + ${startOffset}px)) rotate(${tilt}deg) scale(1.12)`,
+      opacity:0,
+      filter:"blur(1px)"
+    },
+    {
+      offset:.16,
+      opacity:1,
+      filter:"blur(0)"
+    },
+    {
+      offset:.78,
+      transform:`translate(-50%,calc(-50% + 12px)) rotate(${tilt*.18}deg) scale(1.03)`
+    },
+    {
+      offset:.9,
+      transform:"translate(-50%,calc(-50% - 7px)) rotate(0deg) scale(.98)"
+    },
+    {
+      transform:"translate(-50%,-50%) rotate(0deg) scale(1)"
+    }
+  ],{
+    duration:820,
+    easing:"cubic-bezier(.18,.76,.18,1)",
+    fill:"forwards"
+  });
+
+  // 着地直前まで溜め、最後に一気に盤面へ叩き込む。
+  await sleep(640);
+  if(token!==auctionAnimToken){
+    chip.remove();
+    cell.classList.remove("claimPending");
+    return;
+  }
+
+  cell.classList.remove("claimPending");
+  cell.classList.add("claimImpact");
+  $("board").classList.add("claimBoardKick");
+  claimImpactSound();
+
+  const stamp=document.createElement("div");
+  stamp.className="claimStamp";
+  stamp.textContent="CLAIMED";
+  stamp.style.left=cx+"px";
+  stamp.style.top=(rect.top+6)+"px";
+  document.body.appendChild(stamp);
+
+  try{await fall.finished}catch(e){}
+  await sleep(130);
+
+  chip.animate([
+    {opacity:1,transform:"translate(-50%,-50%) scale(1)"},
+    {opacity:0,transform:"translate(-50%,-50%) scale(.88)"}
+  ],{duration:180,easing:"ease-out",fill:"forwards"});
+
+  await sleep(190);
+  chip.remove();
+  stamp.remove();
+  cell.classList.remove("claimImpact");
+  $("board").classList.remove("claimBoardKick");
+}
+
 async function playAuctionReveal(r){
   const token=++auctionAnimToken;
   resetAuctionReveal();$("auctionOverlay").classList.remove("hidden");
@@ -1004,8 +1227,24 @@ async function playAuctionReveal(r){
       : `〇 ${a} - ${b} ×　×が獲得！`;
   }
 
-  await sleep(900);
-  if(token===auctionAnimToken)$("auctionOverlay").classList.add("hidden");
+  if(r.winner===0 || r.winner===1){
+    // 勝者表示を一度見せてから、盤面へ獲得チップを落とす。
+    await sleep(620);
+    if(token!==auctionAnimToken)return;
+
+    // 盤面上の確定済み記号を一瞬隠してからリビールする。
+    const target=document.querySelector(`#board .cell[data-cell-index="${r.cell}"]`);
+    if(target)target.classList.add("claimPending");
+
+    $("auctionOverlay").classList.add("hidden");
+    await playBoardClaim(r,token);
+    await sleep(170);
+  }else{
+    // 同額時は獲得チップ演出を行わず、DRAWを少し残す。
+    await sleep(900);
+    if(token!==auctionAnimToken)return;
+    $("auctionOverlay").classList.add("hidden");
+  }
 }
 
 s.on("auctionResult",r=>{playAuctionReveal(r);});
@@ -1210,7 +1449,7 @@ if(state.pausedForDisconnect){
   }else if(state.phase==="select"){$("roleLabel").textContent=`あなたは ${state.first===slot?"先手":"後手"} です`;const mine=state.selector===slot;$("turnBox").textContent=mine?"あなたの手番：競売するマスを選択してください":"相手の手番：競売するマスを選択中";$("turnBox").className="turnBox "+(mine?"myTurn":"opponentTurn")}else if(state.phase==="bid"){$("roleLabel").textContent=`あなたは ${state.first===slot?"先手":"後手"} です`;$("turnBox").textContent="現在の手番：両者が同時入札中";$("turnBox").className="turnBox myTurn"}else{$("roleLabel").textContent=state.first!==null?`あなたは ${state.first===slot?"先手":"後手"} です`:"";$("turnBox").textContent="対戦結果を確認してください";$("turnBox").className="turnBox"}
 $("diamondsLeft").innerHTML=diamonds(state.matchWins[0]);$("diamondsRight").innerHTML=diamonds(state.matchWins[1]);$("scoreLine").textContent=`〇 ${state.matchWins[0]}勝　｜　× ${state.matchWins[1]}勝`;
 $("surrenderRound").classList.toggle("hidden",!["select","bid","auctionPause"].includes(state.phase)||state.pausedForDisconnect);
-const b=$("board");b.innerHTML="";state.board.forEach((v,i)=>{const x=document.createElement("button");x.className="cell";if(v===0){x.textContent="〇";x.classList.add("o")}if(v===1){x.textContent="×";x.classList.add("x")}if(i===4&&!state.middleUnlocked&&v===null){x.textContent="中央";x.classList.add("blocked")}if(state.phase==="bid"&&state.selected===i)x.classList.add("auction");x.disabled=!ps[1]||state.pausedForDisconnect||state.phase!=="select"||state.selector!==slot||v!==null||(i===4&&!state.middleUnlocked);x.onclick=()=>s.emit("select",{cell:i});b.appendChild(x)});
+const b=$("board");b.innerHTML="";state.board.forEach((v,i)=>{const x=document.createElement("button");x.className="cell";x.dataset.cellIndex=i;if(v===0){x.textContent="〇";x.classList.add("o")}if(v===1){x.textContent="×";x.classList.add("x")}if(i===4&&!state.middleUnlocked&&v===null){x.textContent="中央";x.classList.add("blocked")}if(state.phase==="bid"&&state.selected===i)x.classList.add("auction");x.disabled=!ps[1]||state.pausedForDisconnect||state.phase!=="select"||state.selector!==slot||v!==null||(i===4&&!state.middleUnlocked);x.onclick=()=>s.emit("select",{cell:i});b.appendChild(x)});
 $("bidPanel").classList.toggle("hidden",state.phase!=="bid");
 if(state.phase!=="bid"){
   $("bid").value="";
