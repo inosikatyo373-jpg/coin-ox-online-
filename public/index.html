@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>コイン競売〇×ゲーム ONLINE v2.5.2</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v2.7</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:sticky;top:0;z-index:12;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:8px 0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -21,7 +21,377 @@
 .rulesTitle{font-size:25px;font-weight:1000;margin-bottom:8px}
 .rulesNote{font-size:13px;color:#9ca3af}
 
-</style></head><body><main class="app"><h1>コイン競売〇×ゲーム</h1><div class="muted">ONLINE v2.5.2 / 2本先取・最大3戦</div>
+
+/* ===== BID GRID v2.6 : 3D coin reveal ===== */
+.auctionStage{
+  position:fixed;inset:0;z-index:80;
+  display:flex;align-items:center;justify-content:center;
+  padding:18px;background:radial-gradient(circle at center,#172033ee 0,#05070df2 72%);
+  perspective:900px;overflow:hidden;
+}
+.auctionCard{
+  width:min(94vw,700px);min-height:480px;
+  border:1px solid #4b5563;border-radius:24px;
+  background:linear-gradient(180deg,#1f2937f5,#0f172af5);
+  box-shadow:0 28px 90px #000c,0 0 50px #fbbf2411 inset;
+  padding:18px 18px 22px;position:relative;overflow:hidden;
+}
+.revealTitle{text-align:center;font-weight:1000;letter-spacing:.08em;font-size:14px;color:#fbbf24;margin:0 0 2px}
+.revealSub{text-align:center;color:#9ca3af;font-size:12px;margin-bottom:8px}
+.coinDuel{display:grid;grid-template-columns:1fr 86px 1fr;gap:10px;align-items:end;min-height:310px}
+.coinSide{position:relative;min-width:0;text-align:center}
+.coinSideLabel{font-size:31px;font-weight:1000;margin-bottom:2px}
+.coinSideLabel.oSide{color:#60a5fa}.coinSideLabel.xSide{color:#f87171}
+.coinStack{height:250px;position:relative;margin:0 auto;width:min(150px,36vw);transform-style:preserve-3d}
+.coin3d{
+  --i:0;position:absolute;left:50%;bottom:calc(var(--i) * 6px);
+  width:58px;height:58px;border-radius:50%;
+  transform-style:preserve-3d;
+  transform:translateX(-50%) translateY(-330px) rotateX(0deg) rotateZ(-8deg);
+  opacity:0;
+  background:radial-gradient(circle at 34% 28%,#fff6a2 0 8%,#ffd84d 18%,#e7a915 58%,#8c5a00 100%);
+  border:3px solid #ffe27b;
+  box-shadow:inset 0 0 0 4px #b87508,inset 0 0 16px #fff4,0 3px 0 #704100,0 7px 14px #0008;
+  color:#6b3d00;font-weight:1000;font-size:23px;display:grid;place-items:center;backface-visibility:hidden;
+}
+.coin3d::before{
+  content:"B";width:31px;height:31px;border-radius:50%;display:grid;place-items:center;
+  border:2px solid #9b6508;text-shadow:0 1px #ffe9a0;box-shadow:inset 0 1px 2px #fff6;
+}
+.coin3d.drop{animation:coinDrop .42s cubic-bezier(.18,.82,.25,1.12) forwards}
+@keyframes coinDrop{
+  0%{opacity:0;transform:translateX(-50%) translateY(-330px) rotateX(0deg) rotateZ(-12deg) scale(.9)}
+  18%{opacity:1}
+  72%{transform:translateX(-50%) translateY(-18px) rotateX(22deg) rotateZ(5deg) scale(1.02)}
+  88%{transform:translateX(-50%) translateY(4px) rotateX(82deg) rotateZ(0deg) scale(1.04)}
+  100%{opacity:1;transform:translateX(-50%) translateY(0) rotateX(74deg) rotateZ(0deg) scale(1)}
+}
+.coinCount{margin-top:5px;font-size:30px;font-weight:1000;font-variant-numeric:tabular-nums;min-height:40px}
+.vsMark{align-self:center;text-align:center;font-weight:1000;color:#6b7280;font-size:24px;padding-bottom:58px}
+.revealBanner{min-height:70px;display:grid;place-items:center;text-align:center;margin-top:0;font-weight:1000;letter-spacing:.06em;font-size:clamp(30px,8vw,54px)}
+.revealBanner.just{color:#fde047;text-shadow:0 0 8px #f59e0b,0 0 24px #f59e0b,0 5px 0 #92400e;animation:justBid .56s cubic-bezier(.18,.9,.22,1.3) both}
+@keyframes justBid{0%{opacity:0;transform:scale(.35) rotate(-7deg)}65%{opacity:1;transform:scale(1.14) rotate(2deg)}100%{transform:scale(1)}}
+.revealBanner.draw{color:#e5e7eb;text-shadow:0 0 10px #94a3b8,0 0 30px #64748b;animation:drawStamp .48s ease-out both}
+@keyframes drawStamp{0%{opacity:0;transform:scale(1.8);filter:blur(5px)}100%{opacity:1;transform:scale(1);filter:blur(0)}}
+.auctionCard.drawShake{animation:drawShake .32s linear 1}
+@keyframes drawShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}50%{transform:translateX(7px)}75%{transform:translateX(-3px)}}
+.revealWinner{text-align:center;font-size:18px;font-weight:900;color:#f3f4f6;min-height:27px}
+.revealHint{text-align:center;color:#6b7280;font-size:11px;margin-top:5px}
+@media(max-width:600px){
+  .auctionCard{min-height:440px;padding:14px 10px 18px;border-radius:18px}
+  .coinDuel{grid-template-columns:1fr 54px 1fr;gap:2px;min-height:285px}
+  .coinStack{height:225px;width:38vw}.coin3d{width:49px;height:49px;font-size:20px;bottom:calc(var(--i) * 5px)}
+  .coin3d::before{width:27px;height:27px}.coinSideLabel{font-size:26px}.coinCount{font-size:26px}.vsMark{font-size:18px;padding-bottom:54px}
+}
+@media (prefers-reduced-motion: reduce){
+  .coin3d.drop{animation-duration:.05s}.revealBanner.just,.revealBanner.draw,.auctionCard.drawShake{animation:none}
+}
+
+
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap");
+
+/* ===== BID GRID v2.7 : luxe analog board-game theme ===== */
+:root{
+  --bg0:#05070d;
+  --bg1:#0f1728;
+  --felt:#132033;
+  --panel:#151e2d;
+  --panel2:#101827;
+  --paper:#f0e7c9;
+  --ink:#e8dcc0;
+  --muted2:#b7ab91;
+  --gold:#f7d76f;
+  --gold2:#d8a23a;
+  --gold3:#7d5214;
+  --brass:#9a6a22;
+  --line:#43311a;
+  --blue2:#89b8ff;
+  --red2:#ff9b9b;
+  --shadow:0 18px 50px #0009;
+}
+html,body{
+  min-height:100%;
+  background:
+    radial-gradient(circle at 20% -10%,#23324a 0,#0e1524 25%,transparent 42%),
+    radial-gradient(circle at 80% -8%,#3f2f14 0,#161b26 28%,transparent 40%),
+    linear-gradient(180deg,var(--bg1),var(--bg0) 72%);
+  color:var(--ink);
+  font-family:"Noto Sans JP",system-ui,sans-serif;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
+  background:
+    radial-gradient(circle at 30% 20%,#ffffff08 0 1px,transparent 1px 18px),
+    radial-gradient(circle at 70% 60%,#ffffff05 0 1px,transparent 1px 18px);
+  mix-blend-mode:screen;
+}
+.app{
+  max-width:1160px;
+  background:
+    linear-gradient(180deg,#121926f7,#0b111cf9),
+    radial-gradient(circle at 50% 0%,#30251455,transparent 55%);
+  border:1px solid #6d542a;
+  box-shadow:var(--shadow), inset 0 0 0 2px #20160b;
+  border-radius:28px;
+  padding:20px 18px 24px;
+  position:relative;
+  overflow:hidden;
+}
+.app::before,.app::after{
+  content:"";position:absolute;width:108px;height:108px;border:1px solid #7d5d25aa;border-radius:18px;transform:rotate(45deg);opacity:.22;pointer-events:none
+}
+.app::before{left:-52px;top:-52px;background:linear-gradient(180deg,#d0ac5e18,transparent)}
+.app::after{right:-52px;bottom:-52px;background:linear-gradient(180deg,#d0ac5e10,transparent)}
+
+.eyebrow{
+  text-align:center;
+  letter-spacing:.22em;
+  font-size:12px;
+  color:#c2a56b;
+  margin-top:2px;
+}
+h1{
+  font-family:"Cormorant Garamond","Times New Roman",serif;
+  font-size:60px;
+  letter-spacing:.08em;
+  margin:2px 0 -2px;
+  color:#fbefbf;
+  text-shadow:0 0 10px #c6932d44,0 2px 0 #52350d,0 10px 30px #0008;
+}
+.tagline{
+  text-align:center;
+  font-family:"Cormorant Garamond","Times New Roman",serif;
+  font-size:28px;
+  color:#dcc48b;
+  letter-spacing:.04em;
+  margin-bottom:6px;
+}
+.muted{
+  color:var(--muted2)!important;
+  text-align:center;
+}
+.panel{
+  background:
+    linear-gradient(180deg,#172234f4,#101826f7),
+    radial-gradient(circle at top,#f6d87e08,transparent 60%);
+  border:1px solid #745829;
+  border-radius:22px;
+  box-shadow:var(--shadow), inset 0 0 0 2px #1e140a;
+  position:relative;
+}
+.panel::before{
+  content:"";position:absolute;inset:9px;border-radius:16px;
+  border:1px solid #9d7c3b3a;pointer-events:none;
+}
+section.panel>h2, .panel h2{
+  font-family:"Cormorant Garamond","Times New Roman",serif;
+  font-size:38px;
+  letter-spacing:.03em;
+  color:#f4dfa4;
+  margin:0 0 10px;
+}
+button{
+  border-radius:16px!important;
+  border:1px solid #8f6a30!important;
+  background:
+    linear-gradient(180deg,#33240f,#20160c 55%,#130e08)!important;
+  color:#f7ebcc!important;
+  box-shadow:
+    0 7px 0 #0e0a06,
+    0 13px 28px #0007,
+    inset 0 1px 0 #f8de8a33,
+    inset 0 0 0 1px #b98a3d26;
+  font-weight:900;
+  letter-spacing:.03em;
+  text-shadow:0 1px 0 #000;
+  transition:transform .12s ease, filter .12s ease, box-shadow .12s ease;
+}
+button.primary{
+  background:
+    linear-gradient(180deg,#7f5820,#5b3a14 58%,#2e1d0d)!important;
+  border-color:#d6a84b!important;
+  color:#fff4cf!important;
+  box-shadow:
+    0 7px 0 #24160a,
+    0 14px 28px #0009,
+    inset 0 1px 0 #fff4bf55,
+    0 0 26px #d4a33c26;
+}
+button:hover{filter:brightness(1.06);transform:translateY(-1px)}
+button:active{transform:translateY(3px);box-shadow:0 3px 0 #0e0a06,0 7px 16px #0008,inset 0 1px 0 #f8de8a33}
+input{
+  background:
+    linear-gradient(180deg,#e7d7a9,#c8b785);
+  color:#23170a;
+  border:1px solid #91703a!important;
+  border-radius:15px!important;
+  box-shadow:inset 0 1px 0 #fff7de, inset 0 0 0 1px #6e53280f;
+  font-weight:700;
+}
+input::placeholder{color:#6c5a37}
+.code{
+  font-family:"Cormorant Garamond","Times New Roman",serif;
+  color:#fff1b8!important;
+  border:1px dashed #c79b40!important;
+  background:
+    linear-gradient(180deg,#23170e,#120d08)!important;
+  letter-spacing:.12em;
+  box-shadow:inset 0 0 20px #f3c7660a,0 6px 16px #0005;
+}
+.players{
+  background:linear-gradient(180deg,#0e1622,#0a1018);
+  border-radius:16px;
+  border:1px solid #5d4722;
+  padding:8px 10px;
+}
+.player{
+  background:linear-gradient(180deg,#1b2434,#121825)!important;
+  border:1px solid #715328!important;
+  border-radius:14px!important;
+  box-shadow:inset 0 0 0 1px #25170d;
+}
+.badge{
+  border-radius:999px;
+  background:linear-gradient(180deg,#d2aa4a,#8b6220)!important;
+  color:#201306!important;
+  box-shadow:0 3px 12px #0006;
+}
+.stickyHud{
+  background:
+    linear-gradient(180deg,#161f2eeb,#0b121dea)!important;
+  border:1px solid #7c5d2d!important;
+  box-shadow:0 12px 30px #0008,inset 0 0 0 1px #1f140a!important;
+  border-radius:18px!important;
+}
+.hudRound{color:#e4c36b!important;letter-spacing:.08em}
+.hudPlayer{color:#f3e7c8}
+.hudTimer{
+  color:#ffec9e!important;
+  text-shadow:0 0 10px #fbbf2466,0 2px 0 #50340f;
+}
+.hudBid,.bidLimit{color:#d9c6a1!important}
+#roleLabel{
+  font-family:"Cormorant Garamond","Times New Roman",serif;
+  color:#f2dea1;
+  letter-spacing:.05em;
+}
+.turnBox{
+  background:
+    linear-gradient(180deg,#23160d,#120d08)!important;
+  color:#fff0c6!important;
+  border:1px solid #b1863c!important;
+  border-radius:18px!important;
+  box-shadow:0 12px 28px #0008, inset 0 0 0 1px #3b2811!important;
+}
+#board{
+  background:
+    linear-gradient(180deg,#261d12,#140e08)!important;
+  border:1px solid #a27734!important;
+  border-radius:26px!important;
+  padding:10px!important;
+  box-shadow:var(--shadow), inset 0 0 0 2px #2b1d0d!important;
+}
+.cell{
+  background:
+    radial-gradient(circle at 30% 25%,#1f3654,#14253d 55%,#0c1422)!important;
+  border:1px solid #8a6630!important;
+  border-radius:18px!important;
+  box-shadow:
+    inset 0 0 0 1px #2d1e0d,
+    inset 0 -18px 30px #00000022,
+    0 8px 18px #0004!important;
+  color:#f4e7c9!important;
+  overflow:hidden;
+}
+.cell::before{
+  content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(135deg,transparent 0 44%,#ffffff08 50%,transparent 56%),
+    radial-gradient(circle at 50% 10%,#fbd9770f,transparent 45%);
+  pointer-events:none;
+}
+.cell.x{color:#ffadad!important;text-shadow:0 0 16px #ff9b9b22}
+.cell.o{color:#a8caff!important;text-shadow:0 0 16px #7fb0ff22}
+.cell.auction{
+  animation:auctionPulseLuxe 1.9s ease-in-out infinite!important;
+}
+@keyframes auctionPulseLuxe{
+  0%,100%{
+    background:radial-gradient(circle at 30% 25%,#3e3210,#2d2512 50%,#1c140a);
+    box-shadow:inset 0 0 0 2px #f3d26f, 0 0 0 1px #e1b752, 0 0 12px #d19a2744, 0 0 26px #f3d26f11;
+  }
+  50%{
+    background:radial-gradient(circle at 30% 25%,#5d4512,#433010 55%,#281a09);
+    box-shadow:inset 0 0 0 2px #ffd978, 0 0 0 1px #f6cf74, 0 0 20px #f1c24e66, 0 0 34px #f3d26f22;
+  }
+}
+.cell.auction::after{
+  content:"AUCTION";
+  background:linear-gradient(180deg,#f3d26f,#c68d28)!important;
+  color:#2c1907!important;
+  border-radius:999px!important;
+  padding:2px 8px!important;
+  box-shadow:0 5px 14px #0005;
+}
+.log{
+  background:linear-gradient(180deg,#0d121b,#090d14);
+  border:1px solid #57411d;
+  border-radius:16px;
+  padding:8px 10px;
+  color:#d7c7a0;
+}
+.modal{
+  background:#04070ec0!important;
+  backdrop-filter:blur(4px);
+}
+.modal>div{
+  background:
+    linear-gradient(180deg,#182334,#0f1727)!important;
+  border:1px solid #89652e!important;
+  border-radius:22px!important;
+  box-shadow:0 22px 70px #000a, inset 0 0 0 2px #1c1208!important;
+  color:var(--ink)!important;
+}
+.modal h3,.rulesTitle{
+  font-family:"Cormorant Garamond","Times New Roman",serif;
+  color:#f0dda7;
+  letter-spacing:.04em;
+}
+.rulesList{
+  background:linear-gradient(180deg,#eee0b7,#dbc895);
+  border:1px solid #8f6d35;
+  color:#2b1d0d;
+  border-radius:16px;
+  padding:16px 20px 16px 34px!important;
+  box-shadow:inset 0 1px 0 #fff6d3;
+}
+.rulesList li{margin:6px 0}
+.rulesNote{color:#cab98e!important}
+.roomCodeRow .copyBtn{min-width:152px}
+.choiceRow button{min-height:60px}
+.revealTitle{font-family:"Cormorant Garamond","Times New Roman",serif;color:#efd080!important}
+.revealSub,.revealHint{color:#bda97c!important}
+.auctionCard{
+  background:
+    linear-gradient(180deg,#171f2df5,#0c131ff6)!important;
+  border:1px solid #9b7333!important;
+  box-shadow:0 28px 90px #000c, inset 0 0 0 2px #22160a, inset 0 0 40px #d2a44a10!important;
+}
+.revealWinner{color:#f5e8c6!important}
+.revealBanner.just{color:#ffeb8f!important}
+.revealBanner.draw{color:#efe7cf!important}
+@media(max-width:600px){
+  .app{padding:16px 10px 18px;border-radius:0;max-width:none}
+  h1{font-size:44px}
+  .tagline{font-size:22px}
+  section.panel>h2,.panel h2{font-size:30px}
+  .stickyHud{
+    border-radius:0 0 18px 18px!important;
+    border-left:none!important;border-right:none!important;border-top:none!important;
+  }
+}
+
+</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v2.7 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel">
 <h2>オンライン対戦</h2>
 <input id="name" placeholder="名前（任意）">
@@ -62,14 +432,14 @@
 
 <div id="rulesOverlay" class="modal hidden">
   <div>
-    <div class="rulesTitle">コイン競売〇×ゲーム</div>
+    <div class="rulesTitle">BID GRID</div>
     <p class="muted">競売でマスを奪い、3目ならべを完成させる対戦ゲームです。</p>
     <ol class="rulesList">
       <li>3×3の盤面で〇と×が対戦します。</li>
       <li>各戦の開始時、両者に同じ枚数（20〜40枚）のコインが配られます。</li>
       <li>手番のプレイヤーが競売するマスを選び、両者が同時にコインを入札します。</li>
       <li>多く入札した側がそのマスを獲得。入札したコインは勝敗に関係なく消費します。</li>
-      <li>同額なら両者のコインを没収し、そのマスは空白のままです。</li>
+      <li>同額なら両者のコインを没収し、そのマスは空白のままです。</li><li>入札結果ではコインが1枚ずつ積み上がります。1枚差なら「JUST BID!」、同額なら「DRAW」が表示されます。</li>
       <li>最初の2回の競売が終わるまで中央マスは選べません。</li>
       <li>マス選択・入札は各60秒。入札時間切れ時は最後に入力していた金額を自動入札します。</li>
       <li>3目を先に作った側がその戦の勝者。9マス埋まった場合は残りコインが多い側が勝者です。</li>
@@ -81,10 +451,26 @@
 </div>
 
 <div id="modal" class="modal hidden"><div><div id="resultBig" class="resultBig"></div><p id="resultText"></p><div id="matchActions"></div></div></div>
-<div id="auctionOverlay" class="modal hidden">
-  <div>
-    <div id="auctionResultText" class="resultBig"></div>
-    <p class="muted">2秒後に次のターンへ進みます</p>
+<div id="auctionOverlay" class="auctionStage hidden" aria-live="polite">
+  <div id="auctionCard" class="auctionCard">
+    <div class="revealTitle">BID REVEAL</div>
+    <div class="revealSub">コインが積み上がるまで入札結果は分かりません</div>
+    <div class="coinDuel">
+      <div class="coinSide">
+        <div class="coinSideLabel oSide">〇</div>
+        <div id="coinStack0" class="coinStack"></div>
+        <div id="coinCount0" class="coinCount">0</div>
+      </div>
+      <div class="vsMark">VS</div>
+      <div class="coinSide">
+        <div class="coinSideLabel xSide">×</div>
+        <div id="coinStack1" class="coinStack"></div>
+        <div id="coinCount1" class="coinCount">0</div>
+      </div>
+    </div>
+    <div id="revealBanner" class="revealBanner"></div>
+    <div id="auctionResultText" class="revealWinner"></div>
+    <div class="revealHint">入札したコインは勝敗に関係なく消費されます</div>
   </div>
 </div>
 
@@ -157,16 +543,88 @@ function backToTitle(){
 }
 
 s.on("state",x=>{state=x;render()});s.on("tick",t=>{$("timer").textContent=t+"秒";$("hudTimer").textContent=t+"秒";});s.on("log",m=>$("log").insertAdjacentHTML("afterbegin","<div>"+m+"</div>"));s.on("selected",x=>{$("bidPanel").classList.remove("hidden");$("bidTarget").textContent="現在の競売対象：マス"+(x.cell+1);$("bidMsg").textContent=x.auto?"選択時間切れのため自動選択されました。":"入札額を決めてください。"});
-s.on("auctionResult",r=>{
-  const msg=r.winner===0
-    ? `〇が${r.bids[0]}枚で獲得！`
-    : r.winner===1
-      ? `×が${r.bids[1]}枚で獲得！`
-      : `同額 ${r.bids[0]}枚！`;
-  $("auctionResultText").textContent=msg;
-  $("auctionOverlay").classList.remove("hidden");
-  setTimeout(()=>$("auctionOverlay").classList.add("hidden"),2000);
-});
+let auctionAnimToken=0;
+let audioCtx=null;
+
+function coinClink(strength=1){
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    const now=audioCtx.currentTime;
+    const gain=audioCtx.createGain();
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.055*strength,now+.006);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+.105);
+    gain.connect(audioCtx.destination);
+    [1450,2380].forEach((freq,k)=>{
+      const osc=audioCtx.createOscillator();
+      osc.type=k?"sine":"triangle";
+      osc.frequency.setValueAtTime(freq,now);
+      osc.frequency.exponentialRampToValueAtTime(freq*.78,now+.09);
+      osc.connect(gain);
+      osc.start(now);osc.stop(now+.11);
+    });
+  }catch(e){}
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function resetAuctionReveal(){
+  $("coinStack0").innerHTML="";$("coinStack1").innerHTML="";
+  $("coinCount0").textContent="0";$("coinCount1").textContent="0";
+  $("revealBanner").textContent="";$("revealBanner").className="revealBanner";
+  $("auctionResultText").textContent="";$("auctionCard").classList.remove("drawShake");
+}
+
+function addCoin(side,index){
+  const c=document.createElement("div");
+  c.className="coin3d";c.style.setProperty("--i",Math.min(index,31));
+  $("coinStack"+side).appendChild(c);
+  requestAnimationFrame(()=>c.classList.add("drop"));
+}
+
+async function playAuctionReveal(r){
+  const token=++auctionAnimToken;
+  resetAuctionReveal();$("auctionOverlay").classList.remove("hidden");
+  const a=r.bids[0], b=r.bids[1], maxBid=Math.max(a,b);
+  const step=maxBid<=5?145:Math.max(42,Math.min(105,1750/Math.max(1,maxBid)));
+
+  for(let i=1;i<=maxBid;i++){
+    if(token!==auctionAnimToken)return;
+    let landed=false;
+    if(i<=a){addCoin(0,i-1);$("coinCount0").textContent=i;landed=true}
+    if(i<=b){addCoin(1,i-1);$("coinCount1").textContent=i;landed=true}
+    if(landed)setTimeout(()=>coinClink(i===maxBid?1.15:.72),300);
+    await sleep(step);
+  }
+
+  await sleep(420);
+  if(token!==auctionAnimToken)return;
+
+  const diff=Math.abs(a-b);
+  if(a===b){
+    $("revealBanner").textContent="DRAW";
+    $("revealBanner").className="revealBanner draw";
+    $("auctionCard").classList.add("drawShake");
+    $("auctionResultText").textContent=`${a} - ${b}　同額入札 / マスは空白`;
+    coinClink(1.35);
+  }else if(diff===1){
+    $("revealBanner").textContent="JUST BID!";
+    $("revealBanner").className="revealBanner just";
+    $("auctionResultText").textContent=r.winner===0
+      ? `〇 ${a} - ${b} ×　〇が1枚差で獲得！`
+      : `〇 ${a} - ${b} ×　×が1枚差で獲得！`;
+    coinClink(1.5);setTimeout(()=>coinClink(1.1),90);
+  }else{
+    $("auctionResultText").textContent=r.winner===0
+      ? `〇 ${a} - ${b} ×　〇が獲得！`
+      : `〇 ${a} - ${b} ×　×が獲得！`;
+  }
+
+  await sleep(900);
+  if(token===auctionAnimToken)$("auctionOverlay").classList.add("hidden");
+}
+
+s.on("auctionResult",r=>{playAuctionReveal(r);});
 
 s.on("countdownStart",r=>{
   $("modal").classList.add("hidden");
