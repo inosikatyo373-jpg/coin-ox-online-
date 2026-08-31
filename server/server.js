@@ -7,6 +7,248 @@ const crypto=require("crypto");
 const app=express();
 const server=http.createServer(app);
 const io=new Server(server);
+app.use(express.json({limit:"32kb"}));
+
+const SUPABASE_URL=(process.env.SUPABASE_URL||"").replace(/\/$/,"");
+const SUPABASE_ANON_KEY=process.env.SUPABASE_ANON_KEY||"";
+const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||"";
+
+function accountConfigured(){
+  return !!(SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_SERVICE_ROLE_KEY);
+}
+
+async function sbFetch(pathname,{method="GET",key=SUPABASE_ANON_KEY,token=null,body=null,headers={}}={}){
+  if(!accountConfigured()) throw new Error("ACCOUNT_NOT_CONFIGURED");
+
+  const res=await fetch(`${SUPABASE_URL}${pathname}`,{
+    method,
+    headers:{
+      apikey:key,
+      Authorization:`Bearer ${token||key}`,
+      ...(body?{"Content-Type":"application/json"}:{}),
+      ...headers
+    },
+    body:body?JSON.stringify(body):undefined
+  });
+
+  const text=await res.text();
+  let data=null;
+  try{data=text?JSON.parse(text):null}catch(e){data={message:text}}
+
+  if(!res.ok){
+    const err=new Error(data?.msg||data?.message||data?.error_description||data?.error||`Supabase HTTP ${res.status}`);
+    err.status=res.status;
+    err.data=data;
+    throw err;
+  }
+  return data;
+}
+
+function cleanDisplayName(value,fallback="PLAYER"){
+  const s=String(value||"").trim().replace(/[<>]/g,"").slice(0,24);
+  return s||fallback;
+}
+
+async function authUserFromToken(token){
+  if(!token) return null;
+  return sbFetch("/auth/v1/user",{token,key:SUPABASE_ANON_KEY});
+}
+
+async function fetchProfile(userId){
+  const rows=await sbFetch(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,display_name,rating,highest_rating,wins,losses,draws,created_at`,{
+    key:SUPABASE_SERVICE_ROLE_KEY,
+    headers:{Accept:"application/json"}
+  });
+  return Array.isArray(rows)?rows[0]||null:null;
+}
+
+async function ensureProfile(user){
+  if(!user?.id) return null;
+  let profile=await fetchProfile(user.id);
+  if(profile) return profile;
+
+  const displayName=cleanDisplayName(user.user_metadata?.display_name,user.email?.split("@")[0]||"PLAYER");
+  const rows=await sbFetch("/rest/v1/profiles?on_conflict=id",{
+    method:"POST",
+    key:SUPABASE_SERVICE_ROLE_KEY,
+    headers:{Prefer:"resolution=merge-duplicates,return=representation"},
+    body:[{
+      id:user.id,
+      display_name:displayName,
+      rating:1500,
+      highest_rating:1500,
+      wins:0,
+      losses:0,
+      draws:0
+    }]
+  });
+  return Array.isArray(rows)?rows[0]||null:null;
+}
+
+async function resolveAccount(token){
+  if(!token) return null;
+  const user=await authUserFromToken(token);
+  const profile=await ensureProfile(user);
+  return {user,profile};
+}
+
+async function recordProfileResult(userId,result){
+  const rows=await sbFetch("/rest/v1/rpc/record_match_result",{
+    method:"POST",
+    key:SUPABASE_SERVICE_ROLE_KEY,
+    headers:{Prefer:"return=representation"},
+    body:{p_user_id:userId,p_result:result}
+  });
+  if(Array.isArray(rows)) return rows[0]||await fetchProfile(userId);
+  return rows||await fetchProfile(userId);
+}
+
+async function recordMatchStats(r){
+  if(!accountConfigured() || r.statsRecorded || r.phase!=="matchEnd") return;
+  r.statsRecorded=true;
+
+  await Promise.all(r.players.map(async(p,i)=>{
+    if(!p?.userId) return;
+    const result=r.matchDraw?"draw":r.matchWinner===i?"win":"loss";
+    try{
+      const profile=await recordProfileResult(p.userId,result);
+      if(profile){
+        p.rating=profile.rating;
+        p.highestRating=profile.highest_rating;
+        if(p.id) io.to(p.id).emit("accountStatsUpdated",profile);
+      }
+    }catch(err){
+      console.error("recordMatchStats failed",p.userId,err.message);
+    }
+  }));
+
+  send(r);
+}
+
+app.get("/api/account/config",(req,res)=>{
+  res.json({configured:accountConfigured()});
+});
+
+app.post("/api/account/signup",async(req,res)=>{
+  if(!accountConfigured()) return res.status(503).json({error:"アカウント機能がまだ設定されていません。"});
+  const email=String(req.body?.email||"").trim().toLowerCase();
+  const password=String(req.body?.password||"");
+  const displayName=cleanDisplayName(req.body?.displayName,email.split("@")[0]||"PLAYER");
+
+  if(!email || !email.includes("@")) return res.status(400).json({error:"メールアドレスを確認してください。"});
+  if(password.length<6) return res.status(400).json({error:"パスワードは6文字以上にしてください。"});
+
+  try{
+    const data=await sbFetch("/auth/v1/signup",{
+      method:"POST",
+      key:SUPABASE_ANON_KEY,
+      body:{email,password,data:{display_name:displayName}}
+    });
+
+    const session=data?.access_token?{
+      access_token:data.access_token,
+      refresh_token:data.refresh_token,
+      expires_in:data.expires_in,
+      expires_at:data.expires_at
+    }:null;
+
+    res.json({
+      ok:true,
+      session,
+      requiresEmailConfirmation:!session,
+      user:data?.user||data
+    });
+  }catch(err){
+    res.status(err.status||400).json({error:err.message});
+  }
+});
+
+app.post("/api/account/login",async(req,res)=>{
+  if(!accountConfigured()) return res.status(503).json({error:"アカウント機能がまだ設定されていません。"});
+  const email=String(req.body?.email||"").trim().toLowerCase();
+  const password=String(req.body?.password||"");
+
+  try{
+    const data=await sbFetch("/auth/v1/token?grant_type=password",{
+      method:"POST",
+      key:SUPABASE_ANON_KEY,
+      body:{email,password}
+    });
+    res.json({
+      ok:true,
+      session:{
+        access_token:data.access_token,
+        refresh_token:data.refresh_token,
+        expires_in:data.expires_in,
+        expires_at:data.expires_at
+      },
+      user:data.user
+    });
+  }catch(err){
+    res.status(err.status||400).json({error:"メールアドレスまたはパスワードを確認してください。"});
+  }
+});
+
+app.post("/api/account/refresh",async(req,res)=>{
+  if(!accountConfigured()) return res.status(503).json({error:"アカウント機能がまだ設定されていません。"});
+  const refreshToken=String(req.body?.refreshToken||"");
+  if(!refreshToken) return res.status(400).json({error:"再ログインしてください。"});
+
+  try{
+    const data=await sbFetch("/auth/v1/token?grant_type=refresh_token",{
+      method:"POST",
+      key:SUPABASE_ANON_KEY,
+      body:{refresh_token:refreshToken}
+    });
+    res.json({
+      ok:true,
+      session:{
+        access_token:data.access_token,
+        refresh_token:data.refresh_token,
+        expires_in:data.expires_in,
+        expires_at:data.expires_at
+      },
+      user:data.user
+    });
+  }catch(err){
+    res.status(401).json({error:"ログイン期限が切れました。再ログインしてください。"});
+  }
+});
+
+app.get("/api/account/me",async(req,res)=>{
+  if(!accountConfigured()) return res.status(503).json({error:"アカウント機能がまだ設定されていません。"});
+  const token=String(req.headers.authorization||"").replace(/^Bearer\s+/i,"");
+  if(!token) return res.status(401).json({error:"ログインしてください。"});
+
+  try{
+    const user=await authUserFromToken(token);
+    const profile=await ensureProfile(user);
+    res.json({ok:true,user:{id:user.id,email:user.email},profile});
+  }catch(err){
+    res.status(401).json({error:"ログイン期限が切れました。"});
+  }
+});
+
+app.patch("/api/account/profile",async(req,res)=>{
+  if(!accountConfigured()) return res.status(503).json({error:"アカウント機能がまだ設定されていません。"});
+  const token=String(req.headers.authorization||"").replace(/^Bearer\s+/i,"");
+  const displayName=cleanDisplayName(req.body?.displayName,"PLAYER");
+
+  try{
+    const user=await authUserFromToken(token);
+    const rows=await sbFetch(`/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}`,{
+      method:"PATCH",
+      key:SUPABASE_SERVICE_ROLE_KEY,
+      headers:{Prefer:"return=representation"},
+      body:{display_name:displayName,updated_at:new Date().toISOString()}
+    });
+    const profile=Array.isArray(rows)?rows[0]:rows;
+    res.json({ok:true,profile});
+  }catch(err){
+    res.status(err.status||400).json({error:err.message});
+  }
+});
+
 app.use(express.static(path.join(__dirname,"../public")));
 
 const rooms=new Map();
@@ -35,7 +277,10 @@ function newRoom(id,creator){
       id:creator.id,
       name:creator.name||"プレイヤー1",
       token:creator.token||makeReconnectToken(),
-      connected:true
+      connected:true,
+      userId:creator.userId||null,
+      rating:Number.isInteger(creator.rating)?creator.rating:null,
+      highestRating:Number.isInteger(creator.highestRating)?creator.highestRating:null
     },null],
     phase:"waiting",
     roundNumber:0,
@@ -66,7 +311,8 @@ function newRoom(id,creator){
     pausedDeadlineRemaining:0,
     pausedCountdownRemaining:0,
     auctionPauseUntil:0,
-    pendingDeadlockDraw:false
+    pendingDeadlockDraw:false,
+    statsRecorded:false
   };
 }
 
@@ -106,7 +352,11 @@ function publicState(r,viewerSlot=null){
 
   return {
     room:r.id,
-    players:r.players.map(p=>p?{name:p.name}:null),
+    players:r.players.map(p=>p?{
+      name:p.name,
+      rating:Number.isInteger(p.rating)?p.rating:null,
+      account:!!p.userId
+    }:null),
     phase:r.phase,
     roundNumber:r.roundNumber,
     matchWins:[...r.matchWins],
@@ -248,6 +498,7 @@ function finishDisconnectForfeit(r,loserSlot,reason="timeout"){
   }
 
   send(r);
+  void recordMatchStats(r);
   io.to(r.id).emit("disconnectForfeit",{
     winner,
     loser:loserSlot,
@@ -292,6 +543,7 @@ function endRound(r,w){
 
   log(r,w===0?`第${r.roundNumber}戦：〇の勝利！`:w===1?`第${r.roundNumber}戦：×の勝利！`:`第${r.roundNumber}戦：引き分け`);
   send(r);
+  if(r.phase==="matchEnd") void recordMatchStats(r);
   io.to(r.id).emit("roundResult",{
     winner:w,
     coins:[...r.coins],
@@ -339,6 +591,7 @@ function endEqualBidDeadlock(r){
 
   log(r,`第${r.roundNumber}戦：同額入札が4回連続したため引き分け。両者に1勝を付与しました。`);
   send(r);
+  if(r.phase==="matchEnd") void recordMatchStats(r);
   io.to(r.id).emit("roundResult",{
     winner:-1,
     reason:"fourEqualBids",
@@ -488,6 +741,7 @@ function startMatch(r){
   r.countdownUntil=0;
   r.disconnectCounts=[0,0];
   r.disconnectDeadlines=[0,0];
+  r.statsRecorded=false;
   io.to(r.id).emit("logReset");
   setupRound(r);
   logRoundStart(r);
@@ -526,32 +780,80 @@ function returnToRoom(r){
   r.pausedCountdownRemaining=0;
   r.auctionPauseUntil=0;
   r.pendingDeadlockDraw=false;
+  r.statsRecorded=false;
   send(r);
 }
 
 io.on("connection",s=>{
-  s.on("create",({name},cb)=>{
+  s.on("create",async({name,authToken},cb)=>{
+    let account=null;
+    try{
+      if(authToken) account=await resolveAccount(authToken);
+    }catch(err){
+      return cb({ok:false,error:"ログイン期限が切れています。もう一度ログインしてください。"});
+    }
+
     const id=makeCode();
     const token=makeReconnectToken();
-    const r=newRoom(id,{id:s.id,name:name||"プレイヤー1",token});
+    const playerName=account?.profile?.display_name||cleanDisplayName(name,"プレイヤー1");
+    const r=newRoom(id,{
+      id:s.id,
+      name:playerName,
+      token,
+      userId:account?.user?.id||null,
+      rating:account?.profile?.rating??null,
+      highestRating:account?.profile?.highest_rating??null
+    });
     rooms.set(id,r);
     s.join(id);
     s.data={room:id,slot:0};
-    cb({ok:true,room:id,slot:0,reconnectToken:token});
+    cb({
+      ok:true,
+      room:id,
+      slot:0,
+      reconnectToken:token,
+      account:account?{rating:account.profile.rating}:null
+    });
     send(r);
     log(r,"ルームを作成しました。友達の入室を待っています。");
   });
 
-  s.on("join",({room,name},cb)=>{
+  s.on("join",async({room,name,authToken},cb)=>{
     const r=rooms.get((room||"").toUpperCase());
     if(!r) return cb({ok:false,error:"ルームが見つかりません。"});
     if(r.players[1]) return cb({ok:false,error:"このルームは満員です。"});
 
+    let account=null;
+    try{
+      if(authToken) account=await resolveAccount(authToken);
+    }catch(err){
+      return cb({ok:false,error:"ログイン期限が切れています。もう一度ログインしてください。"});
+    }
+
+    if(account?.user?.id && r.players[0]?.userId===account.user.id){
+      return cb({ok:false,error:"同じアカウントで同じルームには参加できません。"});
+    }
+
     const token=makeReconnectToken();
-    r.players[1]={id:s.id,name:name||"プレイヤー2",token,connected:true};
+    const playerName=account?.profile?.display_name||cleanDisplayName(name,"プレイヤー2");
+    r.players[1]={
+      id:s.id,
+      name:playerName,
+      token,
+      connected:true,
+      userId:account?.user?.id||null,
+      rating:account?.profile?.rating??null,
+      highestRating:account?.profile?.highest_rating??null
+    };
     s.join(r.id);
     s.data={room:r.id,slot:1};
-    cb({ok:true,room:r.id,slot:1,reconnectToken:token});
+    cb({
+      ok:true,
+      room:r.id,
+      slot:1,
+      reconnectToken:token,
+      account:account?{rating:account.profile.rating}:null
+    });
 
     if(r.phase==="waiting"){
       setupRound(r);

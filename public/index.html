@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.0</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.1</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:sticky;top:0;z-index:12;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:8px 0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -789,11 +789,141 @@ input::placeholder{color:#6c5a37}
   .cell.claimImpact,.board.claimBoardKick,.claimStamp{animation:none!important}
 }
 
-</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.0 / 2本先取・最大3戦</div>
+
+/* ===== BID GRID v3.1 : ACCOUNT / RATING ===== */
+.accountCard{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:2px 0 16px;
+  padding:10px 11px;
+  border-radius:15px;
+  border:1px solid #66502c;
+  background:linear-gradient(180deg,#101824,#0b111b);
+  box-shadow:inset 0 0 0 1px #21160c;
+  text-align:left;
+}
+.accountIdentity{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.accountBadge{
+  flex:0 0 auto;
+  min-width:58px;
+  padding:5px 7px;
+  border-radius:999px;
+  border:1px solid #71562c;
+  color:#bbaa82;
+  background:#090d14;
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:.12em;
+  text-align:center;
+}
+.accountBadge.signedIn{
+  color:#2a1907;
+  background:linear-gradient(180deg,#f5d77d,#ba842e);
+  border-color:#f4d57b;
+}
+.accountCopy{min-width:0}
+.accountName{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#f2e5c4;
+  font-size:14px;
+  font-weight:1000;
+}
+.accountStats{
+  margin-top:2px;
+  color:#998d73;
+  font-size:10px;
+  line-height:1.35;
+}
+.accountActions{
+  display:flex;
+  flex:0 0 auto;
+  gap:5px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.accountMiniBtn{
+  min-height:32px!important;
+  padding:5px 8px!important;
+  border-radius:10px!important;
+  font-size:10px!important;
+}
+.accountModal{
+  max-width:430px!important;
+  text-align:left!important;
+}
+.accountModal .rulesTitle{text-align:center}
+.accountLabel{
+  display:block;
+  margin:11px 0 5px 3px;
+  color:#b99c63;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.12em;
+}
+.accountModal input{width:100%}
+.accountModalActions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:14px;
+}
+.accountMessage{
+  min-height:20px;
+  margin:10px 0 0;
+}
+.accountRate{
+  color:#f0ce72;
+  font-weight:1000;
+}
+.playerRate{
+  margin-top:3px;
+  color:#d1b76f;
+  font-size:11px;
+  font-weight:900;
+}
+@media(max-width:600px){
+  .accountCard{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .accountActions{
+    width:100%;
+    justify-content:flex-start;
+  }
+  .accountModalActions{
+    grid-template-columns:1fr;
+  }
+}
+
+</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.1 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel lobbyPanel">
   <div class="lobbyKicker">PRIVATE MATCH</div>
   <h2>友達と対戦</h2>
   <p class="lobbyLead">ルームを作るか、招待されたルームに参加してください。</p>
+
+  <div id="accountCard" class="accountCard">
+    <div class="accountIdentity">
+      <div id="accountBadge" class="accountBadge">GUEST</div>
+      <div class="accountCopy">
+        <div id="accountName" class="accountName">ゲストプレイ</div>
+        <div id="accountStats" class="accountStats">ログインすると戦績を保存できます</div>
+      </div>
+    </div>
+    <div class="accountActions">
+      <button id="accountOpen" class="accountMiniBtn">ログイン / 登録</button>
+      <button id="accountEdit" class="accountMiniBtn hidden">名前変更</button>
+      <button id="accountLogout" class="accountMiniBtn hidden">ログアウト</button>
+    </div>
+  </div>
 
   <div class="lobbyField">
     <label for="name">PLAYER NAME</label>
@@ -852,6 +982,30 @@ input::placeholder{color:#6c5a37}
 </div>
 <p id="bidMsg" class="muted"></p></section>
 <section class="panel"><b>競売履歴（試合別）</b><div id="log" class="log"></div></section></section>
+
+
+<div id="accountOverlay" class="modal hidden">
+  <div class="accountModal">
+    <div class="rulesTitle">BID GRID ACCOUNT</div>
+    <p class="muted">戦績とレーティングをこのアカウントに保存します。</p>
+
+    <label class="accountLabel" for="accountEmail">EMAIL</label>
+    <input id="accountEmail" type="email" autocomplete="email" placeholder="you@example.com">
+
+    <label class="accountLabel" for="accountPassword">PASSWORD</label>
+    <input id="accountPassword" type="password" autocomplete="current-password" placeholder="6文字以上">
+
+    <label class="accountLabel" for="accountSignupName">DISPLAY NAME</label>
+    <input id="accountSignupName" autocomplete="nickname" maxlength="24" placeholder="新規登録時の名前">
+
+    <div class="accountModalActions">
+      <button id="accountLogin" class="primary">ログイン</button>
+      <button id="accountSignup">新規登録</button>
+    </div>
+    <p id="accountMessage" class="muted accountMessage"></p>
+    <button id="accountClose" class="quietLink">閉じる</button>
+  </div>
+</div>
 
 <div id="rulesOverlay" class="modal hidden">
   <div>
@@ -920,6 +1074,11 @@ input::placeholder{color:#6c5a37}
 </main>
 <script src="/socket.io/socket.io.js"></script><script>
 const s=io();let slot=null,room=null,state=null,reconnectToken=null,localDisconnectTimer=null;const $=x=>document.getElementById(x);
+const ACCOUNT_SESSION_KEY="bidGridAccountSession";
+let accountConfigured=false;
+let accountSession=null;
+let accountProfile=null;
+
 const SESSION_KEY="bidGridReconnect";
 function saveReconnectSession(){
   if(room && reconnectToken){
@@ -932,11 +1091,216 @@ function clearReconnectSession(){
 function loadReconnectSession(){
   try{return JSON.parse(localStorage.getItem(SESSION_KEY)||"null")}catch(e){return null}
 }
-$("create").onclick=()=>s.emit("create",{name:$("name").value},handle);
-$("join").onclick=()=>{
+
+function saveAccountSession(session){
+  accountSession=session||null;
+  if(session)localStorage.setItem(ACCOUNT_SESSION_KEY,JSON.stringify(session));
+  else localStorage.removeItem(ACCOUNT_SESSION_KEY);
+}
+function loadStoredAccountSession(){
+  try{return JSON.parse(localStorage.getItem(ACCOUNT_SESSION_KEY)||"null")}catch(e){return null}
+}
+function sessionExpiryMs(session){
+  if(!session)return 0;
+  if(session.expires_at)return Number(session.expires_at)*1000;
+  return Number(session.saved_at||0)+(Number(session.expires_in||3600)*1000);
+}
+async function apiJSON(url,options={}){
+  const res=await fetch(url,{
+    ...options,
+    headers:{
+      ...(options.body?{"Content-Type":"application/json"}:{}),
+      ...(options.headers||{})
+    }
+  });
+  let data={};
+  try{data=await res.json()}catch(e){}
+  if(!res.ok)throw new Error(data.error||"通信に失敗しました。");
+  return data;
+}
+function normalizeSession(session){
+  if(!session)return null;
+  return {...session,saved_at:Date.now()};
+}
+async function refreshAccountSession(){
+  if(!accountSession?.refresh_token)throw new Error("再ログインしてください。");
+  const data=await apiJSON("/api/account/refresh",{
+    method:"POST",
+    body:JSON.stringify({refreshToken:accountSession.refresh_token})
+  });
+  saveAccountSession(normalizeSession(data.session));
+  return accountSession;
+}
+async function ensureAccountToken(){
+  if(!accountSession?.access_token)return null;
+  if(sessionExpiryMs(accountSession)-Date.now()<60000){
+    try{await refreshAccountSession()}catch(e){
+      saveAccountSession(null);
+      accountProfile=null;
+      renderAccountCard();
+      return null;
+    }
+  }
+  return accountSession?.access_token||null;
+}
+async function refreshAccountProfile(){
+  const token=await ensureAccountToken();
+  if(!token){
+    accountProfile=null;
+    renderAccountCard();
+    return null;
+  }
+  try{
+    const data=await apiJSON("/api/account/me",{
+      headers:{Authorization:`Bearer ${token}`}
+    });
+    accountProfile=data.profile;
+    renderAccountCard();
+    return accountProfile;
+  }catch(e){
+    saveAccountSession(null);
+    accountProfile=null;
+    renderAccountCard();
+    return null;
+  }
+}
+function renderAccountCard(){
+  const signed=!!accountProfile;
+  $("accountBadge").textContent=signed?"ACCOUNT":"GUEST";
+  $("accountBadge").classList.toggle("signedIn",signed);
+  $("accountOpen").classList.toggle("hidden",signed||!accountConfigured);
+  $("accountEdit").classList.toggle("hidden",!signed);
+  $("accountLogout").classList.toggle("hidden",!signed);
+
+  if(!accountConfigured){
+    $("accountName").textContent="アカウント機能は未設定";
+    $("accountStats").textContent="Supabaseを設定すると有効になります";
+    $("accountOpen").classList.add("hidden");
+    return;
+  }
+
+  if(!signed){
+    $("accountName").textContent="ゲストプレイ";
+    $("accountStats").textContent="ログインすると戦績を保存できます";
+    $("name").disabled=false;
+    return;
+  }
+
+  $("accountName").textContent=accountProfile.display_name;
+  $("accountStats").innerHTML=`<span class="accountRate">RATE ${accountProfile.rating}</span>　最高 ${accountProfile.highest_rating}　W ${accountProfile.wins} / L ${accountProfile.losses} / D ${accountProfile.draws}`;
+  $("name").value=accountProfile.display_name;
+  $("name").disabled=true;
+}
+async function initAccount(){
+  try{
+    const cfg=await apiJSON("/api/account/config");
+    accountConfigured=!!cfg.configured;
+  }catch(e){
+    accountConfigured=false;
+  }
+
+  accountSession=loadStoredAccountSession();
+  renderAccountCard();
+
+  if(accountConfigured && accountSession){
+    await refreshAccountProfile();
+  }
+}
+function openAccountModal(){
+  if(!accountConfigured)return;
+  $("accountMessage").textContent="";
+  $("accountSignupName").value=$("name").value||"";
+  $("accountOverlay").classList.remove("hidden");
+}
+function closeAccountModal(){
+  $("accountOverlay").classList.add("hidden");
+}
+async function accountLogin(){
+  const email=$("accountEmail").value.trim();
+  const password=$("accountPassword").value;
+  $("accountMessage").textContent="ログイン中…";
+  try{
+    const data=await apiJSON("/api/account/login",{
+      method:"POST",
+      body:JSON.stringify({email,password})
+    });
+    saveAccountSession(normalizeSession(data.session));
+    await refreshAccountProfile();
+    $("accountMessage").textContent="ログインしました。";
+    setTimeout(closeAccountModal,350);
+  }catch(e){
+    $("accountMessage").textContent=e.message;
+  }
+}
+async function accountSignup(){
+  const email=$("accountEmail").value.trim();
+  const password=$("accountPassword").value;
+  const displayName=$("accountSignupName").value.trim()||$("name").value.trim();
+  $("accountMessage").textContent="登録中…";
+  try{
+    const data=await apiJSON("/api/account/signup",{
+      method:"POST",
+      body:JSON.stringify({email,password,displayName})
+    });
+    if(data.session){
+      saveAccountSession(normalizeSession(data.session));
+      await refreshAccountProfile();
+      $("accountMessage").textContent="アカウントを作成しました。";
+      setTimeout(closeAccountModal,350);
+    }else{
+      $("accountMessage").textContent="確認メールを送信しました。メール確認後にログインしてください。";
+    }
+  }catch(e){
+    $("accountMessage").textContent=e.message;
+  }
+}
+async function accountRename(){
+  if(!accountProfile)return;
+  const next=prompt("表示名を入力してください。",accountProfile.display_name);
+  if(next===null)return;
+  const displayName=next.trim().slice(0,24);
+  if(!displayName)return;
+  const token=await ensureAccountToken();
+  if(!token)return openAccountModal();
+
+  try{
+    const data=await apiJSON("/api/account/profile",{
+      method:"PATCH",
+      headers:{Authorization:`Bearer ${token}`},
+      body:JSON.stringify({displayName})
+    });
+    accountProfile=data.profile;
+    renderAccountCard();
+  }catch(e){
+    alert(e.message);
+  }
+}
+function accountLogout(){
+  saveAccountSession(null);
+  accountProfile=null;
+  $("name").disabled=false;
+  renderAccountCard();
+}
+
+$("accountOpen").onclick=openAccountModal;
+$("accountClose").onclick=closeAccountModal;
+$("accountLogin").onclick=accountLogin;
+$("accountSignup").onclick=accountSignup;
+$("accountEdit").onclick=accountRename;
+$("accountLogout").onclick=accountLogout;
+$("accountOverlay").addEventListener("click",e=>{
+  if(e.target===$("accountOverlay"))closeAccountModal();
+});
+
+$("create").onclick=async()=>{
+  const authToken=await ensureAccountToken();
+  s.emit("create",{name:$("name").value,authToken},handle);
+};
+$("join").onclick=async()=>{
   const code=$("room").value.trim().toUpperCase();
   if(!code){$("lobbyMsg").textContent="ルームコードを入力してください。";return}
-  s.emit("join",{room:code,name:$("name").value},handle);
+  const authToken=await ensureAccountToken();
+  s.emit("join",{room:code,name:$("name").value,authToken},handle);
 };
 
 $("toggleJoin").onclick=()=>{
@@ -1322,6 +1686,10 @@ s.on("disconnectForfeit",({winner,loser,reason,matchWins})=>{
   $("matchActions").innerHTML=`<div class="choiceRow"><button onclick="backToTitle()">タイトルに戻る</button></div>`;
   $("modal").classList.remove("hidden");
 });
+s.on("accountStatsUpdated",profile=>{
+  accountProfile=profile;
+  renderAccountCard();
+});
 s.on("roundResult",r=>showRoundResult(r));
 function showRoundResult(r){
   const deadlock=r.reason==="fourEqualBids";
@@ -1432,7 +1800,11 @@ function render(){if(!state)return;
       invite.classList.remove("hidden");
     }
   }
-$("players").innerHTML=ps.map((p,i)=>{const role=state.first===i?"先手":state.first!==null?"後手":"";return `<div class="player ${i===slot?"you":""}"><span class="${i?"p2":"p1"}">${i?"×":"〇"} ${p?p.name:"待機中"}</span>${role?`<div class="role ${role==="先手"?"first":"second"}">${role}</div>`:""}<div class="coins">${state.coins[i]}枚</div><div class="score">戦績：${state.matchWins[i]}勝</div></div>`}).join("");
+$("players").innerHTML=ps.map((p,i)=>{
+  const role=state.first===i?"先手":state.first!==null?"後手":"";
+  const rate=p?.account&&Number.isInteger(p?.rating)?`<div class="playerRate">RATE ${p.rating}</div>`:"";
+  return `<div class="player ${i===slot?"you":""}"><span class="${i?"p2":"p1"}">${i?"×":"〇"} ${p?p.name:"待機中"}</span>${role?`<div class="role ${role==="先手"?"first":"second"}">${role}</div>`:""}${rate}<div class="coins">${state.coins[i]}枚</div><div class="score">戦績：${state.matchWins[i]}勝</div></div>`;
+}).join("");
 $("roundLabel").textContent=state.phase==="waiting"?"対戦相手を待っています":`第${state.roundNumber}戦 / 2本先取`;
 if(state.pausedForDisconnect){
     $("roleLabel").textContent="接続復帰待ち";
@@ -1497,6 +1869,7 @@ $("surrenderRound").onclick=()=>{
     s.emit("surrenderRound");
   }
 };
+initAccount();
 let q=new URLSearchParams(location.search).get("room");
 if(q){
   $("room").value=q.toUpperCase();
