@@ -1,0 +1,47 @@
+name: Fix BID GRID v3.1.2 desktop HUD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-v312-hud.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-hud:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch desktop HUD
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('BID GRID ONLINE v3.1.1','BID GRID ONLINE v3.1.2')
+          css='''\n/* ===== BID GRID v3.1.2 : desktop HUD viewport fix ===== */\n@media (min-width:601px){\n  #stickyHud.stickyHud{\n    position:fixed!important;\n    top:8px!important;\n    left:50%!important;\n    right:auto!important;\n    width:min(calc(100vw - 24px),900px)!important;\n    transform:translateX(-50%)!important;\n    margin:0!important;\n    z-index:60!important;\n  }\n  #game{padding-top:96px!important;}\n}\n'''
+          s=s.replace('</style>',css+'</style>',1)
+          js='''\n<script>\n(function(){\n  const hud=document.getElementById('stickyHud');\n  const game=document.getElementById('game');\n  if(!hud||!game)return;\n  // PCで親要素のtransform/filter等に影響されないよう、HUDをviewport直下へ移動。\n  if(hud.parentElement!==document.body)document.body.appendChild(hud);\n  const sync=()=>hud.classList.toggle('hidden',game.classList.contains('hidden'));\n  sync();\n  new MutationObserver(sync).observe(game,{attributes:true,attributeFilter:['class']});\n})();\n</script>\n'''
+          s=s.replace('</body>',js+'</body>',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          node --check server/server.js
+          grep -q 'BID GRID ONLINE v3.1.2' public/index.html
+          grep -q "document.body.appendChild(hud)" public/index.html
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          rm -f .github/workflows/fix-v312-hud.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/index.html .github/workflows/fix-v312-hud.yml
+          git commit -m 'Fix desktop HUD viewport anchoring'
+          git push
