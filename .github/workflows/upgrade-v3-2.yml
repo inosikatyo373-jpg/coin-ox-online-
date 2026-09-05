@@ -1,0 +1,478 @@
+name: Upgrade BID GRID v3.2
+on:
+  push:
+    paths:
+      - '.github/workflows/upgrade-v3-2.yml'
+permissions:
+  contents: write
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch v3.2 ranked matchmaking and opening menu
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          # ---------- server ----------
+          p=Path('server/server.js')
+          s=p.read_text()
+
+          s=s.replace('const rooms=new Map();\nconst LINES=', 'const rooms=new Map();\nconst rankedQueue=[];\nconst LINES=')
+
+          s=s.replace('function newRoom(id,creator){\n  return {\n    id,', 'function newRoom(id,creator){\n  return {\n    id,\n    matchType:creator.matchType||"friend",\n    ratingChanges:null,')
+
+          old='''async function recordMatchStats(r){
+  if(!accountConfigured() || r.statsRecorded || r.phase!=="matchEnd") return;
+  r.statsRecorded=true;
+
+  await Promise.all(r.players.map(async(p,i)=>{
+    if(!p?.userId) return;
+    const result=r.matchDraw?"draw":r.matchWinner===i?"win":"loss";
+    try{
+      const profile=await recordProfileResult(p.userId,result);
+      if(profile){
+        p.rating=profile.rating;
+        p.highestRating=profile.highest_rating;
+        if(p.id) io.to(p.id).emit("accountStatsUpdated",profile);
+      }
+    }catch(err){
+      console.error("recordMatchStats failed",p.userId,err.message);
+    }
+  }));
+
+  send(r);
+}'''
+          new='''async function recordRankedMatch(r){
+  const p0=r.players[0],p1=r.players[1];
+  if(!p0?.userId || !p1?.userId) throw new Error("RANKED_ACCOUNT_REQUIRED");
+  const result=r.matchDraw?"draw":r.matchWinner===0?"p0":"p1";
+  return sbFetch("/rest/v1/rpc/record_ranked_match",{
+    method:"POST",
+    key:SUPABASE_SERVICE_ROLE_KEY,
+    body:{p_user_0:p0.userId,p_user_1:p1.userId,p_result:result}
+  });
+}
+
+async function recordMatchStats(r){
+  if(!accountConfigured() || r.statsRecorded || r.phase!=="matchEnd") return;
+  r.statsRecorded=true;
+
+  if(r.matchType==="ranked"){
+    try{
+      const data=await recordRankedMatch(r);
+      const profiles=[data?.p0,data?.p1];
+      const before=[data?.before0,data?.before1];
+      const delta=[data?.delta0,data?.delta1];
+      r.ratingChanges=[null,null];
+      r.players.forEach((p,i)=>{
+        const profile=profiles[i];
+        if(!p || !profile) return;
+        p.rating=profile.rating;
+        p.highestRating=profile.highest_rating;
+        r.ratingChanges[i]={before:before[i],after:profile.rating,delta:delta[i]};
+        if(p.id){
+          io.to(p.id).emit("accountStatsUpdated",profile);
+          io.to(p.id).emit("ratingResult",r.ratingChanges[i]);
+        }
+      });
+    }catch(err){
+      console.error("recordRankedMatch failed",err.message);
+      r.statsRecorded=false;
+    }
+    send(r);
+    return;
+  }
+
+  await Promise.all(r.players.map(async(p,i)=>{
+    if(!p?.userId) return;
+    const result=r.matchDraw?"draw":r.matchWinner===i?"win":"loss";
+    try{
+      const profile=await recordProfileResult(p.userId,result);
+      if(profile){
+        p.rating=profile.rating;
+        p.highestRating=profile.highest_rating;
+        if(p.id) io.to(p.id).emit("accountStatsUpdated",profile);
+      }
+    }catch(err){
+      console.error("recordMatchStats failed",p.userId,err.message);
+    }
+  }));
+
+  send(r);
+}'''
+          if old not in s: raise SystemExit('recordMatchStats anchor not found')
+          s=s.replace(old,new)
+
+          s=s.replace('''    room:r.id,
+    players:r.players.map(p=>p?{''','''    room:r.id,
+    matchType:r.matchType||"friend",
+    players:r.players.map(p=>p?{''')
+
+          ranked_helpers=r'''
+function rankedWindow(entry){
+  const waited=Math.max(0,Date.now()-entry.joinedAt);
+  return Math.min(600,100+Math.floor(waited/10000)*50);
+}
+
+function removeFromRankedQueue(socketId){
+  for(let i=rankedQueue.length-1;i>=0;i--){
+    if(rankedQueue[i].socketId===socketId) rankedQueue.splice(i,1);
+  }
+}
+
+function createRankedRoom(a,b){
+  const sa=io.sockets.sockets.get(a.socketId);
+  const sb=io.sockets.sockets.get(b.socketId);
+  if(!sa || !sb || !sa.connected || !sb.connected) return false;
+
+  const id=makeCode();
+  const ta=makeReconnectToken();
+  const tb=makeReconnectToken();
+  const r=newRoom(id,{
+    id:sa.id,name:a.name,token:ta,userId:a.userId,rating:a.rating,
+    highestRating:a.highestRating,matchType:"ranked"
+  });
+  r.matchType="ranked";
+  r.players[1]={
+    id:sb.id,name:b.name,token:tb,connected:true,userId:b.userId,
+    rating:b.rating,highestRating:b.highestRating
+  };
+  rooms.set(id,r);
+  sa.join(id); sb.join(id);
+  sa.data={room:id,slot:0}; sb.data={room:id,slot:1};
+  sa.emit("rankedMatched",{ok:true,room:id,slot:0,reconnectToken:ta});
+  sb.emit("rankedMatched",{ok:true,room:id,slot:1,reconnectToken:tb});
+  setupRound(r);
+  logRoundStart(r);
+  log(r,`ランクマッチ成立：${a.name} (RATE ${a.rating}) vs ${b.name} (RATE ${b.rating})`);
+  send(r);
+  return true;
+}
+
+function processRankedQueue(){
+  for(let i=0;i<rankedQueue.length;i++){
+    const a=rankedQueue[i];
+    const sa=io.sockets.sockets.get(a.socketId);
+    if(!sa?.connected || sa.data?.room){ rankedQueue.splice(i--,1); continue; }
+    for(let j=i+1;j<rankedQueue.length;j++){
+      const b=rankedQueue[j];
+      const sb=io.sockets.sockets.get(b.socketId);
+      if(!sb?.connected || sb.data?.room){ rankedQueue.splice(j--,1); continue; }
+      if(a.userId===b.userId) continue;
+      const allowed=Math.max(rankedWindow(a),rankedWindow(b));
+      if(Math.abs(a.rating-b.rating)>allowed) continue;
+      rankedQueue.splice(j,1);
+      rankedQueue.splice(i,1);
+      createRankedRoom(a,b);
+      i=-1;
+      break;
+    }
+  }
+}
+'''
+          anchor='\nio.on("connection",s=>{\n'
+          if anchor not in s: raise SystemExit('io anchor not found')
+          s=s.replace(anchor,ranked_helpers+anchor,1)
+
+          ranked_handlers=r'''
+  s.on("joinRanked",async({authToken},cb)=>{
+    if(!authToken) return cb?.({ok:false,error:"ランクマッチにはログインが必要です。"});
+    if(s.data?.room) return cb?.({ok:false,error:"すでに対戦ルームに参加しています。"});
+    let account=null;
+    try{ account=await resolveAccount(authToken); }
+    catch(err){ return cb?.({ok:false,error:"ログイン期限が切れています。もう一度ログインしてください。"}); }
+    if(!account?.user?.id || !account?.profile) return cb?.({ok:false,error:"アカウント情報を取得できませんでした。"});
+    if(rankedQueue.some(x=>x.userId===account.user.id)) return cb?.({ok:false,error:"このアカウントはすでに検索中です。"});
+    removeFromRankedQueue(s.id);
+    rankedQueue.push({
+      socketId:s.id,
+      userId:account.user.id,
+      name:account.profile.display_name,
+      rating:account.profile.rating,
+      highestRating:account.profile.highest_rating,
+      joinedAt:Date.now()
+    });
+    cb?.({ok:true,rating:account.profile.rating});
+    processRankedQueue();
+  });
+
+  s.on("cancelRanked",()=>{
+    removeFromRankedQueue(s.id);
+    s.emit("rankedCancelled");
+  });
+
+'''
+          io_anchor='io.on("connection",s=>{\n'
+          s=s.replace(io_anchor,io_anchor+ranked_handlers,1)
+
+          s=s.replace('''  s.on("disconnect",()=>{
+    const r=rooms.get(s.data.room);''','''  s.on("disconnect",()=>{
+    removeFromRankedQueue(s.id);
+    const r=rooms.get(s.data.room);''')
+
+          s=s.replace('''setInterval(()=>{
+  for(const r of rooms.values()){''','''setInterval(()=>{
+  processRankedQueue();
+  for(const r of rooms.values()){''')
+
+          p.write_text(s)
+
+          # ---------- client ----------
+          p=Path('public/index.html')
+          h=p.read_text()
+          h=h.replace('<title>BID GRID ONLINE v3.1.2</title>','<title>BID GRID ONLINE v3.2</title>')
+          h=h.replace('ONLINE v3.1.1 / 2本先取・最大3戦','ONLINE v3.2 / 2本先取・最大3戦')
+
+          css=r'''
+/* ===== BID GRID v3.2 : opening / ranked ===== */
+.openingStats{margin:18px 0 16px;padding:18px 14px;border:1px solid #8a682f;border-radius:16px;background:linear-gradient(180deg,#0d151f,#090e15);text-align:center}
+.openingRate{font-family:"Cormorant Garamond","Times New Roman",serif;font-size:34px;font-weight:700;color:#f4d77b;letter-spacing:.04em}
+.openingWL{margin-top:5px;font-size:14px;font-weight:900;color:#e7d8b8;letter-spacing:.08em}
+.openingMenuActions{display:grid;gap:10px;margin-top:8px}
+.openingMenuActions button{min-height:62px!important;font-size:16px!important}
+.rankBtn{background:linear-gradient(180deg,#d9ad4d,#9d6b20 58%,#624012)!important;color:#170e05!important;border-color:#f3d477!important;box-shadow:0 7px 22px #d19a2733!important}
+.rulesMainBtn{background:linear-gradient(180deg,#364760,#202c3d 58%,#121a25)!important;border-color:#8aa0bd!important}
+.friendMenuHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.friendMenuHeader h2{margin:0!important}
+.backMenuBtn{min-height:36px!important;padding:6px 10px!important;font-size:11px!important}
+.rankStatus{min-height:22px;margin-top:10px;color:#e9cb78;font-weight:900;text-align:center}
+.matchTypeBadge{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;border:1px solid #8d6b32;color:#e7c96f;font-size:10px;vertical-align:middle}
+@media(max-width:600px){.openingRate{font-size:30px}.openingMenuActions button{min-height:58px!important}.friendMenuHeader{align-items:flex-start}}
+'''
+          h=h.replace('</style></head>',css+'\n</style></head>',1)
+
+          lobby=r'''<section id="lobby" class="panel lobbyPanel">
+  <div id="openingMenu">
+    <div class="lobbyKicker">BID GRID ONLINE</div>
+    <h2>対戦メニュー</h2>
+
+    <div id="accountCard" class="accountCard">
+      <div class="accountIdentity">
+        <div id="accountBadge" class="accountBadge">GUEST</div>
+        <div class="accountCopy">
+          <div id="accountName" class="accountName">ゲストプレイ</div>
+          <div id="accountStats" class="accountStats">ログインすると戦績を保存できます</div>
+        </div>
+      </div>
+      <div class="accountActions">
+        <button id="accountOpen" class="accountMiniBtn">ログイン / 登録</button>
+        <button id="accountEdit" class="accountMiniBtn hidden">名前変更</button>
+        <button id="accountLogout" class="accountMiniBtn hidden">ログアウト</button>
+      </div>
+    </div>
+
+    <div class="openingStats">
+      <div id="openingRate" class="openingRate">レート ----</div>
+      <div id="openingWL" class="openingWL">WIN -　　LOSE -</div>
+    </div>
+
+    <div class="openingMenuActions">
+      <button id="rankedMatchBtn" class="primary rankBtn">ランクマッチ</button>
+      <button id="friendMatchBtn">フレンドマッチ</button>
+      <button id="rulesBtn" class="rulesMainBtn">ルール説明</button>
+    </div>
+    <div id="rankedStatus" class="rankStatus"></div>
+  </div>
+
+  <div id="friendMenu" class="hidden">
+    <div class="friendMenuHeader">
+      <div>
+        <div class="lobbyKicker">FRIEND MATCH</div>
+        <h2>フレンドマッチ</h2>
+      </div>
+      <button id="backOpening" class="backMenuBtn">← 戻る</button>
+    </div>
+    <p class="lobbyLead">ルームを作るか、招待されたルームに参加してください。フレンドマッチではRATEは変動しません。</p>
+    <div class="lobbyField">
+      <label for="name">PLAYER NAME</label>
+      <input id="name" placeholder="名前（任意）" autocomplete="nickname">
+    </div>
+    <div class="lobbyActions">
+      <button id="create" class="primary lobbyPrimary">ルームを作る</button>
+      <button id="toggleJoin" class="lobbySecondary">ルームに入る</button>
+    </div>
+    <div id="joinArea" class="joinArea hidden">
+      <div class="joinCodeRow">
+        <input id="room" placeholder="ルームコード" autocomplete="off" maxlength="12">
+        <button id="pasteRoom" class="smallAction">貼り付け</button>
+      </div>
+      <button id="join" class="primary joinButton">入室する</button>
+    </div>
+    <p id="lobbyMsg" class="muted lobbyMsg"></p>
+  </div>
+</section>'''
+          h,n=re.subn(r'<section id="lobby" class="panel lobbyPanel">.*?</section>\n<section id="game"',lobby+'\n<section id="game"',h,count=1,flags=re.S)
+          if n!=1: raise SystemExit('lobby replacement failed')
+
+          h=h.replace('<li>3×3の盤面で〇と×が対戦します。</li>','<li><b>ランクマッチ</b>はログイン必須です。マッチ勝敗でRATEが変動し、近いRATEの相手から自動でマッチングします。</li><li><b>フレンドマッチ</b>はルームコードで友達と対戦します。RATEは変動しません。</li><li>3×3の盤面で〇と×が対戦します。</li>',1)
+
+          h=h.replace('let accountProfile=null;','let accountProfile=null;\nlet rankedSearching=false;\nlet lastRatingResult=null;',1)
+
+          old_render='''  if(!accountConfigured){
+    $("accountName").textContent="アカウント機能は未設定";
+    $("accountStats").textContent="Supabaseを設定すると有効になります";
+    $("accountOpen").classList.add("hidden");
+    return;
+  }
+
+  if(!signed){
+    $("accountName").textContent="ゲストプレイ";
+    $("accountStats").textContent="ログインすると戦績を保存できます";
+    $("name").disabled=false;
+    return;
+  }
+
+  $("accountName").textContent=accountProfile.display_name;
+  $("accountStats").innerHTML=`<span class="accountRate">RATE ${accountProfile.rating}</span>　最高 ${accountProfile.highest_rating}　W ${accountProfile.wins} / L ${accountProfile.losses} / D ${accountProfile.draws}`;
+  $("name").value=accountProfile.display_name;
+  $("name").disabled=true;'''
+          new_render='''  if(!accountConfigured){
+    $("accountName").textContent="アカウント機能は未設定";
+    $("accountStats").textContent="Supabaseを設定すると有効になります";
+    $("accountOpen").classList.add("hidden");
+    $("openingRate").textContent="レート ----";
+    $("openingWL").textContent="WIN -　　LOSE -";
+    return;
+  }
+
+  if(!signed){
+    $("accountName").textContent="ゲストプレイ";
+    $("accountStats").textContent="ランクマッチはログインが必要です";
+    $("openingRate").textContent="レート ----";
+    $("openingWL").textContent="WIN -　　LOSE -";
+    $("name").disabled=false;
+    return;
+  }
+
+  $("accountName").textContent=accountProfile.display_name;
+  $("accountStats").innerHTML=`最高RATE ${accountProfile.highest_rating}　DRAW ${accountProfile.draws}`;
+  $("openingRate").textContent=`レート ${accountProfile.rating}`;
+  $("openingWL").textContent=`WIN ${accountProfile.wins}　　LOSE ${accountProfile.losses}`;
+  $("name").value=accountProfile.display_name;
+  $("name").disabled=true;'''
+          if old_render not in h: raise SystemExit('renderAccountCard anchor not found')
+          h=h.replace(old_render,new_render,1)
+
+          insert_after='''$("accountOverlay").addEventListener("click",e=>{
+  if(e.target===$("accountOverlay"))closeAccountModal();
+});
+'''
+          menu_js=r'''
+function showOpeningMenu(){
+  $("friendMenu").classList.add("hidden");
+  $("openingMenu").classList.remove("hidden");
+  $("joinArea").classList.add("hidden");
+  $("lobbyMsg").textContent="";
+}
+function showFriendMenu(){
+  if(rankedSearching){ s.emit("cancelRanked"); rankedSearching=false; }
+  $("openingMenu").classList.add("hidden");
+  $("friendMenu").classList.remove("hidden");
+}
+$("friendMatchBtn").onclick=showFriendMenu;
+$("backOpening").onclick=showOpeningMenu;
+$("rankedMatchBtn").onclick=async()=>{
+  if(rankedSearching){
+    s.emit("cancelRanked");
+    rankedSearching=false;
+    $("rankedMatchBtn").textContent="ランクマッチ";
+    $("rankedStatus").textContent="検索をキャンセルしました。";
+    return;
+  }
+  if(!accountProfile){
+    $("accountMessage").textContent="ランクマッチにはログインが必要です。";
+    openAccountModal();
+    return;
+  }
+  const authToken=await ensureAccountToken();
+  if(!authToken){ openAccountModal(); return; }
+  $("rankedStatus").textContent=`対戦相手を検索中… RATE ${accountProfile.rating}（まず±100から検索）`;
+  $("rankedMatchBtn").textContent="検索をキャンセル";
+  rankedSearching=true;
+  s.emit("joinRanked",{authToken},r=>{
+    if(!r?.ok){
+      rankedSearching=false;
+      $("rankedMatchBtn").textContent="ランクマッチ";
+      $("rankedStatus").textContent=r?.error||"検索を開始できませんでした。";
+    }
+  });
+};
+s.on("rankedCancelled",()=>{
+  rankedSearching=false;
+  $("rankedMatchBtn").textContent="ランクマッチ";
+});
+s.on("rankedMatched",r=>{
+  rankedSearching=false;
+  $("rankedMatchBtn").textContent="ランクマッチ";
+  $("rankedStatus").textContent="マッチングしました！";
+  lastRatingResult=null;
+  handle(r);
+});
+s.on("ratingResult",r=>{
+  lastRatingResult=r;
+});
+'''
+          if insert_after not in h: raise SystemExit('account overlay anchor missing')
+          h=h.replace(insert_after,insert_after+menu_js,1)
+
+          h=h.replace('''  $("hudRound").textContent=state.phase==="waiting"?"対戦相手を待っています":`第${state.roundNumber}戦 / 2本先取`;''','''  const modeLabel=state.matchType==="ranked"?"RANKED":"FRIEND";
+  $("hudRound").textContent=state.phase==="waiting"?"対戦相手を待っています":`${modeLabel} / 第${state.roundNumber}戦 / 2本先取`;''',1)
+
+          h=h.replace('''function showMatchEnd(w,wins){
+  const name=state?.players?.[w]?.name||(w===0?"〇":"×");''','''function ratingResultHtml(){
+  if(state?.matchType!=="ranked" || !lastRatingResult)return "";
+  const d=Number(lastRatingResult.delta)||0;
+  return `<br><span class="accountRate">RATE ${lastRatingResult.before} → ${lastRatingResult.after} (${d>=0?"+":""}${d})</span>`;
+}
+function showMatchEnd(w,wins){
+  const name=state?.players?.[w]?.name||(w===0?"〇":"×");''',1)
+          h=h.replace('''  $("resultText").innerHTML=`${reason}<br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>`;
+  $("matchActions").innerHTML=`<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;''','''  $("resultText").innerHTML=`${reason}<br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>${ratingResultHtml()}`;
+  $("matchActions").innerHTML=state?.matchType==="ranked"
+    ? `<div class="choiceRow"><button class="primary" onclick="backToTitle()">対戦メニューに戻る</button></div>`
+    : `<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;''',1)
+          h=h.replace('''  $("resultText").innerHTML=`1勝 - 1勝の状態で4連続同額が発生したため<br><b>マッチ全体が引き分け</b><br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>`;
+  $("matchActions").innerHTML=`<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;''','''  $("resultText").innerHTML=`1勝 - 1勝の状態で4連続同額が発生したため<br><b>マッチ全体が引き分け</b><br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>${ratingResultHtml()}`;
+  $("matchActions").innerHTML=state?.matchType==="ranked"
+    ? `<div class="choiceRow"><button class="primary" onclick="backToTitle()">対戦メニューに戻る</button></div>`
+    : `<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;''',1)
+
+          h=h.replace('''if(q){
+  $("room").value=q.toUpperCase();
+  $("joinArea").classList.remove("hidden");
+  $("toggleJoin").textContent="参加欄を閉じる";
+}''','''if(q){
+  showFriendMenu();
+  $("room").value=q.toUpperCase();
+  $("joinArea").classList.remove("hidden");
+  $("toggleJoin").textContent="参加欄を閉じる";
+}''',1)
+
+          p.write_text(h)
+
+          # version package
+          pp=Path('package.json')
+          if pp.exists():
+            t=pp.read_text()
+            t=t.replace('"version": "3.1.0"','"version": "3.2.0"')
+            pp.write_text(t)
+          PY
+          node --check server/server.js
+          node - <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('public/index.html','utf8');
+          const m=html.match(/<script src="\/socket\.io\/socket\.io\.js"><\/script><script>([\s\S]*?)<\/script>/);
+          if(!m) throw new Error('inline game script not found');
+          new Function(m[1]);
+          console.log('client JS syntax OK');
+          NODE
+          rm -f .github/workflows/upgrade-v3-2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Upgrade BID GRID to v3.2 ranked matchmaking"
+          git push
