@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.2.2</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.2.3</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:fixed;top:8px;left:50%;right:auto;width:min(calc(100vw - 24px),900px);transform:translateX(-50%);z-index:60;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -1141,7 +1141,29 @@ input::placeholder{color:#6c5a37}
   .playerCoinsUnit{font-size:12px;margin-left:1px}
 }
 
-</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.2.2 / 2本先取・最大3戦</div>
+/* ===== BID GRID v3.2.3 : CELL SELECTION CLARITY ===== */
+.boardStatusBanner{
+  width:min(92vw,520px);margin:0 auto 10px;padding:10px 14px;border-radius:12px;
+  text-align:center;font-size:13px;font-weight:1000;letter-spacing:.03em;
+  border:1px solid #4c5d73;color:#dbe7f6;background:linear-gradient(180deg,#111c2b,#0b131f);
+  box-shadow:inset 0 0 0 1px #0a0f17,0 5px 14px #0004;
+}
+.boardStatusBanner.selecting{border-color:#78b7ff;color:#bdddff;background:linear-gradient(180deg,#10243d,#0a1728);box-shadow:0 0 0 2px #78b7ff28,0 0 18px #4d9cff20,inset 0 0 14px #4d9cff10}
+.boardStatusBanner.auctioning{border-color:#f1c45e;color:#ffe49b;background:linear-gradient(180deg,#302311,#171007);box-shadow:0 0 0 2px #f1c45e35,0 0 24px #e9ad362c,inset 0 0 18px #f1c45e10}
+.boardStatusBanner.waiting{opacity:.72}
+.cell.selectable{border:2px solid #6eb1ff!important;background:linear-gradient(180deg,#eaf4ff,#dcecff)!important;box-shadow:0 0 0 2px #6eb1ff55,0 0 16px #6eb1ff2e!important;transform:scale(1.015)}
+.cell.selectable:hover,.cell.selectable:focus-visible{transform:scale(1.045);box-shadow:0 0 0 3px #88c1ff88,0 0 26px #6eb1ff55!important}
+.cell.selectable::before{content:"選択可";position:absolute;top:6px;left:6px;z-index:3;padding:3px 7px;border-radius:999px;background:#1f5f9f;color:#eef7ff;font-size:10px;line-height:1.25;font-weight:1000;letter-spacing:.04em;box-shadow:0 2px 7px #0004}
+.cell.auction{border:3px solid #f4c95f!important;background:linear-gradient(180deg,#fff3bd,#f8dea0)!important;transform:scale(1.055)!important;z-index:4!important;animation:auctionTargetPulse 1.2s ease-in-out infinite!important}
+.cell.auction::before{content:"競売対象";position:absolute;top:6px;left:6px;z-index:5;padding:4px 8px;border-radius:999px;background:linear-gradient(180deg,#ffe38b,#cf9428);color:#2b1904;font-size:10px;line-height:1.2;font-weight:1000;letter-spacing:.04em;box-shadow:0 3px 9px #0005,0 0 10px #f5c85f40}
+.cell.auction::after{content:"NOW BIDDING / 競売中"!important;left:7px!important;right:7px!important;bottom:7px!important;padding:3px 4px!important;background:linear-gradient(180deg,#e8ad3f,#a96a17)!important;color:#fff4cf!important;border:1px solid #ffe18a!important;letter-spacing:.04em;box-shadow:0 4px 10px #0005,0 0 14px #f0b54240!important}
+@keyframes auctionTargetPulse{0%,100%{box-shadow:0 0 0 3px #f4c95f88,0 0 18px #e3a52e55,inset 0 0 18px #f4c95f18;filter:brightness(1)}50%{box-shadow:0 0 0 5px #ffe28db0,0 0 36px #f0b23388,inset 0 0 28px #fff1b92c;filter:brightness(1.08)}}
+.playerActionStatus{margin-top:5px;min-height:16px;color:#90c5ff;font-size:9px;font-weight:1000;letter-spacing:.06em}
+.playerActionStatus.active::before{content:"◆ ";font-size:8px}
+@media(max-width:600px){.boardStatusBanner{width:min(94vw,430px);font-size:11px;padding:8px 9px;margin-bottom:7px}.cell.selectable::before,.cell.auction::before{top:3px;left:3px;font-size:8px;padding:2px 5px}.cell.auction::after{left:3px!important;right:3px!important;bottom:3px!important;font-size:9px!important;padding:2px!important}.playerActionStatus{font-size:8px;margin-top:3px;min-height:12px}}
+@media (prefers-reduced-motion: reduce){.cell.auction{animation:none!important}}
+
+</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.2.3 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel lobbyPanel">
   <div id="openingMenu">
     <div class="lobbyKicker">BID GRID ONLINE</div><h2>対戦メニュー</h2>
@@ -1191,7 +1213,7 @@ input::placeholder{color:#6c5a37}
   <div id="players" class="players"></div>
 </section>
 <section class="panel"><div id="roundLabel" class="status"></div><div id="roleLabel" class="muted"></div><div id="turnBox" class="turnBox"></div><div class="timerRow"><div id="diamondsLeft" class="diamonds left"></div><div id="timer" class="timer">--</div><div id="diamondsRight" class="diamonds right"></div></div><div id="scoreLine" class="scoreLine"></div><div class="surrenderRow"><button id="surrenderRound" class="surrenderBtn hidden">この戦を降参</button></div></section>
-<section class="panel"><div id="board" class="board"></div></section>
+<section class="panel"><div id="boardStatus" class="boardStatusBanner waiting">対戦開始を待っています</div><div id="board" class="board"></div></section>
 <section id="bidPanel" class="panel hidden"><div id="bidTarget" class="bidTarget"></div><div id="bidLimit" class="bidLimit"></div><p class="muted">入札額は所持コイン以内です。時間切れ時は最後に入力していた金額を自動入札します。</p><div class="row"><input id="bid" type="number" min="0" placeholder="入札枚数"><button id="sendBid" class="primary">入札する</button></div>
 <div id="changeBidRow" class="changeBidRow hidden">
   <button id="changeBid" class="changeBidBtn">入札を変更する</button>
@@ -2039,10 +2061,12 @@ $("players").innerHTML=ps.map((p,i)=>{
   const mark=i?"×":"〇";
   const name=p?p.name:"待機中";
   const rate=p?.account&&Number.isInteger(p?.rating)?`RATE ${p.rating}`:"RATE ----";
+  const action=state.phase==="select"&&state.selector===i?"マス選択中":"";
   return `<div class="player ${i===slot?"you":""}">
     <div class="playerIdentity">
       <div class="playerNameRow"><span class="playerSymbol ${i?"p2":"p1"}">${mark}</span><span class="playerName ${i?"p2":"p1"}">${name}</span>${role?`<span class="role ${role==="先手"?"first":"second"}">${role}</span>`:""}</div>
       <div class="playerRate">${rate}</div>
+      <div class="playerActionStatus ${action?"active":""}">${action}</div>
     </div>
     <div class="playerAvatar ${i?"avatarX":"avatarO"}" aria-hidden="true"><span class="avatarHat"></span><span class="avatarMark">${mark}</span></div>
     <div class="playerCoinsWrap"><span class="playerCoinsValue">${state.coins[i]}</span><span class="playerCoinsUnit">枚</span></div>
@@ -2064,7 +2088,17 @@ if(state.pausedForDisconnect){
   }else if(state.phase==="select"){$("roleLabel").textContent=`あなたは ${state.first===slot?"先手":"後手"} です`;const mine=state.selector===slot;$("turnBox").textContent=mine?"あなたの手番：競売するマスを選択してください":"相手の手番：競売するマスを選択中";$("turnBox").className="turnBox "+(mine?"myTurn":"opponentTurn")}else if(state.phase==="bid"){$("roleLabel").textContent=`あなたは ${state.first===slot?"先手":"後手"} です`;$("turnBox").textContent="現在の手番：両者が同時入札中";$("turnBox").className="turnBox myTurn"}else{$("roleLabel").textContent=state.first!==null?`あなたは ${state.first===slot?"先手":"後手"} です`:"";$("turnBox").textContent="対戦結果を確認してください";$("turnBox").className="turnBox"}
 $("diamondsLeft").innerHTML=diamonds(state.matchWins[0]);$("diamondsRight").innerHTML=diamonds(state.matchWins[1]);$("scoreLine").textContent=`〇 ${state.matchWins[0]}勝　｜　× ${state.matchWins[1]}勝`;
 $("surrenderRound").classList.toggle("hidden",!["select","bid","auctionPause"].includes(state.phase)||state.pausedForDisconnect);
-const b=$("board");b.innerHTML="";state.board.forEach((v,i)=>{const x=document.createElement("button");x.className="cell";x.dataset.cellIndex=i;if(v===0){x.textContent="〇";x.classList.add("o")}if(v===1){x.textContent="×";x.classList.add("x")}if(i===4&&!state.middleUnlocked&&v===null){x.textContent="中央";x.classList.add("blocked")}if(state.phase==="bid"&&state.selected===i)x.classList.add("auction");x.disabled=!ps[1]||state.pausedForDisconnect||state.phase!=="select"||state.selector!==slot||v!==null||(i===4&&!state.middleUnlocked);x.onclick=()=>s.emit("select",{cell:i});b.appendChild(x)});
+const boardStatus=$("boardStatus");
+if(boardStatus){
+  boardStatus.className="boardStatusBanner";
+  if(state.pausedForDisconnect){boardStatus.textContent="接続復帰を待っています";boardStatus.classList.add("waiting");}
+  else if(state.phase==="waiting"){boardStatus.textContent="対戦相手を待っています";boardStatus.classList.add("waiting");}
+  else if(state.phase==="select"){const mine=state.selector===slot;boardStatus.textContent=mine?"青く光るマスから、競売するマスを選択してください":`${ps[state.selector]?.name||"相手"} が競売するマスを選択中`;boardStatus.classList.add("selecting");}
+  else if(state.phase==="bid"&&state.selected!==null){boardStatus.textContent=`現在競売中：マス ${state.selected+1}`;boardStatus.classList.add("auctioning");}
+  else if(state.phase==="auctionPause"&&state.selected!==null){boardStatus.textContent=`競売結果を表示中：マス ${state.selected+1}`;boardStatus.classList.add("auctioning");}
+  else{boardStatus.textContent="対戦進行中";boardStatus.classList.add("waiting");}
+}
+const b=$("board");b.innerHTML="";state.board.forEach((v,i)=>{const x=document.createElement("button");x.className="cell";x.dataset.cellIndex=i;if(v===0){x.textContent="〇";x.classList.add("o")}if(v===1){x.textContent="×";x.classList.add("x")}if(i===4&&!state.middleUnlocked&&v===null){x.textContent="中央";x.classList.add("blocked")}const selectable=!!ps[1]&&!state.pausedForDisconnect&&state.phase==="select"&&state.selector===slot&&v===null&&!(i===4&&!state.middleUnlocked);if(selectable)x.classList.add("selectable");if(state.phase==="bid"&&state.selected===i)x.classList.add("auction");x.disabled=!selectable;x.onclick=()=>s.emit("select",{cell:i});b.appendChild(x)});
 $("bidPanel").classList.toggle("hidden",state.phase!=="bid");
 if(state.phase!=="bid"){
   $("bid").value="";
