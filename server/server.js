@@ -292,6 +292,8 @@ app.use(express.static(path.join(__dirname,"../public")));
 
 const rooms=new Map();
 const rankedQueue=[];
+const CHARACTER_IDS=new Set(["zombie","merchant","gunslinger","swordswoman","robot","dog","mage","doctor"]);
+function cleanCharacter(v){return CHARACTER_IDS.has(String(v||""))?String(v):"merchant";}
 const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
 function makeCode(){
@@ -322,7 +324,8 @@ function newRoom(id,creator){
       connected:true,
       userId:creator.userId||null,
       rating:Number.isInteger(creator.rating)?creator.rating:null,
-      highestRating:Number.isInteger(creator.highestRating)?creator.highestRating:null
+      highestRating:Number.isInteger(creator.highestRating)?creator.highestRating:null,
+      character:cleanCharacter(creator.character)
     },null],
     phase:"waiting",
     roundNumber:0,
@@ -398,7 +401,8 @@ function publicState(r,viewerSlot=null){
     players:r.players.map(p=>p?{
       name:p.name,
       rating:Number.isInteger(p.rating)?p.rating:null,
-      account:!!p.userId
+      account:!!p.userId,
+      character:cleanCharacter(p.character)
     }:null),
     phase:r.phase,
     roundNumber:r.roundNumber,
@@ -838,9 +842,9 @@ function createRankedRoom(a,b){
   const sa=io.sockets.sockets.get(a.socketId), sb=io.sockets.sockets.get(b.socketId);
   if(!sa || !sb || !sa.connected || !sb.connected) return false;
   const id=makeCode(), ta=makeReconnectToken(), tb=makeReconnectToken();
-  const r=newRoom(id,{id:sa.id,name:a.name,token:ta,userId:a.userId,rating:a.rating,highestRating:a.highestRating,matchType:"ranked"});
+  const r=newRoom(id,{id:sa.id,name:a.name,token:ta,userId:a.userId,rating:a.rating,highestRating:a.highestRating,character:a.character,matchType:"ranked"});
   r.matchType="ranked";
-  r.players[1]={id:sb.id,name:b.name,token:tb,connected:true,userId:b.userId,rating:b.rating,highestRating:b.highestRating};
+  r.players[1]={id:sb.id,name:b.name,token:tb,connected:true,userId:b.userId,rating:b.rating,highestRating:b.highestRating,character:cleanCharacter(b.character)};
   rooms.set(id,r);
   sa.join(id); sb.join(id);
   sa.data={room:id,slot:0}; sb.data={room:id,slot:1};
@@ -868,7 +872,7 @@ function processRankedQueue(){
 
 io.on("connection",s=>{
 
-  s.on("joinRanked",async({authToken},cb)=>{
+  s.on("joinRanked",async({authToken,character},cb)=>{
     if(!authToken) return cb?.({ok:false,error:"ランクマッチにはログインが必要です。"});
     if(s.data?.room) return cb?.({ok:false,error:"すでに対戦ルームに参加しています。"});
     let account=null;
@@ -877,13 +881,13 @@ io.on("connection",s=>{
     if(!account?.user?.id || !account?.profile) return cb?.({ok:false,error:"アカウント情報を取得できませんでした。"});
     if(rankedQueue.some(x=>x.userId===account.user.id)) return cb?.({ok:false,error:"このアカウントはすでに検索中です。"});
     removeFromRankedQueue(s.id);
-    rankedQueue.push({socketId:s.id,userId:account.user.id,name:account.profile.display_name,rating:account.profile.rating,highestRating:account.profile.highest_rating,joinedAt:Date.now()});
+    rankedQueue.push({socketId:s.id,userId:account.user.id,name:account.profile.display_name,rating:account.profile.rating,highestRating:account.profile.highest_rating,character:cleanCharacter(character),joinedAt:Date.now()});
     cb?.({ok:true,rating:account.profile.rating});
     processRankedQueue();
   });
   s.on("cancelRanked",()=>{ removeFromRankedQueue(s.id); s.emit("rankedCancelled"); });
 
-  s.on("create",async({name,authToken},cb)=>{
+  s.on("create",async({name,authToken,character},cb)=>{
     let account=null;
     try{
       if(authToken) account=await resolveAccount(authToken);
@@ -900,7 +904,8 @@ io.on("connection",s=>{
       token,
       userId:account?.user?.id||null,
       rating:account?.profile?.rating??null,
-      highestRating:account?.profile?.highest_rating??null
+      highestRating:account?.profile?.highest_rating??null,
+      character:cleanCharacter(character)
     });
     rooms.set(id,r);
     s.join(id);
@@ -916,7 +921,7 @@ io.on("connection",s=>{
     log(r,"ルームを作成しました。友達の入室を待っています。");
   });
 
-  s.on("join",async({room,name,authToken},cb)=>{
+  s.on("join",async({room,name,authToken,character},cb)=>{
     const r=rooms.get((room||"").toUpperCase());
     if(!r) return cb({ok:false,error:"ルームが見つかりません。"});
     if(r.players[1]) return cb({ok:false,error:"このルームは満員です。"});
@@ -941,7 +946,8 @@ io.on("connection",s=>{
       connected:true,
       userId:account?.user?.id||null,
       rating:account?.profile?.rating??null,
-      highestRating:account?.profile?.highest_rating??null
+      highestRating:account?.profile?.highest_rating??null,
+      character:cleanCharacter(character)
     };
     s.join(r.id);
     s.data={room:r.id,slot:1};
