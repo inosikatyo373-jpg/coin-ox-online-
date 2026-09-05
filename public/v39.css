@@ -1,0 +1,100 @@
+/* BID GRID v3.9 - preserve original character art quality */
+
+/* Always use the high-resolution 3x3 character sheet. */
+.characterSprite{
+  background-image:url('/characters/characters_hd.png?v=390')!important;
+  background-size:300% 300%!important;
+  background-repeat:no-repeat!important;
+  image-rendering:pixelated!important;
+  image-rendering:crisp-edges!important;
+  transform:none!important;
+  filter:drop-shadow(0 7px 7px #0009);
+  backface-visibility:hidden;
+}
+
+/* Character selection: show the whole character instead of zooming/cropping. */
+#characterMenu .charPortrait{
+  overflow:visible!important;
+  display:grid!important;
+  place-items:center!important;
+  background:transparent!important;
+}
+#characterMenu .charPortrait .characterSprite{
+  width:96%!important;
+  height:96%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  transform:none!important;
+  background-size:300% 300%!important;
+}
+
+/* Opening selected-character banner: keep full body and original aspect impression. */
+.openingHeroPortrait{
+  overflow:visible!important;
+  display:grid!important;
+  place-items:center!important;
+}
+.openingHeroPortrait .openingHeroSprite,
+.openingHeroPortrait .characterSprite{
+  width:96%!important;
+  height:96%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  transform:none!important;
+  background-size:300% 300%!important;
+}
+
+/* Full PNG sprites such as the Gunslinger idle frames must never stretch. */
+.battleCharacterSprite,
+.openingHeroGunslinger,
+.v38GunslingerImage{
+  width:auto!important;
+  height:auto!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center bottom!important;
+  image-rendering:pixelated!important;
+  image-rendering:crisp-edges!important;
+  transform:none!important;
+}
+
+/* Battle-side characters: keep the entire sprite visible, no crop/no aspect distortion. */
+.battleSideArt{
+  overflow:visible!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  padding:10px!important;
+}
+.battleSideArt .characterSprite{
+  width:94%!important;
+  height:94%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  transform:none!important;
+  background-size:300% 300%!important;
+}
+.battleSideArt .battleCharacterSprite{
+  width:auto!important;
+  height:auto!important;
+  max-width:94%!important;
+  max-height:94%!important;
+  object-fit:contain!important;
+  object-position:center bottom!important;
+}
+
+/* Small face medallions also keep crisp pixel edges. */
+.characterAvatar .characterSprite,
+.battleFaceSprite{
+  image-rendering:pixelated!important;
+  image-rendering:crisp-edges!important;
+}
+
+@media(max-width:760px){
+  #characterMenu .charPortrait .characterSprite,
+  .openingHeroPortrait .openingHeroSprite,
+  .openingHeroPortrait .characterSprite{width:94%!important;height:94%!important}
+  .battleSideArt .characterSprite{width:90%!important;height:90%!important}
+  .battleSideArt .battleCharacterSprite{max-width:90%!important;max-height:90%!important}
+}
