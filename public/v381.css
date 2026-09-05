@@ -1,0 +1,91 @@
+/* BID GRID v3.8.1 - full-body character visibility fixes */
+
+/* Character select / opening: show the entire character without zoom-cropping. */
+#characterMenu .charPortrait,
+.openingHeroPortrait{
+  overflow:visible!important;
+  display:grid!important;
+  place-items:center!important;
+}
+#characterMenu .charPortrait .characterSprite,
+.openingHeroPortrait .openingHeroSprite,
+.openingHeroPortrait .characterSprite{
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  left:0!important;
+  top:0!important;
+  margin:0!important;
+  transform:none!important;
+  transform-origin:center center!important;
+  image-rendering:pixelated!important;
+}
+
+/* The initial character select cards get a little more portrait room. */
+#characterMenu .characterCard{
+  overflow:visible!important;
+}
+#characterMenu .charPortrait{
+  width:150px!important;
+  height:150px!important;
+}
+
+/* Battle-side characters: keep the whole silhouette inside the panel. */
+.battleSidePanel{
+  overflow:visible!important;
+}
+.battleSideArt{
+  overflow:visible!important;
+  display:grid!important;
+  place-items:end center!important;
+  padding:10px!important;
+}
+.battleSideArt .characterSprite{
+  width:88%!important;
+  height:88%!important;
+  max-width:88%!important;
+  max-height:88%!important;
+  margin:0 auto!important;
+  left:auto!important;
+  top:auto!important;
+  transform:none!important;
+  transform-origin:center bottom!important;
+  image-rendering:pixelated!important;
+}
+.battleSideArt .battleCharacterSprite{
+  width:auto!important;
+  height:auto!important;
+  max-width:88%!important;
+  max-height:88%!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+  object-position:center bottom!important;
+  transform:none!important;
+  transform-origin:center bottom!important;
+  image-rendering:pixelated!important;
+}
+
+/* Never distort the full-body assets. */
+.battleSideArt img,
+.openingHeroPortrait img,
+#characterMenu .charPortrait img{
+  object-fit:contain!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:100%!important;
+  max-height:100%!important;
+}
+
+@media(max-width:900px){
+  #characterMenu .charPortrait{width:112px!important;height:112px!important}
+  .battleSideArt{padding:4px!important}
+  .battleSideArt .characterSprite,
+  .battleSideArt .battleCharacterSprite{max-width:94%!important;max-height:94%!important}
+}
+
+@media(max-width:600px){
+  #characterMenu .charPortrait{width:94px!important;height:94px!important}
+  .battleSideArt .characterSprite,
+  .battleSideArt .battleCharacterSprite{max-width:96%!important;max-height:96%!important}
+}
