@@ -17,6 +17,18 @@ jobs:
       - name: Install Pillow
         run: python3 -m pip install --quiet pillow
 
+      - name: Keep existing gunslinger assets during UI patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/apply_v37.py')
+          s=p.read_text(encoding='utf-8')
+          a=s.index('for i in range(1, 5):')
+          b=s.index('# --- Gunslinger motion fix')
+          replacement='''for i in range(1, 5):\n    fp = Path(f'public/characters/gunslinger/gunslinger_idle_{i}.png')\n    if not fp.exists():\n        raise SystemExit(f'missing {fp}')\n\n'''
+          p.write_text(s[:a]+replacement+s[b:],encoding='utf-8')
+          PY
+
       - name: Apply v3.7 patch
         run: python3 scripts/apply_v37.py
 
@@ -37,6 +49,6 @@ jobs:
           git rm .github/workflows/apply-v3-7-battle-ui.yml
           git rm scripts/apply_v37.py
           git rm -f .v3-7-trigger || true
-          git add public/index.html public/characters/characters_hd.png public/characters/gunslinger/gunslinger_idle_1.png public/characters/gunslinger/gunslinger_idle_2.png public/characters/gunslinger/gunslinger_idle_3.png public/characters/gunslinger/gunslinger_idle_4.png
+          git add public/index.html public/characters/characters_hd.png
           git commit -m "Add BID GRID v3.7 battle arena polish"
           git push
