@@ -1,0 +1,50 @@
+name: Fix BID GRID v3.2.1 friend stats
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-v3-2-1-friend-stats.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch friend stats behavior
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('server/server.js')
+          s=p.read_text()
+          old='''async function recordMatchStats(r){\n  if(!accountConfigured() || r.statsRecorded || r.phase!=="matchEnd") return;\n  r.statsRecorded=true;'''
+          new='''async function recordMatchStats(r){\n  if(!accountConfigured() || r.statsRecorded || r.phase!=="matchEnd") return;\n  // v3.2.1: フレンドマッチはRATEだけでなくWIN/LOSE/DRAWも保存しない。\n  if(r.matchType!=="ranked") return;\n  r.statsRecorded=true;'''
+          if old not in s:
+              raise SystemExit('recordMatchStats marker not found')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          p=Path('public/index.html')
+          s=p.read_text()
+          s=s.replace('ONLINE v3.2 / 2本先取・最大3戦','ONLINE v3.2.1 / 2本先取・最大3戦',1)
+          s=s.replace('フレンドマッチではRATEは変動しません。','フレンドマッチではRATE・WIN・LOSE・DRAWは変動しません。',1)
+          s=s.replace('<b>フレンドマッチ</b>はルームコードで友達と対戦します。RATEは変動しません。','<b>フレンドマッチ</b>はルームコードで友達と対戦します。RATE・WIN・LOSE・DRAWは変動しません。',1)
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add server/server.js public/index.html
+          git commit -m 'Fix friend matches not affecting stats' || exit 0
+          git push
+      - name: Cleanup workflow
+        if: always()
+        shell: bash
+        run: |
+          git pull --rebase || true
+          git rm .github/workflows/fix-v3-2-1-friend-stats.yml || true
+          git commit -m 'Remove one-time v3.2.1 workflow' || exit 0
+          git push || true
