@@ -18,7 +18,14 @@ css=r'''
 #openingMenu .openingCharacterGrid .characterCard{min-height:126px;padding:6px 4px!important}
 #openingMenu .openingCharacterGrid .charPortrait{width:76px;height:76px;border:0;background:transparent;box-shadow:none;overflow:visible}
 #openingMenu .openingCharacterGrid .charPortrait::before{display:none}
-.characterPortraitImage{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 5px 5px #0008)}
+.characterSprite{
+  display:block;width:100%;height:100%;
+  background-image:url('/characters/characters.png');background-size:300% 300%;background-repeat:no-repeat;
+  image-rendering:pixelated;filter:drop-shadow(0 5px 5px #0008);
+}
+.sprite-zombie{background-position:0 0}.sprite-merchant{background-position:50% 0}.sprite-gunslinger{background-position:100% 0}
+.sprite-swordswoman{background-position:0 50%}.sprite-random{background-position:50% 50%}.sprite-robot{background-position:100% 50%}
+.sprite-dog{background-position:0 100%}.sprite-mage{background-position:50% 100%}.sprite-doctor{background-position:100% 100%}
 #openingMenu .openingCharacterGrid .charName{font-size:11px}
 #openingMenu .openingCharacterGrid .charSub{font-size:7px}
 #openingSelectedCharacter{margin-top:9px;text-align:center;color:#efd079;font-size:12px;font-weight:1000;min-height:18px}
@@ -44,7 +51,7 @@ old='''function characterVisual(id,compact=false){
 }'''
 new='''function characterVisual(id,compact=false){
   const c=id==="random"?{id:"random",name:"ランダム",sub:"RANDOM",glyph:"?"}:getCharacterDef(id);
-  return `<div class="charPortrait character-${c.id}"><img class="characterPortraitImage" src="/characters/${c.id}.png" alt="${c.name}"></div><div class="charName">${c.name}</div>${compact?"":`<div class="charSub">${c.sub}</div>`}`;
+  return `<div class="charPortrait character-${c.id}"><span class="characterSprite sprite-${c.id}" role="img" aria-label="${c.name}"></span></div><div class="charName">${c.name}</div>${compact?"":`<div class="charSub">${c.sub}</div>`}`;
 }'''
 if old not in s:
     raise SystemExit('characterVisual not found')
@@ -109,7 +116,7 @@ p.write_text(s)
 s=p.read_text()
 assert 'ONLINE v3.4' in s
 assert 'openingCharacterGrid' in s
-assert '/characters/${c.id}.png' in s
+assert '/characters/characters.png' in s
 scripts=[]
 for attrs,body in re.findall(r'<script([^>]*)>(.*?)</script>',s,re.S):
     if 'src=' not in attrs:
