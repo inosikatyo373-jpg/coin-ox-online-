@@ -931,7 +931,7 @@ input::placeholder{color:#6c5a37}
 .backMenuBtn{min-height:36px!important;padding:6px 10px!important;font-size:11px!important}.rankStatus{min-height:22px;margin-top:10px;color:#e9cb78;font-weight:900;text-align:center}
 @media(max-width:600px){.openingRate{font-size:30px}.openingMenuActions button{min-height:58px!important}.friendMenuHeader{align-items:flex-start}}
 
-</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.2 / 2本先取・最大3戦</div>
+</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.2.1 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel lobbyPanel">
   <div id="openingMenu">
     <div class="lobbyKicker">BID GRID ONLINE</div><h2>対戦メニュー</h2>
@@ -945,7 +945,7 @@ input::placeholder{color:#6c5a37}
   </div>
   <div id="friendMenu" class="hidden">
     <div class="friendMenuHeader"><div><div class="lobbyKicker">FRIEND MATCH</div><h2>フレンドマッチ</h2></div><button id="backOpening" class="backMenuBtn">← 戻る</button></div>
-    <p class="lobbyLead">ルームを作るか、招待されたルームに参加してください。フレンドマッチではRATEは変動しません。</p>
+    <p class="lobbyLead">ルームを作るか、招待されたルームに参加してください。フレンドマッチではRATE・WIN・LOSE・DRAWは変動しません。</p>
     <div class="lobbyField"><label for="name">PLAYER NAME</label><input id="name" placeholder="名前（任意）" autocomplete="nickname"></div>
     <div class="lobbyActions"><button id="create" class="primary lobbyPrimary">ルームを作る</button><button id="toggleJoin" class="lobbySecondary">ルームに入る</button></div>
     <div id="joinArea" class="joinArea hidden"><div class="joinCodeRow"><input id="room" placeholder="ルームコード" autocomplete="off" maxlength="12"><button id="pasteRoom" class="smallAction">貼り付け</button></div><button id="join" class="primary joinButton">入室する</button></div>
@@ -1018,7 +1018,7 @@ input::placeholder{color:#6c5a37}
     <div class="rulesTitle">BID GRID</div>
     <p class="muted">競売でマスを奪い、3目ならべを完成させる対戦ゲームです。</p>
     <ol class="rulesList">
-      <li><b>ランクマッチ</b>はログイン必須です。マッチ勝敗でRATEが変動し、近いRATEの相手から自動でマッチングします。</li><li><b>フレンドマッチ</b>はルームコードで友達と対戦します。RATEは変動しません。</li><li>3×3の盤面で〇と×が対戦します。</li>
+      <li><b>ランクマッチ</b>はログイン必須です。マッチ勝敗でRATEが変動し、近いRATEの相手から自動でマッチングします。</li><li><b>フレンドマッチ</b>はルームコードで友達と対戦します。RATE・WIN・LOSE・DRAWは変動しません。</li><li>3×3の盤面で〇と×が対戦します。</li>
       <li>各戦の開始時、両者に同じ枚数（20〜40枚）のコインが配られます。</li>
       <li>手番のプレイヤーが競売するマスを選び、両者が同時にコインを入札します。</li>
       <li>多く入札した側がそのマスを獲得。入札したコインは勝敗に関係なく消費します。</li>

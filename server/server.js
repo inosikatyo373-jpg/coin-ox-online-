@@ -116,6 +116,8 @@ async function recordRankedMatch(r){
 
 async function recordMatchStats(r){
   if(!accountConfigured() || r.statsRecorded || r.phase!=="matchEnd") return;
+  // v3.2.1: フレンドマッチはRATEだけでなくWIN/LOSE/DRAWも保存しない。
+  if(r.matchType!=="ranked") return;
   r.statsRecorded=true;
 
   if(r.matchType==="ranked"){
