@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.3</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.4</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:fixed;top:8px;left:50%;right:auto;width:min(calc(100vw - 24px),900px);transform:translateX(-50%);z-index:60;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -1205,7 +1205,42 @@ input::placeholder{color:#6c5a37}
   .characterAvatar{width:46px;height:58px;border-radius:12px}.characterAvatar .charGlyph{font-size:25px}
 }
 
-</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.3 / 2本先取・最大3戦</div>
+/* ===== BID GRID v3.4 : OPENING CHARACTER ART ===== */
+.openingCharacterSelect{
+  margin:14px 0 12px;padding:14px;border:1px solid #765a2a;border-radius:16px;
+  background:linear-gradient(180deg,#111a28,#090f18);box-shadow:inset 0 0 0 1px #21170b,0 10px 24px #0004;
+}
+.openingCharacterTitle{text-align:center;margin-bottom:3px;color:#f2d27a;font-family:"Cormorant Garamond","Times New Roman",serif;font-size:24px;font-weight:700;letter-spacing:.08em}
+.openingCharacterLead{text-align:center;color:#968b73;font-size:10px;margin-bottom:10px;letter-spacing:.05em}
+#openingMenu .openingCharacterGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+#openingMenu .openingCharacterGrid .characterCard{min-height:126px;padding:6px 4px!important}
+#openingMenu .openingCharacterGrid .charPortrait{width:76px;height:76px;border:0;background:transparent;box-shadow:none;overflow:visible}
+#openingMenu .openingCharacterGrid .charPortrait::before{display:none}
+.characterSprite{
+  display:block;width:100%;height:100%;
+  background-image:url('/characters/characters.png');background-size:300% 300%;background-repeat:no-repeat;
+  image-rendering:pixelated;filter:drop-shadow(0 5px 5px #0008);
+}
+.sprite-zombie{background-position:0 0}.sprite-merchant{background-position:50% 0}.sprite-gunslinger{background-position:100% 0}
+.sprite-swordswoman{background-position:0 50%}.sprite-random{background-position:50% 50%}.sprite-robot{background-position:100% 50%}
+.sprite-dog{background-position:0 100%}.sprite-mage{background-position:50% 100%}.sprite-doctor{background-position:100% 100%}
+#openingMenu .openingCharacterGrid .charName{font-size:11px}
+#openingMenu .openingCharacterGrid .charSub{font-size:7px}
+#openingSelectedCharacter{margin-top:9px;text-align:center;color:#efd079;font-size:12px;font-weight:1000;min-height:18px}
+#openingMenu .openingCharacterGrid .characterCard.selected::after{
+  content:"SELECTED";position:absolute;right:5px;top:5px;padding:2px 5px;border-radius:999px;
+  background:#d9ad4d;color:#1b1105;font-size:7px;font-weight:1000;letter-spacing:.06em;box-shadow:0 2px 8px #0008;
+}
+@media(max-width:600px){
+  .openingCharacterSelect{padding:9px;margin:10px 0}.openingCharacterTitle{font-size:20px}
+  #openingMenu .openingCharacterGrid{gap:4px}
+  #openingMenu .openingCharacterGrid .characterCard{min-height:103px;padding:4px 2px!important;border-radius:10px!important}
+  #openingMenu .openingCharacterGrid .charPortrait{width:58px;height:58px}
+  #openingMenu .openingCharacterGrid .charName{font-size:9px}
+  #openingMenu .openingCharacterGrid .charSub{display:none}
+}
+
+</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.4 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel lobbyPanel">
   <div id="openingMenu">
     <div class="lobbyKicker">BID GRID ONLINE</div><h2>対戦メニュー</h2>
@@ -1386,7 +1421,7 @@ function saveCharacter(id){try{localStorage.setItem(CHARACTER_STORAGE_KEY,id)}ca
 function loadCharacter(){try{const id=localStorage.getItem(CHARACTER_STORAGE_KEY);return CHARACTER_DEFS.some(c=>c.id===id)?id:null}catch(e){return null}}
 function characterVisual(id,compact=false){
   const c=id==="random"?{id:"random",name:"ランダム",sub:"RANDOM",glyph:"?"}:getCharacterDef(id);
-  return `<div class="charPortrait character-${c.id}"><span class="charGlyph">${c.glyph}</span></div><div class="charName">${c.name}</div>${compact?"":`<div class="charSub">${c.sub}</div>`}`;
+  return `<div class="charPortrait character-${c.id}"><span class="characterSprite sprite-${c.id}" role="img" aria-label="${c.name}"></span></div><div class="charName">${c.name}</div>${compact?"":`<div class="charSub">${c.sub}</div>`}`;
 }
 function renderCharacterGrid(){
   const g=$("characterGrid"); if(!g)return;
@@ -1396,6 +1431,32 @@ function renderCharacterGrid(){
   $("selectedCharacterText").textContent=chosen?`選択中：${chosen.name}`:"キャラクターを選択してください";
   $("confirmCharacter").disabled=!chosen;
 }
+function renderOpeningCharacterGrid(){
+  const g=$("openingCharacterGrid"); if(!g)return;
+  g.innerHTML=CHARACTER_ORDER.map(id=>`<button class="characterCard ${id==="random"?"randomCard":""} ${selectedCharacter===id?"selected":""}" data-opening-character="${id}">${characterVisual(id)}</button>`).join("");
+  g.querySelectorAll("[data-opening-character]").forEach(btn=>btn.onclick=()=>chooseOpeningCharacter(btn.dataset.openingCharacter));
+  const chosen=selectedCharacter?getCharacterDef(selectedCharacter):null;
+  const label=$("openingSelectedCharacter"); if(label)label.textContent=chosen?`使用キャラクター：${chosen.name}`:"キャラクターを選択してください";
+}
+async function chooseOpeningCharacter(id){
+  if(id!=="random"){
+    selectedCharacter=id;saveCharacter(id);renderOpeningCharacterGrid();renderCharacterGrid();return;
+  }
+  const pool=CHARACTER_DEFS.map(c=>c.id);let n=0;
+  const timer=setInterval(()=>{
+    selectedCharacter=pool[n%pool.length];renderOpeningCharacterGrid();n++;
+    if(n>=12){clearInterval(timer);selectedCharacter=pool[Math.floor(Math.random()*pool.length)];saveCharacter(selectedCharacter);renderOpeningCharacterGrid();renderCharacterGrid();}
+  },60);
+}
+function mountOpeningCharacterSelect(){
+  const opening=$("openingMenu"); if(!opening||$("openingCharacterSelect"))return;
+  selectedCharacter=loadCharacter()||"merchant";saveCharacter(selectedCharacter);
+  const sec=document.createElement("div");sec.id="openingCharacterSelect";sec.className="openingCharacterSelect";
+  sec.innerHTML=`<div class="openingCharacterTitle">CHARACTER SELECT</div><div class="openingCharacterLead">対戦に使用するキャラクターを選択してください　※性能差はありません</div><div id="openingCharacterGrid" class="characterGrid openingCharacterGrid"></div><div id="openingSelectedCharacter"></div>`;
+  const anchor=opening.querySelector(".openingMenuActions"); if(anchor)opening.insertBefore(sec,anchor); else opening.appendChild(sec);
+  renderOpeningCharacterGrid();
+}
+
 async function chooseCharacter(id){
   if(id!=="random"){
     selectedCharacter=id; saveCharacter(id); renderCharacterGrid(); return;
@@ -1628,7 +1689,7 @@ $("accountOverlay").addEventListener("click",e=>{
 
 function showOpeningMenu(){ $("friendMenu").classList.add("hidden"); $("characterMenu").classList.add("hidden"); $("openingMenu").classList.remove("hidden"); $("joinArea").classList.add("hidden"); $("lobbyMsg").textContent=""; }
 function showFriendMenu(){ if(rankedSearching){s.emit("cancelRanked");rankedSearching=false;} $("openingMenu").classList.add("hidden"); $("characterMenu").classList.add("hidden"); $("friendMenu").classList.remove("hidden"); if(pendingInviteRoom){$("room").value=pendingInviteRoom;$("joinArea").classList.remove("hidden");$("toggleJoin").textContent="参加欄を閉じる";} }
-$("friendMatchBtn").onclick=()=>beginCharacterSelect("friend"); $("backOpening").onclick=showOpeningMenu; $("backCharacter").onclick=leaveCharacterSelect;
+$("friendMatchBtn").onclick=()=>{pendingMatchMode="friend";if(!selectedCharacter){selectedCharacter=loadCharacter()||"merchant";saveCharacter(selectedCharacter);}showFriendMenu();}; $("backOpening").onclick=showOpeningMenu; $("backCharacter").onclick=leaveCharacterSelect;
 async function startRankedMatch(){
   if(rankedSearching){s.emit("cancelRanked");rankedSearching=false;$("rankedMatchBtn").textContent="ランクマッチ";$("rankedStatus").textContent="検索をキャンセルしました。";return;}
   if(!accountProfile){$("accountMessage").textContent="ランクマッチにはログインが必要です。";openAccountModal();return;}
@@ -1637,7 +1698,7 @@ async function startRankedMatch(){
   $("rankedStatus").textContent=`対戦相手を検索中… RATE ${accountProfile.rating} / ${getCharacterDef(selectedCharacter).name}`; $("rankedMatchBtn").textContent="検索をキャンセル"; rankedSearching=true;
   s.emit("joinRanked",{authToken,character:selectedCharacter},r=>{if(!r?.ok){rankedSearching=false;$("rankedMatchBtn").textContent="ランクマッチ";$("rankedStatus").textContent=r?.error||"検索を開始できませんでした。";}});
 }
-$("rankedMatchBtn").onclick=()=>{if(rankedSearching)return startRankedMatch();beginCharacterSelect("ranked")};
+$("rankedMatchBtn").onclick=()=>{if(rankedSearching)return startRankedMatch();pendingMatchMode="ranked";if(!selectedCharacter){selectedCharacter=loadCharacter()||"merchant";saveCharacter(selectedCharacter);}startRankedMatch();};
 $("confirmCharacter").onclick=()=>{if(!selectedCharacter)return;if(pendingMatchMode==="ranked")startRankedMatch();else if(pendingMatchMode==="friend")showFriendMenu();};
 s.on("rankedCancelled",()=>{rankedSearching=false;$("rankedMatchBtn").textContent="ランクマッチ";});
 s.on("rankedMatched",r=>{rankedSearching=false;$("rankedMatchBtn").textContent="ランクマッチ";$("rankedStatus").textContent="マッチングしました！";lastRatingResult=null;handle(r);});
@@ -2248,10 +2309,12 @@ $("surrenderRound").onclick=()=>{
   }
 };
 initAccount();
+mountOpeningCharacterSelect();
 let q=new URLSearchParams(location.search).get("room");
 if(q){
   pendingInviteRoom=q.toUpperCase();
-  beginCharacterSelect("friend");
+  pendingMatchMode="friend";
+  const rs=$("rankedStatus");if(rs)rs.textContent="招待ルームがあります。キャラクターを選んで「フレンドマッチ」へ進んでください。";
 }
 
 function attemptRejoin(){
