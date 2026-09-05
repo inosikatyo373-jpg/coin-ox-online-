@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.6</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.6.1</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:fixed;top:8px;left:50%;right:auto;width:min(calc(100vw - 24px),900px);transform:translateX(-50%);z-index:60;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -1297,6 +1297,14 @@ input::placeholder{color:#6c5a37}
 .playerActionStatus.active::before{content:"⌛ "!important;color:#d9b763!important;font-size:9px!important}
 @media(max-width:600px){.openingCharacterBanner{min-height:126px;padding:9px 10px!important;grid-template-columns:98px minmax(0,1fr);gap:10px}.openingHeroPortrait{width:94px;height:94px;border-radius:13px}.openingCharacterName{font-size:25px}.openingCharacterKicker{font-size:9px}.openingCharacterSub{font-size:8px}.openingCharacterHint{grid-column:1/-1;justify-self:stretch;text-align:center;padding:7px 10px}#characterMenu .characterGrid{gap:6px}#characterMenu .characterCard{min-height:142px;padding:6px 3px!important}#characterMenu .charPortrait{width:88px;height:88px}#characterMenu .charName{font-size:10px}#characterMenu .charSub{font-size:7px}.characterAvatar{width:56px!important;height:56px!important}}
 
+
+/* ===== BID GRID v3.6.1 : GUNSLINGER DISPLAY FIX ===== */
+.openingHeroPortrait .openingHeroSprite{width:150%!important;height:150%!important;transform:scale(1.04)!important;filter:drop-shadow(0 7px 7px #000b)!important}
+.characterAvatar .battleFaceFallback{z-index:1!important}
+.characterAvatar .battleFaceImage{z-index:2!important}
+.auctionCharacter .battleBodyFallback{position:absolute;inset:3px;z-index:1;width:auto!important;height:auto!important}
+.auctionCharacter .battleCharacterSprite{position:relative;z-index:2}
+
 </style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.5 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel lobbyPanel">
   <div id="openingMenu">
@@ -1478,10 +1486,10 @@ const CHARACTER_ORDER=["zombie","merchant","gunslinger","swordswoman","random","
 const BATTLE_MOTION_ASSETS={
   gunslinger:{
     idle:[
-      "/characters/gunslinger/gunslinger_idle_1.png",
-      "/characters/gunslinger/gunslinger_idle_2.png",
-      "/characters/gunslinger/gunslinger_idle_3.png",
-      "/characters/gunslinger/gunslinger_idle_4.png"
+      "/characters/gunslinger/gunslinger_idle_1.png?v=361",
+      "/characters/gunslinger/gunslinger_idle_2.png?v=361",
+      "/characters/gunslinger/gunslinger_idle_3.png?v=361",
+      "/characters/gunslinger/gunslinger_idle_4.png?v=361"
     ]
   }
 };
@@ -1500,7 +1508,7 @@ function battleCharacterMarkup(characterId,motion="static"){
   const c=getCharacterDef(id);
   if(id==="gunslinger"){
     const src=motion==="idle"?getGunslingerIdleSrc():BATTLE_MOTION_ASSETS.gunslinger.idle[0];
-    return `<img class="battleCharacterSprite" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false">`;
+    return `<span class="characterSprite sprite-gunslinger battleBodyFallback" role="img" aria-label="${c.name}"></span><img class="battleCharacterSprite" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false" onerror="this.remove()">`;
   }
   return `<span class="characterSprite sprite-${id}" role="img" aria-label="${c.name}"></span>`;
 }
@@ -1576,7 +1584,7 @@ function mountOpeningCharacterSelect(){
 
 async function chooseCharacter(id){
   if(id!=="random"){
-    selectedCharacter=id; saveCharacter(id); renderCharacterGrid(); return;
+    selectedCharacter=id; saveCharacter(id); renderCharacterGrid(); if(typeof renderOpeningCharacterBanner==="function")renderOpeningCharacterBanner(); return;
   }
   const pool=CHARACTER_DEFS.map(c=>c.id); let n=0;
   $("confirmCharacter").disabled=true;
@@ -2435,8 +2443,7 @@ $("surrenderRound").onclick=()=>{
 /* ===== BID GRID v3.6 : OPENING BANNER + FACE PORTRAITS ===== */
 function openingSelectedArt(id){
   const c=getCharacterDef(id||"merchant");
-  if(c.id==="gunslinger")return `<img class="openingHeroGunslinger" src="/characters/gunslinger/gunslinger_idle_1.png" alt="${c.name}" draggable="false">`;
-  return `<span class="characterSprite sprite-${c.id}" role="img" aria-label="${c.name}"></span>`;
+  return `<span class="characterSprite sprite-${c.id} openingHeroSprite" role="img" aria-label="${c.name}"></span>`;
 }
 function renderOpeningCharacterBanner(){
   const host=$("openingCharacterSelect");if(!host)return;
@@ -2460,7 +2467,7 @@ function battleCharacterFaceMarkup(characterId,motion="static"){
   const id=characterId||"merchant";const c=getCharacterDef(id);
   if(id==="gunslinger"){
     const src=motion==="idle"?getGunslingerIdleSrc():BATTLE_MOTION_ASSETS.gunslinger.idle[0];
-    return `<img class="battleCharacterSprite battleFaceImage" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false">`;
+    return `<span class="characterSprite sprite-gunslinger battleFaceSprite battleFaceFallback" role="img" aria-label="${c.name}"></span><img class="battleCharacterSprite battleFaceImage" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false" onerror="this.remove()">`;
   }
   return `<span class="characterSprite sprite-${id} battleFaceSprite" role="img" aria-label="${c.name}"></span>`;
 }
