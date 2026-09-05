@@ -1,5 +1,13 @@
 /* BID GRID v3.8 - battle presentation sync */
 (function(){
+  if(!document.querySelector('link[data-v381-fullbody]')){
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='/v381.css?v=381';
+    link.dataset.v381Fullbody='1';
+    document.head.appendChild(link);
+  }
+
   const gunslingerFrames=[
     '/characters/gunslinger/gunslinger_idle_1.png?v=380',
     '/characters/gunslinger/gunslinger_idle_2.png?v=380',
