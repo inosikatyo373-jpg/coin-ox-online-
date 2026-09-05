@@ -47,7 +47,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/apply-v3-7-battle-ui.yml
-          git rm scripts/apply_v37.py
+          git rm -f scripts/apply_v37.py
           git rm -f .v3-7-trigger || true
           git add public/index.html public/characters/characters_hd.png
           git commit -m "Add BID GRID v3.7 battle arena polish"
