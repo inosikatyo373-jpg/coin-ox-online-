@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.6.1</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.7</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:fixed;top:8px;left:50%;right:auto;width:min(calc(100vw - 24px),900px);transform:translateX(-50%);z-index:60;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -1218,7 +1218,7 @@ input::placeholder{color:#6c5a37}
 #openingMenu .openingCharacterGrid .charPortrait::before{display:none}
 .characterSprite{
   display:block;width:100%;height:100%;
-  background-image:url('/characters/characters.png');background-size:300% 300%;background-repeat:no-repeat;
+  background-image:url('/characters/characters_hd.png?v=370');background-size:300% 300%;background-repeat:no-repeat;
   image-rendering:pixelated;filter:drop-shadow(0 5px 5px #0008);
 }
 .sprite-zombie{background-position:0 0}.sprite-merchant{background-position:50% 0}.sprite-gunslinger{background-position:100% 0}
@@ -1305,7 +1305,174 @@ input::placeholder{color:#6c5a37}
 .auctionCharacter .battleBodyFallback{position:absolute;inset:3px;z-index:1;width:auto!important;height:auto!important}
 .auctionCharacter .battleCharacterSprite{position:relative;z-index:2}
 
-</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.5 / 2本先取・最大3戦</div>
+
+
+/* ===== BID GRID v3.7 : CRISP CHARACTERS + AUCTION FOCUS ===== */
+.characterSprite,.battleCharacterSprite{
+  image-rendering:pixelated!important;
+  image-rendering:crisp-edges;
+}
+
+/* Opening: the selected character is a clear visual anchor. */
+.openingCharacterBanner{
+  min-height:214px!important;
+  grid-template-columns:190px minmax(0,1fr) auto!important;
+  padding:16px 20px!important;
+}
+.openingHeroPortrait{width:178px!important;height:178px!important;border-radius:20px!important;}
+.openingHeroPortrait .openingHeroSprite{
+  width:168%!important;height:168%!important;transform:none!important;
+  filter:drop-shadow(0 9px 8px #000b)!important;
+}
+.openingCharacterName{font-size:42px!important;}
+
+/* Character select: make art large enough to judge the character at a glance. */
+#characterMenu{max-width:930px!important;}
+#characterMenu .characterGrid{gap:14px!important;}
+#characterMenu .characterCard{min-height:226px!important;padding:12px 8px!important;}
+#characterMenu .charPortrait{
+  width:168px!important;height:168px!important;border:0!important;background:transparent!important;
+  box-shadow:none!important;overflow:visible!important;
+}
+#characterMenu .charPortrait::before{display:none!important;}
+#characterMenu .charPortrait .characterSprite{filter:drop-shadow(0 8px 7px #0009)!important;}
+#characterMenu .charName{font-size:15px!important;}
+
+/* Player header circles: crop strongly to face/hat, do not shrink the full body. */
+.playerPanel .player{grid-template-columns:minmax(0,1fr) 100px auto!important;}
+.characterAvatar{
+  width:96px!important;height:96px!important;border-radius:50%!important;overflow:hidden!important;
+  border:2px solid #a57b36!important;
+  background:radial-gradient(circle at 50% 42%,#26354c,#091019 74%)!important;
+}
+.characterAvatar .battleFaceSprite{
+  position:absolute!important;width:218%!important;height:218%!important;
+  left:-59%!important;top:-43%!important;margin:0!important;filter:none!important;transform:none!important;
+}
+.characterAvatar.character-dog .battleFaceSprite{top:-34%!important;}
+.characterAvatar.character-robot .battleFaceSprite{top:-39%!important;}
+.characterAvatar.character-doctor .battleFaceSprite{top:-47%!important;}
+.characterAvatar.character-mage .battleFaceSprite{top:-46%!important;}
+
+/* Main battle arena: YOU is left, RIVAL is right, coins sit directly below. */
+.battleArenaStage{
+  width:min(100%,960px);margin:0 auto;display:grid;
+  grid-template-columns:minmax(130px,190px) minmax(320px,520px) minmax(130px,190px);
+  grid-template-areas:"self board rival";gap:16px;align-items:end;
+}
+.battleArenaStage>.board{grid-area:board;width:100%!important;margin:0!important;}
+.battleSideSelf{grid-area:self}.battleSideOpponent{grid-area:rival}
+.battleSidePanel{
+  min-height:310px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding:12px 8px 14px;border:1px solid #5d4724;border-radius:20px;
+  background:radial-gradient(circle at 50% 38%,#172638 0,#0c131d 58%,#080d14 100%);
+  box-shadow:inset 0 0 0 2px #181108,0 12px 30px #0008;overflow:hidden;
+}
+.battleSideLabel{
+  font-family:"Cormorant Garamond","Times New Roman",serif;font-size:13px;font-weight:700;
+  letter-spacing:.18em;color:#bca15f;margin-bottom:4px;
+}
+.battleSideArt{width:100%;height:220px;display:grid;place-items:end center;position:relative;overflow:visible;}
+.battleSideArt .characterSprite{width:100%;height:100%;filter:drop-shadow(0 10px 8px #000b)!important;}
+.battleSideArt .battleCharacterSprite{
+  width:100%;height:100%;object-fit:contain;object-position:center bottom;
+  filter:drop-shadow(0 10px 8px #000b)!important;
+}
+.battleSideWaiting{
+  width:100%;height:220px;display:grid;place-items:center;
+  font-family:"Cormorant Garamond",serif;font-size:72px;color:#594829;opacity:.65;
+}
+.battleSideCoins{margin-top:2px;white-space:nowrap;color:#e8d9aa;text-align:center;}
+.battleSideCoins span{
+  font-family:"Cormorant Garamond","Times New Roman",serif;font-size:43px;font-weight:700;line-height:1;
+  color:#f5d77e;text-shadow:0 2px 0 #3c270d,0 0 15px #d5aa4930;
+}
+.battleSideCoins small{font-size:10px;font-weight:1000;letter-spacing:.12em;color:#9f9277;}
+
+/* Choosing a cell: restrained, premium, tactile — no blue dot helper. */
+.boardStatusBanner.selecting{
+  color:#e5d2a0!important;border-color:#74582d!important;
+  background:linear-gradient(180deg,#161a1e,#0b1017)!important;
+  box-shadow:inset 0 0 16px #d8a53b0b!important;
+}
+.cell.selectable{
+  background:radial-gradient(circle at 30% 25%,#24344a,#152338 58%,#0b1421)!important;
+  border:1px solid #8b6b35!important;
+  box-shadow:inset 0 0 0 1px #2c1d0d,0 7px 16px #0005!important;
+  transform:scale(.985)!important;filter:brightness(.92);
+}
+.cell.selectable::before{
+  content:""!important;position:absolute!important;inset:7px!important;width:auto!important;height:auto!important;
+  left:7px!important;top:7px!important;transform:none!important;border:1px solid #a17a3b45!important;
+  border-radius:12px!important;background:linear-gradient(135deg,#e8c6660d,transparent 42%)!important;
+  box-shadow:none!important;padding:0!important;
+}
+.cell.selectable:hover,.cell.selectable:focus-visible{
+  transform:translateY(-3px) scale(1.015)!important;filter:brightness(1.12);border-color:#dfb85e!important;
+  box-shadow:inset 0 0 0 1px #e6c56a55,0 0 18px #d5a84632,0 10px 22px #0007!important;
+}
+
+/* Auction target: dim the rest and chase two luminous arcs around the target. */
+.board:has(.cell.auction) .cell:not(.auction){
+  filter:brightness(.48) saturate(.72)!important;opacity:.78;transform:scale(.965)!important;
+  transition:filter .24s ease,opacity .24s ease,transform .24s ease;
+}
+.cell.auction{
+  overflow:visible!important;z-index:8!important;transform:scale(1.045)!important;
+  background:radial-gradient(circle at 50% 38%,#3e351e,#201a11 62%,#0c0f13)!important;
+  border:1px solid #e2bd62!important;
+  box-shadow:inset 0 0 0 2px #6d5226,0 0 18px #f1c55d75,0 0 42px #5fd7ff26!important;
+  animation:auctionFocusBreath 1.7s ease-in-out infinite!important;
+}
+.cell.auction::before{
+  content:""!important;position:absolute!important;inset:-8px!important;z-index:8!important;padding:2px!important;
+  border:0!important;border-radius:24px!important;
+  background:conic-gradient(from 0deg,transparent 0 8%,#77e8ff 10% 16%,#fff4c2 17% 20%,transparent 22% 49%,#f6c85e 51% 57%,#fff1ae 58% 61%,transparent 63% 100%)!important;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)!important;
+  -webkit-mask-composite:xor!important;mask-composite:exclude!important;
+  box-shadow:none!important;animation:auctionChaseRing 1.35s linear infinite!important;pointer-events:none!important;
+}
+.cell.auction::after{
+  content:"NOW BIDDING"!important;left:12%!important;right:12%!important;bottom:8px!important;padding:3px 5px!important;
+  background:linear-gradient(180deg,#edc75f,#91611d)!important;color:#171006!important;
+  border:1px solid #ffe69a!important;border-radius:999px!important;font-size:10px!important;
+  letter-spacing:.10em!important;box-shadow:0 4px 12px #0007,0 0 12px #e8c35b38!important;
+}
+@keyframes auctionChaseRing{to{transform:rotate(360deg)}}
+@keyframes auctionFocusBreath{
+  0%,100%{filter:brightness(1);box-shadow:inset 0 0 0 2px #6d5226,0 0 16px #f1c55d62,0 0 34px #5fd7ff1d}
+  50%{filter:brightness(1.1);box-shadow:inset 0 0 0 2px #8f7135,0 0 26px #f5d27396,0 0 54px #69ddff32}
+}
+
+/* Keep the four gunslinger frames aligned and stable. */
+.battleCharacterSprite[data-character="gunslinger"]{
+  object-fit:contain!important;object-position:center bottom!important;transform:none;
+}
+
+@media(max-width:760px){
+  .openingCharacterBanner{min-height:150px!important;grid-template-columns:116px minmax(0,1fr)!important;padding:10px 12px!important;}
+  .openingHeroPortrait{width:108px!important;height:108px!important;}
+  .openingCharacterName{font-size:29px!important;}
+  .openingCharacterHint{grid-column:1/-1!important;}
+  #characterMenu .characterGrid{gap:6px!important;}
+  #characterMenu .characterCard{min-height:150px!important;padding:6px 3px!important;}
+  #characterMenu .charPortrait{width:96px!important;height:96px!important;}
+  .playerPanel .player{grid-template-columns:minmax(0,1fr) 64px auto!important;}
+  .characterAvatar{width:62px!important;height:62px!important;}
+  .battleArenaStage{grid-template-columns:1fr 1fr;grid-template-areas:"self rival" "board board";gap:8px;align-items:end;}
+  .battleSidePanel{
+    min-height:112px;display:grid;grid-template-columns:72px 1fr;grid-template-rows:auto auto;
+    padding:6px 8px;border-radius:14px;
+  }
+  .battleSideLabel{grid-column:2;grid-row:1;align-self:end;margin:0;font-size:9px;text-align:left;width:100%;}
+  .battleSideArt,.battleSideWaiting{grid-column:1;grid-row:1/3;width:70px;height:92px;}
+  .battleSideCoins{grid-column:2;grid-row:2;text-align:left;align-self:start;}
+  .battleSideCoins span{font-size:30px;}
+  .battleArenaStage>.board{margin-top:3px!important;}
+}
+@media(prefers-reduced-motion:reduce){.cell.auction::before,.cell.auction{animation:none!important;}}
+
+</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.7 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel lobbyPanel">
   <div id="openingMenu">
     <div class="lobbyKicker">BID GRID ONLINE</div><h2>対戦メニュー</h2>
@@ -1486,15 +1653,15 @@ const CHARACTER_ORDER=["zombie","merchant","gunslinger","swordswoman","random","
 const BATTLE_MOTION_ASSETS={
   gunslinger:{
     idle:[
-      "/characters/gunslinger/gunslinger_idle_1.png?v=361",
-      "/characters/gunslinger/gunslinger_idle_2.png?v=361",
-      "/characters/gunslinger/gunslinger_idle_3.png?v=361",
-      "/characters/gunslinger/gunslinger_idle_4.png?v=361"
+      "/characters/gunslinger/gunslinger_idle_1.png?v=370",
+      "/characters/gunslinger/gunslinger_idle_2.png?v=370",
+      "/characters/gunslinger/gunslinger_idle_3.png?v=370",
+      "/characters/gunslinger/gunslinger_idle_4.png?v=370"
     ]
   }
 };
 const BATTLE_IDLE_SEQUENCE=[0,1,2,3,2,1];
-const BATTLE_IDLE_SPEED=120;
+const BATTLE_IDLE_SPEED=170;
 const BATTLE_REDUCED=!!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
 let battleIdleSequenceIndex=0;
 function getGunslingerIdleSrc(){
@@ -1508,7 +1675,7 @@ function battleCharacterMarkup(characterId,motion="static"){
   const c=getCharacterDef(id);
   if(id==="gunslinger"){
     const src=motion==="idle"?getGunslingerIdleSrc():BATTLE_MOTION_ASSETS.gunslinger.idle[0];
-    return `<span class="characterSprite sprite-gunslinger battleBodyFallback" role="img" aria-label="${c.name}"></span><img class="battleCharacterSprite" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false" onerror="this.remove()">`;
+    return `<img class="battleCharacterSprite" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false">`;
   }
   return `<span class="characterSprite sprite-${id}" role="img" aria-label="${c.name}"></span>`;
 }
@@ -2364,6 +2531,7 @@ $("players").innerHTML=ps.map((p,i)=>{
     <div class="playerCoinsWrap"><span class="playerCoinsValue">${state.coins[i]}</span><span class="playerCoinsUnit">枚</span></div>
   </div>`;
 }).join("");
+renderBattleArenaCharacters(ps);
 $("roundLabel").textContent=state.phase==="waiting"?"対戦相手を待っています":`第${state.roundNumber}戦 / 2本先取`;
 if(state.pausedForDisconnect){
     $("roleLabel").textContent="接続復帰待ち";
@@ -2385,7 +2553,7 @@ if(boardStatus){
   boardStatus.className="boardStatusBanner";
   if(state.pausedForDisconnect){boardStatus.textContent="接続復帰を待っています";boardStatus.classList.add("waiting");}
   else if(state.phase==="waiting"){boardStatus.textContent="対戦相手を待っています";boardStatus.classList.add("waiting");}
-  else if(state.phase==="select"){const mine=state.selector===slot;boardStatus.textContent=mine?"青く光るマスから、競売するマスを選択してください":`${ps[state.selector]?.name||"相手"} が競売するマスを選択中`;boardStatus.classList.add("selecting");}
+  else if(state.phase==="select"){const mine=state.selector===slot;boardStatus.textContent=mine?"競売するマスを選択してください":`${ps[state.selector]?.name||"相手"} が競売するマスを選択中`;boardStatus.classList.add("selecting");}
   else if(state.phase==="bid"&&state.selected!==null){boardStatus.textContent=`現在競売中：マス ${state.selected+1}`;boardStatus.classList.add("auctioning");}
   else if(state.phase==="auctionPause"&&state.selected!==null){boardStatus.textContent=`競売結果を表示中：マス ${state.selected+1}`;boardStatus.classList.add("auctioning");}
   else{boardStatus.textContent="対戦進行中";boardStatus.classList.add("waiting");}
@@ -2465,11 +2633,45 @@ function showOpeningMenu(){$("friendMenu").classList.add("hidden");$("characterM
 function leaveCharacterSelect(){pendingMatchMode=null;$("characterMenu").classList.add("hidden");$("openingMenu").classList.remove("hidden");renderOpeningCharacterBanner()}
 function battleCharacterFaceMarkup(characterId,motion="static"){
   const id=characterId||"merchant";const c=getCharacterDef(id);
-  if(id==="gunslinger"){
-    const src=motion==="idle"?getGunslingerIdleSrc():BATTLE_MOTION_ASSETS.gunslinger.idle[0];
-    return `<span class="characterSprite sprite-gunslinger battleFaceSprite battleFaceFallback" role="img" aria-label="${c.name}"></span><img class="battleCharacterSprite battleFaceImage" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false" onerror="this.remove()">`;
-  }
   return `<span class="characterSprite sprite-${id} battleFaceSprite" role="img" aria-label="${c.name}"></span>`;
+}
+
+
+/* ===== BID GRID v3.7 : BATTLE ARENA SIDE CHARACTERS ===== */
+function ensureBattleArenaStage(){
+  const board=$("board");if(!board)return null;
+  let stage=board.closest(".battleArenaStage");
+  if(stage)return stage;
+  stage=document.createElement("div");
+  stage.className="battleArenaStage";
+  const parent=board.parentElement;
+  parent.insertBefore(stage,board);
+  const self=document.createElement("aside");
+  self.className="battleSidePanel battleSideSelf";
+  const opp=document.createElement("aside");
+  opp.className="battleSidePanel battleSideOpponent";
+  stage.append(self,board,opp);
+  return stage;
+}
+function renderBattleArenaCharacters(ps){
+  const stage=ensureBattleArenaStage();if(!stage||!state)return;
+  const selfIndex=Number(slot)===1?1:0;
+  const oppIndex=selfIndex===0?1:0;
+  const motion=["select","bid","auctionPause"].includes(state.phase)?"idle":"static";
+  const paint=(selector,idx,label)=>{
+    const host=stage.querySelector(selector);if(!host)return;
+    const player=ps?.[idx];
+    if(!player){
+      host.innerHTML=`<div class="battleSideLabel">${label}</div><div class="battleSideWaiting">?</div><div class="battleSideCoins"><span>--</span><small> COINS</small></div>`;
+      return;
+    }
+    const id=player.character||"merchant";
+    const coins=state.coins?.[idx]??"--";
+    host.innerHTML=`<div class="battleSideLabel">${label}</div><div class="battleSideArt character-${id}" data-character="${id}">${battleCharacterMarkup(id,motion)}</div><div class="battleSideCoins"><span>${coins}</span><small> COINS</small></div>`;
+  };
+  paint(".battleSideSelf",selfIndex,"YOU");
+  paint(".battleSideOpponent",oppIndex,"RIVAL");
+  updateGunslingerIdleSprites();
 }
 
 initAccount();
