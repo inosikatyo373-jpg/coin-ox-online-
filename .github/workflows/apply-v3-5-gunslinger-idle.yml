@@ -10,10 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install gunslinger idle frames
-        run: |
-          mkdir -p public/characters/gunslinger
-          unzip -o .tmp/gunslinger-idle.zip -d public/characters/gunslinger
       - name: Patch BID GRID v3.5
         run: python .github/scripts/patch_v3_5_gunslinger_idle.py
       - name: Validate JavaScript
