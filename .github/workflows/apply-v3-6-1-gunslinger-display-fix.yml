@@ -1,0 +1,139 @@
+name: Apply BID GRID v3.6.1 gunslinger display fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch gunslinger display fallback
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('public/index.html')
+          s=p.read_text(encoding='utf-8')
+
+          s=s.replace('BID GRID ONLINE v3.6','BID GRID ONLINE v3.6.1')
+
+          # Keep the new filenames as the canonical battle animation paths and bust stale browser 404 caches.
+          for i in range(1,5):
+              old=f'/characters/gunslinger/gunslinger_idle_{i}.png'
+              # Do not double-append a version query if rerun.
+              s=s.replace(old+'?v=361', old)
+              s=s.replace(old, old+'?v=361')
+
+          # Opening banner should use the proven 3x3 character atlas. This makes the selected
+          # gunslinger visible even if a battle-animation PNG is temporarily unavailable.
+          old='''function openingSelectedArt(id){
+  const c=getCharacterDef(id||"merchant");
+  if(c.id==="gunslinger")return `<img class="openingHeroGunslinger" src="/characters/gunslinger/gunslinger_idle_1.png?v=361" alt="${c.name}" draggable="false">`;
+  return `<span class="characterSprite sprite-${c.id}" role="img" aria-label="${c.name}"></span>`;
+}'''
+          new='''function openingSelectedArt(id){
+  const c=getCharacterDef(id||"merchant");
+  return `<span class="characterSprite sprite-${c.id} openingHeroSprite" role="img" aria-label="${c.name}"></span>`;
+}'''
+          if old not in s:
+              # Accept the no-query variant if this is the first version seen by the runner.
+              old2='''function openingSelectedArt(id){
+  const c=getCharacterDef(id||"merchant");
+  if(c.id==="gunslinger")return `<img class="openingHeroGunslinger" src="/characters/gunslinger/gunslinger_idle_1.png" alt="${c.name}" draggable="false">`;
+  return `<span class="characterSprite sprite-${c.id}" role="img" aria-label="${c.name}"></span>`;
+}'''
+              if old2 not in s:
+                  raise SystemExit('openingSelectedArt marker not found')
+              s=s.replace(old2,new,1)
+          else:
+              s=s.replace(old,new,1)
+
+          # Add a sprite-atlas fallback underneath the animated gunslinger face.
+          old_face='''  if(id==="gunslinger"){
+    const src=motion==="idle"?getGunslingerIdleSrc():BATTLE_MOTION_ASSETS.gunslinger.idle[0];
+    return `<img class="battleCharacterSprite battleFaceImage" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false">`;
+  }'''
+          new_face='''  if(id==="gunslinger"){
+    const src=motion==="idle"?getGunslingerIdleSrc():BATTLE_MOTION_ASSETS.gunslinger.idle[0];
+    return `<span class="characterSprite sprite-gunslinger battleFaceSprite battleFaceFallback" role="img" aria-label="${c.name}"></span><img class="battleCharacterSprite battleFaceImage" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false" onerror="this.remove()">`;
+  }'''
+          if old_face not in s:
+              raise SystemExit('battleCharacterFaceMarkup marker not found')
+          s=s.replace(old_face,new_face,1)
+
+          # Same fallback for full-body battle / coin-reveal usage.
+          old_body='''  if(id==="gunslinger"){
+    const src=motion==="idle"?getGunslingerIdleSrc():BATTLE_MOTION_ASSETS.gunslinger.idle[0];
+    return `<img class="battleCharacterSprite" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false">`;
+  }'''
+          new_body='''  if(id==="gunslinger"){
+    const src=motion==="idle"?getGunslingerIdleSrc():BATTLE_MOTION_ASSETS.gunslinger.idle[0];
+    return `<span class="characterSprite sprite-gunslinger battleBodyFallback" role="img" aria-label="${c.name}"></span><img class="battleCharacterSprite" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false" onerror="this.remove()">`;
+  }'''
+          if old_body not in s:
+              raise SystemExit('battleCharacterMarkup marker not found')
+          s=s.replace(old_body,new_body,1)
+
+          # Immediately keep the opening banner state in sync when a character is chosen.
+          old_choose='selectedCharacter=id; saveCharacter(id); renderCharacterGrid(); return;'
+          new_choose='selectedCharacter=id; saveCharacter(id); renderCharacterGrid(); if(typeof renderOpeningCharacterBanner==="function")renderOpeningCharacterBanner(); return;'
+          if old_choose not in s:
+              raise SystemExit('chooseCharacter marker not found')
+          s=s.replace(old_choose,new_choose,1)
+
+          marker='/* ===== BID GRID v3.6.1 : GUNSLINGER DISPLAY FIX ===== */'
+          if marker not in s:
+              css=r'''
+
+/* ===== BID GRID v3.6.1 : GUNSLINGER DISPLAY FIX ===== */
+.openingHeroPortrait .openingHeroSprite{
+  width:150%!important;height:150%!important;transform:scale(1.04)!important;
+  filter:drop-shadow(0 7px 7px #000b)!important;
+}
+.characterAvatar .battleFaceFallback{z-index:1!important}
+.characterAvatar .battleFaceImage{z-index:2!important}
+.auctionCharacter .battleBodyFallback{
+  position:absolute;inset:3px;z-index:1;width:auto!important;height:auto!important;
+}
+.auctionCharacter .battleCharacterSprite{position:relative;z-index:2}
+'''
+              s=s.replace('</style>',css+'\n</style>',1)
+
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Validate v3.6.1
+        shell: bash
+        run: |
+          set -e
+          for i in 1 2 3 4; do test -s "public/characters/gunslinger/gunslinger_idle_$i.png"; done
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path('public/index.html').read_text(encoding='utf-8')
+          assert 'BID GRID ONLINE v3.6.1' in s
+          assert '/characters/gunslinger/gunslinger_idle_1.png?v=361' in s
+          assert 'openingHeroSprite' in s
+          assert 'battleFaceFallback' in s
+          blocks=re.findall(r'<script(?![^>]*\\bsrc=)[^>]*>(.*?)</script>',s,re.S|re.I)
+          Path('/tmp/bidgrid-inline.js').write_text('\n'.join(blocks),encoding='utf-8')
+          PY
+          node --check /tmp/bidgrid-inline.js
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-v3-6-1-gunslinger-display-fix.yml
+          git add public/index.html
+          git commit -m "Fix gunslinger display in BID GRID v3.6.1"
+          git push
