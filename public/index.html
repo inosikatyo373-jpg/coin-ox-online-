@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.1.2</title><style>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BID GRID ONLINE v3.2</title><style>
 *{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:900px;margin:auto;padding:12px}h1{text-align:center;font-size:28px;margin:8px 0 2px}.muted{color:#9ca3af;text-align:center}
 .stickyHud{position:fixed;top:8px;left:50%;right:auto;width:min(calc(100vw - 24px),900px);transform:translateX(-50%);z-index:60;background:#111827ee;backdrop-filter:blur(8px);border:2px solid #374151;border-radius:14px;padding:7px 10px;margin:0;box-shadow:0 5px 18px #0007}
 .hudRound{text-align:center;font-size:13px;font-weight:900;color:#fbbf24}
@@ -919,47 +919,38 @@ input::placeholder{color:#6c5a37}
   }
   #game{padding-top:96px!important;}
 }
-</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.1.1 / 2本先取・最大3戦</div>
+
+/* ===== BID GRID v3.2 : opening / ranked ===== */
+.openingStats{margin:18px 0 16px;padding:18px 14px;border:1px solid #8a682f;border-radius:16px;background:linear-gradient(180deg,#0d151f,#090e15);text-align:center}
+.openingRate{font-family:"Cormorant Garamond","Times New Roman",serif;font-size:34px;font-weight:700;color:#f4d77b;letter-spacing:.04em}
+.openingWL{margin-top:5px;font-size:14px;font-weight:900;color:#e7d8b8;letter-spacing:.08em}
+.openingMenuActions{display:grid;gap:10px;margin-top:8px}.openingMenuActions button{min-height:62px!important;font-size:16px!important}
+.rankBtn{background:linear-gradient(180deg,#d9ad4d,#9d6b20 58%,#624012)!important;color:#170e05!important;border-color:#f3d477!important;box-shadow:0 7px 22px #d19a2733!important}
+.rulesMainBtn{background:linear-gradient(180deg,#364760,#202c3d 58%,#121a25)!important;border-color:#8aa0bd!important}
+.friendMenuHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.friendMenuHeader h2{margin:0!important}
+.backMenuBtn{min-height:36px!important;padding:6px 10px!important;font-size:11px!important}.rankStatus{min-height:22px;margin-top:10px;color:#e9cb78;font-weight:900;text-align:center}
+@media(max-width:600px){.openingRate{font-size:30px}.openingMenuActions button{min-height:58px!important}.friendMenuHeader{align-items:flex-start}}
+
+</style></head><body><main class="app"><div class="eyebrow">PRIVATE AUCTION BOARD GAME</div><h1>BID GRID</h1><div class="tagline">そのマス、いくらで買う？</div><div class="muted">ONLINE v3.2 / 2本先取・最大3戦</div>
 <section id="lobby" class="panel lobbyPanel">
-  <div class="lobbyKicker">PRIVATE MATCH</div>
-  <h2>友達と対戦</h2>
-  <p class="lobbyLead">ルームを作るか、招待されたルームに参加してください。</p>
-
-  <div id="accountCard" class="accountCard">
-    <div class="accountIdentity">
-      <div id="accountBadge" class="accountBadge">GUEST</div>
-      <div class="accountCopy">
-        <div id="accountName" class="accountName">ゲストプレイ</div>
-        <div id="accountStats" class="accountStats">ログインすると戦績を保存できます</div>
-      </div>
+  <div id="openingMenu">
+    <div class="lobbyKicker">BID GRID ONLINE</div><h2>対戦メニュー</h2>
+    <div id="accountCard" class="accountCard">
+      <div class="accountIdentity"><div id="accountBadge" class="accountBadge">GUEST</div><div class="accountCopy"><div id="accountName" class="accountName">ゲストプレイ</div><div id="accountStats" class="accountStats">ログインすると戦績を保存できます</div></div></div>
+      <div class="accountActions"><button id="accountOpen" class="accountMiniBtn">ログイン / 登録</button><button id="accountEdit" class="accountMiniBtn hidden">名前変更</button><button id="accountLogout" class="accountMiniBtn hidden">ログアウト</button></div>
     </div>
-    <div class="accountActions">
-      <button id="accountOpen" class="accountMiniBtn">ログイン / 登録</button>
-      <button id="accountEdit" class="accountMiniBtn hidden">名前変更</button>
-      <button id="accountLogout" class="accountMiniBtn hidden">ログアウト</button>
-    </div>
+    <div class="openingStats"><div id="openingRate" class="openingRate">レート ----</div><div id="openingWL" class="openingWL">WIN -　　LOSE -</div></div>
+    <div class="openingMenuActions"><button id="rankedMatchBtn" class="primary rankBtn">ランクマッチ</button><button id="friendMatchBtn">フレンドマッチ</button><button id="rulesBtn" class="rulesMainBtn">ルール説明</button></div>
+    <div id="rankedStatus" class="rankStatus"></div>
   </div>
-
-  <div class="lobbyField">
-    <label for="name">PLAYER NAME</label>
-    <input id="name" placeholder="名前（任意）" autocomplete="nickname">
+  <div id="friendMenu" class="hidden">
+    <div class="friendMenuHeader"><div><div class="lobbyKicker">FRIEND MATCH</div><h2>フレンドマッチ</h2></div><button id="backOpening" class="backMenuBtn">← 戻る</button></div>
+    <p class="lobbyLead">ルームを作るか、招待されたルームに参加してください。フレンドマッチではRATEは変動しません。</p>
+    <div class="lobbyField"><label for="name">PLAYER NAME</label><input id="name" placeholder="名前（任意）" autocomplete="nickname"></div>
+    <div class="lobbyActions"><button id="create" class="primary lobbyPrimary">ルームを作る</button><button id="toggleJoin" class="lobbySecondary">ルームに入る</button></div>
+    <div id="joinArea" class="joinArea hidden"><div class="joinCodeRow"><input id="room" placeholder="ルームコード" autocomplete="off" maxlength="12"><button id="pasteRoom" class="smallAction">貼り付け</button></div><button id="join" class="primary joinButton">入室する</button></div>
+    <p id="lobbyMsg" class="muted lobbyMsg"></p>
   </div>
-
-  <div class="lobbyActions">
-    <button id="create" class="primary lobbyPrimary">ルームを作る</button>
-    <button id="toggleJoin" class="lobbySecondary">ルームに参加</button>
-  </div>
-
-  <div id="joinArea" class="joinArea hidden">
-    <div class="joinCodeRow">
-      <input id="room" placeholder="ルームコード" autocomplete="off" maxlength="12">
-      <button id="pasteRoom" class="smallAction">貼り付け</button>
-    </div>
-    <button id="join" class="primary joinButton">入室する</button>
-  </div>
-
-  <button id="rulesBtn" class="quietLink">ルール説明</button>
-  <p id="lobbyMsg" class="muted lobbyMsg"></p>
 </section>
 <section id="game" class="hidden">
 <div id="stickyHud" class="stickyHud">
@@ -1027,7 +1018,7 @@ input::placeholder{color:#6c5a37}
     <div class="rulesTitle">BID GRID</div>
     <p class="muted">競売でマスを奪い、3目ならべを完成させる対戦ゲームです。</p>
     <ol class="rulesList">
-      <li>3×3の盤面で〇と×が対戦します。</li>
+      <li><b>ランクマッチ</b>はログイン必須です。マッチ勝敗でRATEが変動し、近いRATEの相手から自動でマッチングします。</li><li><b>フレンドマッチ</b>はルームコードで友達と対戦します。RATEは変動しません。</li><li>3×3の盤面で〇と×が対戦します。</li>
       <li>各戦の開始時、両者に同じ枚数（20〜40枚）のコインが配られます。</li>
       <li>手番のプレイヤーが競売するマスを選び、両者が同時にコインを入札します。</li>
       <li>多く入札した側がそのマスを獲得。入札したコインは勝敗に関係なく消費します。</li>
@@ -1093,6 +1084,8 @@ const ACCOUNT_SESSION_KEY="bidGridAccountSession";
 let accountConfigured=false;
 let accountSession=null;
 let accountProfile=null;
+let rankedSearching=false;
+let lastRatingResult=null;
 
 const SESSION_KEY="bidGridReconnect";
 function saveReconnectSession(){
@@ -1191,20 +1184,16 @@ function renderAccountCard(){
     $("accountName").textContent="アカウント機能は未設定";
     $("accountStats").textContent="Supabaseを設定すると有効になります";
     $("accountOpen").classList.add("hidden");
-    return;
+    $("openingRate").textContent="レート ----"; $("openingWL").textContent="WIN -　　LOSE -"; return;
   }
-
   if(!signed){
-    $("accountName").textContent="ゲストプレイ";
-    $("accountStats").textContent="ログインすると戦績を保存できます";
-    $("name").disabled=false;
-    return;
+    $("accountName").textContent="ゲストプレイ"; $("accountStats").textContent="ランクマッチはログインが必要です";
+    $("openingRate").textContent="レート ----"; $("openingWL").textContent="WIN -　　LOSE -"; $("name").disabled=false; return;
   }
-
   $("accountName").textContent=accountProfile.display_name;
-  $("accountStats").innerHTML=`<span class="accountRate">RATE ${accountProfile.rating}</span>　最高 ${accountProfile.highest_rating}　W ${accountProfile.wins} / L ${accountProfile.losses} / D ${accountProfile.draws}`;
-  $("name").value=accountProfile.display_name;
-  $("name").disabled=true;
+  $("accountStats").innerHTML=`最高RATE ${accountProfile.highest_rating}　DRAW ${accountProfile.draws}`;
+  $("openingRate").textContent=`レート ${accountProfile.rating}`; $("openingWL").textContent=`WIN ${accountProfile.wins}　　LOSE ${accountProfile.losses}`;
+  $("name").value=accountProfile.display_name; $("name").disabled=true;
 }
 async function initAccount(){
   try{
@@ -1306,6 +1295,20 @@ $("accountLogout").onclick=accountLogout;
 $("accountOverlay").addEventListener("click",e=>{
   if(e.target===$("accountOverlay"))closeAccountModal();
 });
+
+function showOpeningMenu(){ $("friendMenu").classList.add("hidden"); $("openingMenu").classList.remove("hidden"); $("joinArea").classList.add("hidden"); $("lobbyMsg").textContent=""; }
+function showFriendMenu(){ if(rankedSearching){s.emit("cancelRanked");rankedSearching=false;} $("openingMenu").classList.add("hidden"); $("friendMenu").classList.remove("hidden"); }
+$("friendMatchBtn").onclick=showFriendMenu; $("backOpening").onclick=showOpeningMenu;
+$("rankedMatchBtn").onclick=async()=>{
+  if(rankedSearching){s.emit("cancelRanked");rankedSearching=false;$("rankedMatchBtn").textContent="ランクマッチ";$("rankedStatus").textContent="検索をキャンセルしました。";return;}
+  if(!accountProfile){$("accountMessage").textContent="ランクマッチにはログインが必要です。";openAccountModal();return;}
+  const authToken=await ensureAccountToken(); if(!authToken){openAccountModal();return;}
+  $("rankedStatus").textContent=`対戦相手を検索中… RATE ${accountProfile.rating}（まず±100から検索）`; $("rankedMatchBtn").textContent="検索をキャンセル"; rankedSearching=true;
+  s.emit("joinRanked",{authToken},r=>{if(!r?.ok){rankedSearching=false;$("rankedMatchBtn").textContent="ランクマッチ";$("rankedStatus").textContent=r?.error||"検索を開始できませんでした。";}});
+};
+s.on("rankedCancelled",()=>{rankedSearching=false;$("rankedMatchBtn").textContent="ランクマッチ";});
+s.on("rankedMatched",r=>{rankedSearching=false;$("rankedMatchBtn").textContent="ランクマッチ";$("rankedStatus").textContent="マッチングしました！";lastRatingResult=null;handle(r);});
+s.on("ratingResult",r=>{lastRatingResult=r;});
 
 $("create").onclick=async()=>{
   const authToken=await ensureAccountToken();
@@ -1729,6 +1732,11 @@ function showRoundResult(r){
   $("modal").classList.remove("hidden");
 }
 
+function ratingResultHtml(){
+  if(state?.matchType!=="ranked" || !lastRatingResult)return "";
+  const d=Number(lastRatingResult.delta)||0;
+  return `<br><span class="accountRate">RATE ${lastRatingResult.before} → ${lastRatingResult.after} (${d>=0?"+":""}${d})</span>`;
+}
 function showMatchEnd(w,wins){
   const name=state?.players?.[w]?.name||(w===0?"〇":"×");
   $("resultBig").textContent=`${name} の勝利！`;
@@ -1737,14 +1745,14 @@ function showMatchEnd(w,wins){
     :state?.matchEndReason==="disconnect"
       ?"相手が20秒以内に復帰しなかったため不戦勝"
       :"2本先取で対戦終了";
-  $("resultText").innerHTML=`${reason}<br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>`;
-  $("matchActions").innerHTML=`<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;
+  $("resultText").innerHTML=`${reason}<br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>${ratingResultHtml()}`;
+  $("matchActions").innerHTML=state?.matchType==="ranked" ? `<div class="choiceRow"><button class="primary" onclick="backToTitle()">対戦メニューに戻る</button></div>` : `<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;
 }
 
 function showMatchDraw(wins){
   $("resultBig").textContent="MATCH DRAW";
-  $("resultText").innerHTML=`1勝 - 1勝の状態で4連続同額が発生したため<br><b>マッチ全体が引き分け</b><br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>`;
-  $("matchActions").innerHTML=`<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;
+  $("resultText").innerHTML=`1勝 - 1勝の状態で4連続同額が発生したため<br><b>マッチ全体が引き分け</b><br><span class="matchScore">〇 ${wins[0]}勝 - ${wins[1]}勝 ×</span>${ratingResultHtml()}`;
+  $("matchActions").innerHTML=state?.matchType==="ranked" ? `<div class="choiceRow"><button class="primary" onclick="backToTitle()">対戦メニューに戻る</button></div>` : `<p class="waitChoice">どちらに進むか選択してください。</p><div class="choiceRow"><button class="primary" onclick="chooseMatch('rematch')">連戦する</button><button onclick="backToTitle()">タイトルに戻る</button></div>`;
 }
 
 function goNextRound(){
@@ -1791,7 +1799,8 @@ function render(){if(!state)return;
 
   $("hudCoins0").textContent=state.coins[0];
   $("hudCoins1").textContent=state.coins[1];
-  $("hudRound").textContent=state.phase==="waiting"?"対戦相手を待っています":`第${state.roundNumber}戦 / 2本先取`;
+  const modeLabel=state.matchType==="ranked"?"RANKED":"FRIEND";
+  $("hudRound").textContent=state.phase==="waiting"?"対戦相手を待っています":`${modeLabel} / 第${state.roundNumber}戦 / 2本先取`;
   $("hudTimer").textContent=(state.phase==="waiting"||state.phase==="countdown"||state.phase==="auctionPause")?"--":state.timeLeft+"秒";
   if(state.phase==="bid"&&slot!==null){
     const current=$("bid").value||0;
@@ -1887,9 +1896,8 @@ $("surrenderRound").onclick=()=>{
 initAccount();
 let q=new URLSearchParams(location.search).get("room");
 if(q){
-  $("room").value=q.toUpperCase();
-  $("joinArea").classList.remove("hidden");
-  $("toggleJoin").textContent="参加欄を閉じる";
+  showFriendMenu();
+  $("room").value=q.toUpperCase(); $("joinArea").classList.remove("hidden"); $("toggleJoin").textContent="参加欄を閉じる";
 }
 
 function attemptRejoin(){

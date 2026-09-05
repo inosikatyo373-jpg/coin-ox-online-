@@ -103,9 +103,46 @@ async function recordProfileResult(userId,result){
   return rows||await fetchProfile(userId);
 }
 
+async function recordRankedMatch(r){
+  const p0=r.players[0],p1=r.players[1];
+  if(!p0?.userId || !p1?.userId) throw new Error("RANKED_ACCOUNT_REQUIRED");
+  const result=r.matchDraw?"draw":r.matchWinner===0?"p0":"p1";
+  return sbFetch("/rest/v1/rpc/record_ranked_match",{
+    method:"POST",
+    key:SUPABASE_SERVICE_ROLE_KEY,
+    body:{p_user_0:p0.userId,p_user_1:p1.userId,p_result:result}
+  });
+}
+
 async function recordMatchStats(r){
   if(!accountConfigured() || r.statsRecorded || r.phase!=="matchEnd") return;
   r.statsRecorded=true;
+
+  if(r.matchType==="ranked"){
+    try{
+      const data=await recordRankedMatch(r);
+      const profiles=[data?.p0,data?.p1];
+      const before=[data?.before0,data?.before1];
+      const delta=[data?.delta0,data?.delta1];
+      r.ratingChanges=[null,null];
+      r.players.forEach((p,i)=>{
+        const profile=profiles[i];
+        if(!p || !profile) return;
+        p.rating=profile.rating;
+        p.highestRating=profile.highest_rating;
+        r.ratingChanges[i]={before:before[i],after:profile.rating,delta:delta[i]};
+        if(p.id){
+          io.to(p.id).emit("accountStatsUpdated",profile);
+          io.to(p.id).emit("ratingResult",r.ratingChanges[i]);
+        }
+      });
+    }catch(err){
+      console.error("recordRankedMatch failed",err.message);
+      r.statsRecorded=false;
+    }
+    send(r);
+    return;
+  }
 
   await Promise.all(r.players.map(async(p,i)=>{
     if(!p?.userId) return;
@@ -252,6 +289,7 @@ app.patch("/api/account/profile",async(req,res)=>{
 app.use(express.static(path.join(__dirname,"../public")));
 
 const rooms=new Map();
+const rankedQueue=[];
 const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
 function makeCode(){
@@ -273,6 +311,8 @@ function makeReconnectToken(){
 function newRoom(id,creator){
   return {
     id,
+    matchType:creator.matchType||"friend",
+    ratingChanges:null,
     players:[{
       id:creator.id,
       name:creator.name||"プレイヤー1",
@@ -352,6 +392,7 @@ function publicState(r,viewerSlot=null){
 
   return {
     room:r.id,
+    matchType:r.matchType||"friend",
     players:r.players.map(p=>p?{
       name:p.name,
       rating:Number.isInteger(p.rating)?p.rating:null,
@@ -784,7 +825,62 @@ function returnToRoom(r){
   send(r);
 }
 
+function rankedWindow(entry){
+  const waited=Math.max(0,Date.now()-entry.joinedAt);
+  return Math.min(600,100+Math.floor(waited/10000)*50);
+}
+function removeFromRankedQueue(socketId){
+  for(let i=rankedQueue.length-1;i>=0;i--) if(rankedQueue[i].socketId===socketId) rankedQueue.splice(i,1);
+}
+function createRankedRoom(a,b){
+  const sa=io.sockets.sockets.get(a.socketId), sb=io.sockets.sockets.get(b.socketId);
+  if(!sa || !sb || !sa.connected || !sb.connected) return false;
+  const id=makeCode(), ta=makeReconnectToken(), tb=makeReconnectToken();
+  const r=newRoom(id,{id:sa.id,name:a.name,token:ta,userId:a.userId,rating:a.rating,highestRating:a.highestRating,matchType:"ranked"});
+  r.matchType="ranked";
+  r.players[1]={id:sb.id,name:b.name,token:tb,connected:true,userId:b.userId,rating:b.rating,highestRating:b.highestRating};
+  rooms.set(id,r);
+  sa.join(id); sb.join(id);
+  sa.data={room:id,slot:0}; sb.data={room:id,slot:1};
+  sa.emit("rankedMatched",{ok:true,room:id,slot:0,reconnectToken:ta});
+  sb.emit("rankedMatched",{ok:true,room:id,slot:1,reconnectToken:tb});
+  setupRound(r); logRoundStart(r);
+  log(r,`ランクマッチ成立：${a.name} (RATE ${a.rating}) vs ${b.name} (RATE ${b.rating})`);
+  send(r);
+  return true;
+}
+function processRankedQueue(){
+  for(let i=0;i<rankedQueue.length;i++){
+    const a=rankedQueue[i], sa=io.sockets.sockets.get(a.socketId);
+    if(!sa?.connected || sa.data?.room){ rankedQueue.splice(i--,1); continue; }
+    for(let j=i+1;j<rankedQueue.length;j++){
+      const b=rankedQueue[j], sb=io.sockets.sockets.get(b.socketId);
+      if(!sb?.connected || sb.data?.room){ rankedQueue.splice(j--,1); continue; }
+      if(a.userId===b.userId) continue;
+      const allowed=Math.max(rankedWindow(a),rankedWindow(b));
+      if(Math.abs(a.rating-b.rating)>allowed) continue;
+      rankedQueue.splice(j,1); rankedQueue.splice(i,1); createRankedRoom(a,b); i=-1; break;
+    }
+  }
+}
+
 io.on("connection",s=>{
+
+  s.on("joinRanked",async({authToken},cb)=>{
+    if(!authToken) return cb?.({ok:false,error:"ランクマッチにはログインが必要です。"});
+    if(s.data?.room) return cb?.({ok:false,error:"すでに対戦ルームに参加しています。"});
+    let account=null;
+    try{ account=await resolveAccount(authToken); }
+    catch(err){ return cb?.({ok:false,error:"ログイン期限が切れています。もう一度ログインしてください。"}); }
+    if(!account?.user?.id || !account?.profile) return cb?.({ok:false,error:"アカウント情報を取得できませんでした。"});
+    if(rankedQueue.some(x=>x.userId===account.user.id)) return cb?.({ok:false,error:"このアカウントはすでに検索中です。"});
+    removeFromRankedQueue(s.id);
+    rankedQueue.push({socketId:s.id,userId:account.user.id,name:account.profile.display_name,rating:account.profile.rating,highestRating:account.profile.highest_rating,joinedAt:Date.now()});
+    cb?.({ok:true,rating:account.profile.rating});
+    processRankedQueue();
+  });
+  s.on("cancelRanked",()=>{ removeFromRankedQueue(s.id); s.emit("rankedCancelled"); });
+
   s.on("create",async({name,authToken},cb)=>{
     let account=null;
     try{
@@ -1015,6 +1111,7 @@ io.on("connection",s=>{
   });
 
   s.on("disconnect",()=>{
+    removeFromRankedQueue(s.id);
     const r=rooms.get(s.data.room);
     const i=s.data.slot;
     if(!r || (i!==0 && i!==1)) return;
@@ -1057,6 +1154,7 @@ io.on("connection",s=>{
 });
 
 setInterval(()=>{
+  processRankedQueue();
   for(const r of rooms.values()){
     // 切断猶予20秒。期限切れで、残っている側をマッチ勝者にする。
     for(let i=0;i<2;i++){
