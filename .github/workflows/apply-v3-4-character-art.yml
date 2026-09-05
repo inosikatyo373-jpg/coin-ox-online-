@@ -10,10 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install character art
-        run: |
-          mkdir -p public/characters
-          unzip -o .tmp/bidgrid-characters120.zip -d public/characters
       - name: Patch opening character selector
         run: python .github/scripts/patch_v3_4_character_art.py
       - name: Validate JavaScript
