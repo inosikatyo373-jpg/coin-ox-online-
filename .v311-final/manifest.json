@@ -1,10 +1,10 @@
 {
-  "doctor":{"parts":8,"bytes":106832,"sha256":"5b2f487145812435863e616ba457a3c93330ddb2b4143c20fe684d7ffa179fb8","width":720,"height":720,"format":"webp","encoding":"base64","chunkChars":18000},
-  "dog":{"parts":5,"bytes":54686,"sha256":"3a62a6531df868c9a504a6fac2d67ea117055c7f10e8e343ebd73b74a031708a","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":18000},
-  "gunslinger":{"parts":5,"bytes":67362,"sha256":"c43d3c5d2d769f5078c719cd6ba11de0507aa972798e6185f7c1ffe9ca4310a2","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":18000},
-  "mage":{"parts":8,"bytes":96402,"sha256":"eb3a7a68c3d47ea7a1c784626be3ae966f52feee175c05a6c5c764c540419d80","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":18000},
-  "merchant":{"parts":7,"bytes":93400,"sha256":"0a6c1793cedf4aadb407ec906bd44bfce77e4916a273fde438ec118abfd09ed8","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":18000},
-  "robot":{"parts":7,"bytes":81584,"sha256":"028fd320e358b3aa4810c18892871f80fbce882577b80d0026b1722d26a86da3","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":18000},
-  "swordswoman":{"parts":6,"bytes":77002,"sha256":"b021281b4e026031319c60d370c9826bf96e4ec156df0d24cf1731258f5e399d","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":18000},
-  "zombie":{"parts":5,"bytes":55166,"sha256":"0ff5007a1246d357a37e9333e9b13a3fa43be5f9a3f098831d3a021b589c099a","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":18000}
+  "doctor":{"parts":8,"bytes":106832,"sha256":"5b2f487145812435863e616ba457a3c93330ddb2b4143c20fe684d7ffa179fb8","width":720,"height":720,"format":"webp","encoding":"base64"},
+  "dog":{"parts":4,"bytes":54686,"sha256":"3a62a6531df868c9a504a6fac2d67ea117055c7f10e8e343ebd73b74a031708a","width":720,"height":658,"format":"webp","encoding":"base64"},
+  "gunslinger":{"parts":5,"bytes":67362,"sha256":"c43d3c5d2d769f5078c719cd6ba11de0507aa972798e6185f7c1ffe9ca4310a2","width":720,"height":658,"format":"webp","encoding":"base64"},
+  "mage":{"parts":7,"bytes":96402,"sha256":"eb3a7a68c3d47ea7a1c784626be3ae966f52feee175c05a6c5c764c540419d80","width":720,"height":658,"format":"webp","encoding":"base64"},
+  "merchant":{"parts":7,"bytes":93400,"sha256":"0a6c1793cedf4aadb407ec906bd44bfce77e4916a273fde438ec118abfd09ed8","width":720,"height":658,"format":"webp","encoding":"base64"},
+  "robot":{"parts":6,"bytes":81584,"sha256":"028fd320e358b3aa4810c18892871f80fbce882577b80d0026b1722d26a86da3","width":720,"height":658,"format":"webp","encoding":"base64"},
+  "swordswoman":{"parts":6,"bytes":77002,"sha256":"b021281b4e026031319c60d370c9826bf96e4ec156df0d24cf1731258f5e399d","width":720,"height":658,"format":"webp","encoding":"base64"},
+  "zombie":{"parts":4,"bytes":55166,"sha256":"0ff5007a1246d357a37e9333e9b13a3fa43be5f9a3f098831d3a021b589c099a","width":720,"height":658,"format":"webp","encoding":"base64"}
 }
