@@ -1,6 +1,6 @@
 {
   "name": "bid-grid-online",
-  "version": "3.10.0",
+  "version": "3.10.2",
   "private": true,
   "scripts": {
     "prepare-assets": "node server/prepare-assets.js",
@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "express": "^4.21.2",
+    "sharp": "^0.34.3",
     "socket.io": "^4.8.1"
   },
   "engines": {
