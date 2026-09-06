@@ -1,114 +1,132 @@
-/* BID GRID v3.10.2 - 4x HD character rendering */
+/* BID GRID v3.11.0 - native individual HD character artwork */
 
-/* Render creates this 3072x3072 atlas from the committed 768x768 3x3 source. */
-.characterSprite{
-  background-image:url('/characters/characters_hd_4x.png?v=3102')!important;
-  background-size:300% 300%!important;
-  background-repeat:no-repeat!important;
+.nativeCharacterImage,
+.characterSelectImage,
+.openingHeroImage,
+.battleCharacterSprite,
+.battleFaceImage{
+  display:block!important;
+  opacity:1!important;
+  visibility:visible!important;
   image-rendering:auto!important;
-  transform:none!important;
-  filter:drop-shadow(0 7px 7px #0009);
-  backface-visibility:hidden;
+  backface-visibility:hidden!important;
+  user-select:none!important;
+  -webkit-user-drag:none!important;
 }
 
-#characterMenu .charPortrait{
+/* Character select: show the whole native image without atlas cropping. */
+#characterMenu .charPortrait,
+#openingMenu .charPortrait{
   overflow:visible!important;
   display:grid!important;
   place-items:center!important;
   background:transparent!important;
 }
-#characterMenu .charPortrait .characterSprite{
-  width:96%!important;
-  height:96%!important;
+#characterMenu .charPortrait .characterSelectImage,
+#openingMenu .charPortrait .characterSelectImage{
+  position:static!important;
+  width:100%!important;
+  height:100%!important;
   max-width:100%!important;
   max-height:100%!important;
-  aspect-ratio:1/1!important;
+  object-fit:contain!important;
+  object-position:center center!important;
   transform:none!important;
-  background-size:300% 300%!important;
+  margin:0!important;
+  filter:drop-shadow(0 6px 6px #0009)!important;
 }
+.nativeRandomPortrait{background:radial-gradient(circle at 50% 42%,#263348,#0a111c 72%)!important}
+.nativeRandomGlyph{font-family:"Cormorant Garamond","Times New Roman",serif;font-size:54px;font-weight:700;color:#e7c56d;text-shadow:0 3px 8px #000}
 
+/* Opening selected-character banner. */
 .openingHeroPortrait{
   overflow:visible!important;
   display:grid!important;
   place-items:center!important;
 }
-.openingHeroPortrait .openingHeroSprite,
-.openingHeroPortrait .characterSprite{
-  width:96%!important;
-  height:96%!important;
+.openingHeroPortrait .openingHeroImage{
+  position:static!important;
+  width:100%!important;
+  height:100%!important;
   max-width:100%!important;
   max-height:100%!important;
-  aspect-ratio:1/1!important;
-  transform:none!important;
-  background-size:300% 300%!important;
-}
-
-/* v3.10.2 battle bodies are individual 1024x1024 transparent PNGs.
-   Force them visible and let the browser scale them normally. */
-.v310HdCharacterImage,
-.battleSideArt .v310HdCharacterImage,
-.auctionCharacter .v310HdCharacterImage{
-  display:block!important;
-  opacity:1!important;
-  visibility:visible!important;
-  position:relative!important;
-  z-index:5!important;
-  width:auto!important;
-  height:auto!important;
-  max-width:96%!important;
-  max-height:96%!important;
   object-fit:contain!important;
-  object-position:center bottom!important;
-  image-rendering:auto!important;
+  object-position:center center!important;
   transform:none!important;
-  margin:0 auto!important;
-  filter:drop-shadow(0 14px 9px #000c)!important;
+  margin:0!important;
+  filter:drop-shadow(0 8px 8px #000b)!important;
 }
 
+/* Round player portrait. Crop visually inside the existing circular frame, not from an atlas. */
+.characterAvatar{
+  position:relative!important;
+  overflow:hidden!important;
+}
+.characterAvatar .battleFaceImage,
+.characterAvatar .nativeCharacterFace{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:145%!important;
+  height:145%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  transform:translate(-50%,-50%)!important;
+  margin:0!important;
+  filter:none!important;
+  z-index:2!important;
+}
+
+/* Large characters beside the board. */
+.battleSidePanel{overflow:visible!important}
 .battleSideArt{
   overflow:visible!important;
   display:flex!important;
   align-items:flex-end!important;
   justify-content:center!important;
-  padding:8px!important;
+  padding:6px!important;
   position:relative!important;
 }
-
-/* CSS-atlas fallback/other UI surfaces. */
-.battleSideArt .characterSprite{
-  width:min(94%,330px)!important;
+.battleSideArt .battleCharacterSprite,
+.battleSideArt .nativeBattleBody{
+  position:static!important;
+  width:auto!important;
   height:auto!important;
-  aspect-ratio:1/1!important;
-  max-width:100%!important;
-  max-height:100%!important;
-  transform:none!important;
-  background-size:300% 300%!important;
-}
-
-.battleCharacterSprite,
-.openingHeroGunslinger,
-.v38GunslingerImage{
+  max-width:98%!important;
+  max-height:98%!important;
   object-fit:contain!important;
   object-position:center bottom!important;
+  transform:none!important;
+  margin:0 auto!important;
+  z-index:5!important;
+  filter:drop-shadow(0 14px 10px #000c)!important;
 }
 
-.characterAvatar .characterSprite,
-.battleFaceSprite{
-  aspect-ratio:1/1!important;
-  image-rendering:auto!important;
+/* Auction reveal also uses the same native art. */
+.auctionCharacter{
+  overflow:visible!important;
+  display:grid!important;
+  place-items:center!important;
 }
-.characterAvatar .v310HdFace{
-  display:block!important;
-  opacity:1!important;
-  visibility:visible!important;
+.auctionCharacter .battleCharacterSprite{
+  position:static!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:100%!important;
+  max-height:100%!important;
   object-fit:contain!important;
-  image-rendering:auto!important;
+  object-position:center bottom!important;
+  margin:0 auto!important;
+  transform:none!important;
+  filter:drop-shadow(0 6px 6px #000a)!important;
 }
 
-@media(max-width:760px){
-  #characterMenu .charPortrait .characterSprite,
-  .openingHeroPortrait .openingHeroSprite,
-  .openingHeroPortrait .characterSprite{width:94%!important;height:94%!important}
-  .battleSideArt .v310HdCharacterImage{max-width:94%!important;max-height:94%!important}
-  .battleSideArt .characterSprite{width:min(90%,260px)!important;height:auto!important;aspect-ratio:1/1!important}
+@media(max-width:900px){
+  .battleSideArt .battleCharacterSprite{max-width:100%!important;max-height:100%!important}
+}
+@media(max-width:600px){
+  .nativeRandomGlyph{font-size:38px}
+  .characterAvatar .battleFaceImage,.characterAvatar .nativeCharacterFace{width:150%!important;height:150%!important}
 }
