@@ -1,39 +1,45 @@
-/* BID GRID v3.8 - battle presentation sync */
+/* BID GRID v3.10.2 - robust HD battle-character rendering */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=381';
+    link.href='/v381.css?v=3102';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
 
-  const gunslingerFrames=[
-    '/characters/gunslinger/gunslinger_idle_1.png?v=380',
-    '/characters/gunslinger/gunslinger_idle_2.png?v=380',
-    '/characters/gunslinger/gunslinger_idle_3.png?v=380',
-    '/characters/gunslinger/gunslinger_idle_4.png?v=380'
-  ];
+  const assetVersion='3102';
+  const hdCharacterSrc=id=>`/characters/hd/${id}.png?v=${assetVersion}`;
+  const gunslingerFrames=[1,2,3,4].map(i=>`/characters/hd/gunslinger_idle_${i}.png?v=${assetVersion}`);
   const seq=[0,1,2,3,2,1];
   let frame=0;
 
-  gunslingerFrames.forEach(src=>{const im=new Image();im.src=src;});
+  [...gunslingerFrames,
+    ...['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'].map(hdCharacterSrc)
+  ].forEach(src=>{const im=new Image();im.src=src;});
+
   window.v38GunslingerIdleSrc=function(){return gunslingerFrames[seq[frame%seq.length]];};
 
+  function imageMarkup(id,src,motion='static',extraClass=''){
+    const c=getCharacterDef(id);
+    return `<img class="battleCharacterSprite v310HdCharacterImage ${extraClass}" data-character="${id}" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false" decoding="async" fetchpriority="high">`;
+  }
+
+  // Battle artwork no longer depends on CSS background-position cropping.
   window.battleCharacterMarkup=function(characterId,motion='static'){
     const id=characterId||'merchant';
-    const c=getCharacterDef(id);
     if(id==='gunslinger'){
       const src=motion==='idle'?window.v38GunslingerIdleSrc():gunslingerFrames[0];
-      return `<span class="characterSprite sprite-gunslinger v38GunslingerFallback" role="img" aria-label="${c.name}"></span><img class="battleCharacterSprite v38GunslingerImage" data-character="gunslinger" data-motion="${motion}" src="${src}" alt="${c.name}" draggable="false" onerror="this.remove()">`;
+      return imageMarkup(id,src,motion,'v38GunslingerImage');
     }
-    return `<span class="characterSprite sprite-${id}" role="img" aria-label="${c.name}"></span>`;
+    return imageMarkup(id,hdCharacterSrc(id),motion,'v310BattleBody');
   };
 
   window.battleCharacterFaceMarkup=function(characterId,motion='static'){
     const id=characterId||'merchant';
+    const src=id==='gunslinger' ? gunslingerFrames[0] : hdCharacterSrc(id);
     const c=getCharacterDef(id);
-    return `<span class="characterSprite sprite-${id} battleFaceSprite" role="img" aria-label="${c.name}"></span>`;
+    return `<img class="battleFaceImage v310HdFace" data-character="${id}" src="${src}" alt="${c.name}" draggable="false" decoding="async">`;
   };
 
   function refreshGunslinger(){
@@ -59,9 +65,13 @@
       playerPanel.insertAdjacentElement('afterend',hud);
     }
 
-    if(typeof renderBattleArenaCharacters==='function' && window.state?.players){
-      try{renderBattleArenaCharacters(window.state.players);}catch(e){}
-    }
+    // `state` is declared with top-level let in index.html, so it is not window.state.
+    // Access the shared global lexical binding directly and repaint after this override loads.
+    try{
+      if(typeof renderBattleArenaCharacters==='function' && typeof state!=='undefined' && state?.players){
+        renderBattleArenaCharacters(state.players);
+      }
+    }catch(e){console.warn('[battle-art] repaint failed',e)}
     refreshGunslinger();
   }
 
