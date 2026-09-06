@@ -1,6 +1,5 @@
-/* BID GRID v3.10.1 - full-body character visibility fixes */
+/* BID GRID v3.10.2 - full-body HD character visibility */
 
-/* Character select / opening: show the entire character without zoom-cropping. */
 #characterMenu .charPortrait,
 .openingHeroPortrait{
   overflow:visible!important;
@@ -26,20 +25,19 @@
 #characterMenu .characterCard{overflow:visible!important}
 #characterMenu .charPortrait{width:150px!important;height:150px!important}
 
-/* Battle-side atlas sprites must stay square because each atlas cell is square. */
 .battleSidePanel{overflow:visible!important}
 .battleSideArt{
   overflow:visible!important;
   display:grid!important;
   place-items:end center!important;
-  padding:10px!important;
+  padding:6px!important;
 }
 .battleSideArt .characterSprite{
-  width:min(88%,330px)!important;
+  width:min(94%,340px)!important;
   height:auto!important;
   aspect-ratio:1/1!important;
-  max-width:88%!important;
-  max-height:88%!important;
+  max-width:94%!important;
+  max-height:94%!important;
   margin:0 auto!important;
   left:auto!important;
   top:auto!important;
@@ -47,11 +45,15 @@
   transform-origin:center bottom!important;
   image-rendering:auto!important;
 }
-.battleSideArt .battleCharacterSprite{
+.battleSideArt .battleCharacterSprite,
+.battleSideArt .v310HdCharacterImage{
+  display:block!important;
+  opacity:1!important;
+  visibility:visible!important;
   width:auto!important;
   height:auto!important;
-  max-width:88%!important;
-  max-height:88%!important;
+  max-width:96%!important;
+  max-height:96%!important;
   margin:0 auto!important;
   object-fit:contain!important;
   object-position:center bottom!important;
@@ -74,11 +76,11 @@
   #characterMenu .charPortrait{width:112px!important;height:112px!important}
   .battleSideArt{padding:4px!important}
   .battleSideArt .characterSprite{width:min(94%,260px)!important;height:auto!important;aspect-ratio:1/1!important;max-width:94%!important;max-height:94%!important}
-  .battleSideArt .battleCharacterSprite{max-width:94%!important;max-height:94%!important}
+  .battleSideArt .battleCharacterSprite,.battleSideArt .v310HdCharacterImage{max-width:96%!important;max-height:96%!important}
 }
 
 @media(max-width:600px){
   #characterMenu .charPortrait{width:94px!important;height:94px!important}
   .battleSideArt .characterSprite{width:min(96%,180px)!important;height:auto!important;aspect-ratio:1/1!important;max-width:96%!important;max-height:96%!important}
-  .battleSideArt .battleCharacterSprite{max-width:96%!important;max-height:96%!important}
+  .battleSideArt .battleCharacterSprite,.battleSideArt .v310HdCharacterImage{max-width:98%!important;max-height:98%!important}
 }
