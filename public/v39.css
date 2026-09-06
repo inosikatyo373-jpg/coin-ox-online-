@@ -1,8 +1,9 @@
-/* BID GRID v3.10 - high-resolution character atlas */
+/* BID GRID v3.10.1 - compatible high-resolution character atlas */
 
-/* Use the deploy-reconstructed high-resolution 3x3 character sheet. */
+/* The game uses a 3x3 atlas with 0/50/100% background positions.
+   Use the committed 768x768 HD atlas that matches that layout exactly. */
 .characterSprite{
-  background-image:url('/characters/characters_hd_v310.png?v=3100')!important;
+  background-image:url('/characters/characters_hd.png?v=3101')!important;
   background-size:300% 300%!important;
   background-repeat:no-repeat!important;
   image-rendering:auto!important;
@@ -22,6 +23,7 @@
   height:96%!important;
   max-width:100%!important;
   max-height:100%!important;
+  aspect-ratio:1/1!important;
   transform:none!important;
   background-size:300% 300%!important;
 }
@@ -37,6 +39,7 @@
   height:96%!important;
   max-width:100%!important;
   max-height:100%!important;
+  aspect-ratio:1/1!important;
   transform:none!important;
   background-size:300% 300%!important;
 }
@@ -62,8 +65,9 @@
   padding:10px!important;
 }
 .battleSideArt .characterSprite{
-  width:94%!important;
-  height:94%!important;
+  width:min(94%,330px)!important;
+  height:auto!important;
+  aspect-ratio:1/1!important;
   max-width:100%!important;
   max-height:100%!important;
   transform:none!important;
@@ -80,6 +84,7 @@
 
 .characterAvatar .characterSprite,
 .battleFaceSprite{
+  aspect-ratio:1/1!important;
   image-rendering:auto!important;
 }
 
@@ -87,6 +92,6 @@
   #characterMenu .charPortrait .characterSprite,
   .openingHeroPortrait .openingHeroSprite,
   .openingHeroPortrait .characterSprite{width:94%!important;height:94%!important}
-  .battleSideArt .characterSprite{width:90%!important;height:90%!important}
+  .battleSideArt .characterSprite{width:min(90%,260px)!important;height:auto!important;aspect-ratio:1/1!important}
   .battleSideArt .battleCharacterSprite{max-width:90%!important;max-height:90%!important}
 }
