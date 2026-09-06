@@ -1,9 +1,8 @@
-/* BID GRID v3.10.1 - compatible high-resolution character atlas */
+/* BID GRID v3.10.2 - 4x HD character rendering */
 
-/* The game uses a 3x3 atlas with 0/50/100% background positions.
-   Use the committed 768x768 HD atlas that matches that layout exactly. */
+/* Render creates this 3072x3072 atlas from the committed 768x768 3x3 source. */
 .characterSprite{
-  background-image:url('/characters/characters_hd.png?v=3101')!important;
+  background-image:url('/characters/characters_hd_4x.png?v=3102')!important;
   background-size:300% 300%!important;
   background-repeat:no-repeat!important;
   image-rendering:auto!important;
@@ -44,17 +43,26 @@
   background-size:300% 300%!important;
 }
 
-.battleCharacterSprite,
-.openingHeroGunslinger,
-.v38GunslingerImage{
+/* v3.10.2 battle bodies are individual 1024x1024 transparent PNGs.
+   Force them visible and let the browser scale them normally. */
+.v310HdCharacterImage,
+.battleSideArt .v310HdCharacterImage,
+.auctionCharacter .v310HdCharacterImage{
+  display:block!important;
+  opacity:1!important;
+  visibility:visible!important;
+  position:relative!important;
+  z-index:5!important;
   width:auto!important;
   height:auto!important;
-  max-width:100%!important;
-  max-height:100%!important;
+  max-width:96%!important;
+  max-height:96%!important;
   object-fit:contain!important;
   object-position:center bottom!important;
   image-rendering:auto!important;
   transform:none!important;
+  margin:0 auto!important;
+  filter:drop-shadow(0 14px 9px #000c)!important;
 }
 
 .battleSideArt{
@@ -62,8 +70,11 @@
   display:flex!important;
   align-items:flex-end!important;
   justify-content:center!important;
-  padding:10px!important;
+  padding:8px!important;
+  position:relative!important;
 }
+
+/* CSS-atlas fallback/other UI surfaces. */
 .battleSideArt .characterSprite{
   width:min(94%,330px)!important;
   height:auto!important;
@@ -73,11 +84,10 @@
   transform:none!important;
   background-size:300% 300%!important;
 }
-.battleSideArt .battleCharacterSprite{
-  width:auto!important;
-  height:auto!important;
-  max-width:94%!important;
-  max-height:94%!important;
+
+.battleCharacterSprite,
+.openingHeroGunslinger,
+.v38GunslingerImage{
   object-fit:contain!important;
   object-position:center bottom!important;
 }
@@ -87,11 +97,18 @@
   aspect-ratio:1/1!important;
   image-rendering:auto!important;
 }
+.characterAvatar .v310HdFace{
+  display:block!important;
+  opacity:1!important;
+  visibility:visible!important;
+  object-fit:contain!important;
+  image-rendering:auto!important;
+}
 
 @media(max-width:760px){
   #characterMenu .charPortrait .characterSprite,
   .openingHeroPortrait .openingHeroSprite,
   .openingHeroPortrait .characterSprite{width:94%!important;height:94%!important}
+  .battleSideArt .v310HdCharacterImage{max-width:94%!important;max-height:94%!important}
   .battleSideArt .characterSprite{width:min(90%,260px)!important;height:auto!important;aspect-ratio:1/1!important}
-  .battleSideArt .battleCharacterSprite{max-width:90%!important;max-height:90%!important}
 }
