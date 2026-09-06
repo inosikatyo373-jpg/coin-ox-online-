@@ -1,0 +1,58 @@
+{
+  "doctor": {
+    "parts": 7,
+    "bytes": 247084,
+    "sha256": "be6ebebd1b4eaba2b062e9dcec4787a6e93e9348152b1a7c5b884e1309ec98e7",
+    "width": 720,
+    "height": 720
+  },
+  "dog": {
+    "parts": 4,
+    "bytes": 135312,
+    "sha256": "64c8ce010703fa6204d186c3e9d8b1861a3eb487ad39b17ebd66d14038f7fc27",
+    "width": 720,
+    "height": 658
+  },
+  "gunslinger": {
+    "parts": 5,
+    "bytes": 156566,
+    "sha256": "f58e4a2f9c0fcb55d23777f21bbcff56f42c0605ed9c00d6741ed55d8dc008e0",
+    "width": 720,
+    "height": 658
+  },
+  "mage": {
+    "parts": 6,
+    "bytes": 223566,
+    "sha256": "22de698d0babcf446c5342a551cb7d3ef698fc383835644bc743666f845a6f91",
+    "width": 720,
+    "height": 658
+  },
+  "merchant": {
+    "parts": 6,
+    "bytes": 201788,
+    "sha256": "bb2170f06749a92f257f08f7f17548204eebf671fe79252e77876ab6e4d78043",
+    "width": 720,
+    "height": 658
+  },
+  "robot": {
+    "parts": 6,
+    "bytes": 190816,
+    "sha256": "a2fb8c974843d5df7fe7a08bb66e76d60cfc87e1970b788a41bf9e3f886b294e",
+    "width": 720,
+    "height": 658
+  },
+  "swordswoman": {
+    "parts": 5,
+    "bytes": 175864,
+    "sha256": "2358454f4a34d6b91a0c43d81ff2d291105752f1e7586c4962c1dfcba16a7fb3",
+    "width": 720,
+    "height": 658
+  },
+  "zombie": {
+    "parts": 4,
+    "bytes": 136986,
+    "sha256": "619e131521fe558cfefd9f181b85d3a8650707b4fc865cebb9cc54905cadd401",
+    "width": 720,
+    "height": 658
+  }
+}
