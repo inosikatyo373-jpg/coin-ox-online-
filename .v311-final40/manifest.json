@@ -1,0 +1,10 @@
+{
+  "doctor":{"parts":4,"bytes":119728,"sha256":"b6b560804eafe69a0445a1b2396ae93aaaae4c7f9d67dcb9c3f5f81372d1ab8b","width":720,"height":720,"format":"webp","encoding":"base64","chunkChars":40000},
+  "dog":{"parts":3,"bytes":64490,"sha256":"b0d89f167737fefc58c836f485cd9ee417f9fa018e606d244c8203e6e449b19d","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":40000},
+  "gunslinger":{"parts":3,"bytes":75906,"sha256":"aab176d4e70972bc02fca9cd274630668c5087cdb4e8613ef56dc3be54b3eec8","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":40000},
+  "mage":{"parts":4,"bytes":111084,"sha256":"d55d649c20e3d09b98f4816334d37f77a5982a3c19d297c1080567a9f04c5cac","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":40000},
+  "merchant":{"parts":4,"bytes":106772,"sha256":"11e659a03d1accdef6a482bfd68fc794f4c313fe632f5252b0caf0c1e6561069","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":40000},
+  "robot":{"parts":4,"bytes":91514,"sha256":"1417f2e46c34ba5254d8921a982f02cab63094db3b895ae04664c05a0bd85369","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":40000},
+  "swordswoman":{"parts":4,"bytes":91120,"sha256":"332e17cbd58ca898404347999f30750b3e5c859066508ec628d61851ff8c4820","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":40000},
+  "zombie":{"parts":3,"bytes":64860,"sha256":"492a468321a2c331460222017df30ca2b06041e4265f3f2f6265e740313f28fd","width":720,"height":658,"format":"webp","encoding":"base64","chunkChars":40000}
+}
