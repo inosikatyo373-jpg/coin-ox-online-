@@ -1,14 +1,14 @@
-/* BID GRID v3.11.0 - native high-resolution individual character artwork */
+/* BID GRID v3.11.1 - native individual HD character artwork */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=3110';
+    link.href='/v381.css?v=3111';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
 
-  const assetVersion='3110';
+  const assetVersion='3111';
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
   const characterSrc=id=>`/characters/full/${id}.webp?v=${assetVersion}`;
 
@@ -18,9 +18,7 @@
     img.src=characterSrc(id);
   });
 
-  function safeCharacter(id){
-    return playable.includes(id)?id:'merchant';
-  }
+  function safeCharacter(id){ return playable.includes(id)?id:'merchant'; }
 
   function fullImageMarkup(id,className,extra=''){
     const safe=safeCharacter(id);
