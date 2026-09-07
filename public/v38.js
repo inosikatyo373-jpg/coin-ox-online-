@@ -1,14 +1,14 @@
-/* BID GRID v3.11.9 - individual character artwork */
+/* BID GRID v3.11.11 - individual character artwork */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=3119';
+    link.href='/v381.css?v=31111';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
 
-  const assetVersion='3119';
+  const assetVersion='31111';
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
   const characterSrc=id=>`/characters/full/${id}.webp?v=${assetVersion}`;
 
@@ -30,7 +30,10 @@
 
   window.battleCharacterMarkup=function(characterId,motion='static'){
     const id=safeCharacter(characterId||'merchant');
-    return imageMarkup(id,`battleCharacterSprite nativeCharacterImage nativeBattleBody motion-${motion}`,`data-motion="${motion}"`);
+    // Native artwork deliberately does not use data-motion. The legacy
+    // Gunslinger idle loop in index.html targets data-motion="idle" and
+    // would otherwise overwrite the new full-body WebP with old PNG frames.
+    return imageMarkup(id,`battleCharacterSprite nativeCharacterImage nativeBattleBody motion-${motion}`,`data-native-motion="${motion}"`);
   };
   try{battleCharacterMarkup=window.battleCharacterMarkup}catch(e){}
 
