@@ -1683,7 +1683,7 @@ function battleCharacterMarkup(characterId,motion="static"){
 }
 function updateGunslingerIdleSprites(){
   const src=getGunslingerIdleSrc();
-  document.querySelectorAll('.battleCharacterSprite[data-character="gunslinger"][data-motion="idle"]').forEach(img=>{
+  document.querySelectorAll('img.battleCharacterSprite[data-character="gunslinger"][data-motion="idle"]').forEach(img=>{
     if(img.getAttribute("src")!==src)img.src=src;
   });
 }
@@ -2737,5 +2737,5 @@ if(s.connected)setTimeout(attemptRejoin,0);
   new MutationObserver(sync).observe(game,{attributes:true,attributeFilter:['class']});
 })();
 </script>
-<script src="/v38.js?v=380"></script>
+<script src="/v38.js?v=31114"></script>
 </body></html>
