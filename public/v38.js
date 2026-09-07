@@ -1,9 +1,9 @@
-/* BID GRID v3.11.14 - stable atlas dimensions and compact opening portrait */
+/* BID GRID v3.11.15 - original PNG character artwork */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=31114';
+    link.href='/v381.css?v=31115';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
@@ -11,13 +11,12 @@
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
   function safeCharacter(id){return playable.includes(id)?id:'merchant'}
   function spriteMarkup(id,className=''){
-    const safe=safeCharacter(id);
-    const c=getCharacterDef(safe);
-    return `<span class="characterSprite sprite-${safe} ${className}" data-character="${safe}" role="img" aria-label="${c.name}"></span>`;
+    const safe=id==='random'?'random':safeCharacter(id);
+    const c=safe==='random'?{name:'ランダム'}:getCharacterDef(safe);
+    return `<img class="nativeCharacterImage nativeSourceImage ${className}" data-character="${safe}" src="/characters/original/${safe}.png?v=31115" alt="${c.name}" draggable="false">`;
   }
 
-  // Use the already-shipped HD 3x3 atlas for every character.
-  // This avoids the corrupt/inconsistent individual WebP files entirely.
+  // Render the supplied original PNGs without resampling or atlas cropping.
   window.battleCharacterMarkup=function(characterId,motion='static'){
     const id=safeCharacter(characterId||'merchant');
     return spriteMarkup(id,`battleCharacterSprite nativeStableSprite motion-${motion}`);
@@ -31,7 +30,7 @@
 
   window.characterVisual=function(id,compact=false){
     if(id==='random'){
-      return `<div class="charPortrait character-random"><span class="characterSprite sprite-random nativeStableSprite" role="img" aria-label="ランダム"></span></div><div class="charName">ランダム</div>${compact?'':`<div class="charSub">RANDOM</div>`}`;
+      return `<div class="charPortrait character-random">${spriteMarkup('random')}</div><div class="charName">ランダム</div>${compact?'':`<div class="charSub">RANDOM</div>`}`;
     }
     const safe=safeCharacter(id);
     const c=getCharacterDef(safe);

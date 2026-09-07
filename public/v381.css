@@ -1,4 +1,20 @@
 /* BID GRID v3.11.9 - full-body compatibility for individual images */
+.charPortrait .nativeSourceImage{
+  width:100%!important;height:100%!important;object-fit:contain!important;
+}
+.openingHeroPortrait .openingHeroSprite.nativeSourceImage{
+  width:100%!important;height:100%!important;object-fit:contain!important;transform:none!important;
+}
+.characterAvatar .nativeSourceImage{
+  width:100%!important;height:100%!important;object-fit:contain!important;
+}
+.battleSideArt .nativeSourceImage{
+  width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;
+  object-fit:contain!important;aspect-ratio:auto!important;
+}
+.auctionCharacter .nativeSourceImage{
+  width:100%!important;height:100%!important;object-fit:contain!important;
+}
 #characterMenu .characterCard{overflow:visible!important}
 #characterMenu .charPortrait{width:150px!important;height:150px!important}
 .battleSidePanel,.battleSideArt,.openingHeroPortrait{overflow:visible!important}
