@@ -7,3 +7,32 @@
 }
 @media(max-width:900px){#characterMenu .charPortrait{width:112px!important;height:112px!important}}
 @media(max-width:600px){#characterMenu .charPortrait{width:94px!important;height:94px!important}}
+
+/* Atlas spans have no intrinsic image size. Keep their square tile dimensions
+   explicit so legacy img rules cannot collapse them to an empty flex item. */
+.battleSideArt .characterSprite.nativeStableSprite{
+  width:100%!important;height:auto!important;aspect-ratio:1/1!important;
+  max-width:360px!important;max-height:none!important;flex:0 0 auto!important;
+}
+.auctionCharacter .characterSprite.nativeStableSprite{
+  width:82px!important;height:82px!important;aspect-ratio:1/1!important;
+  max-width:none!important;max-height:none!important;
+}
+.openingCharacterBanner{
+  min-height:160px!important;grid-template-columns:132px minmax(0,1fr) auto!important;
+  padding:12px 16px!important;
+}
+.openingHeroPortrait{width:132px!important;height:132px!important;overflow:hidden!important}
+.openingHeroPortrait .openingHeroSprite.nativeStableSprite{
+  width:100%!important;height:100%!important;transform:none!important;
+}
+@media(max-width:760px){
+  .openingCharacterBanner{
+    min-height:118px!important;grid-template-columns:94px minmax(0,1fr)!important;
+    padding:10px 12px!important;
+  }
+  .openingHeroPortrait{width:94px!important;height:94px!important}
+}
+@media(max-width:600px){
+  .auctionCharacter .characterSprite.nativeStableSprite{width:56px!important;height:56px!important}
+}
