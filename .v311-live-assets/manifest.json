@@ -1,0 +1,10 @@
+{
+  "doctor": {"parts":8,"bytes":89334,"sha256":"84fee4ee9a90a810da869d5577a7812f55b4be15137c1495aa6550b4ffdc56cf","width":512,"height":512},
+  "dog": {"parts":5,"bytes":49604,"sha256":"2b62139441150a7c01913b3ce1219cb6192b3a5c243149c7130830270be4a9b0","width":512,"height":468},
+  "gunslinger": {"parts":5,"bytes":57278,"sha256":"c4419315d9c99b993dd7345fbffd99139554de12e573c9526ed8f3fa363d3ea4","width":512,"height":468},
+  "mage": {"parts":8,"bytes":84490,"sha256":"f412d6c1b1543b89caa2663260f12ced6f6ad56168062581bc02751e3241723f","width":512,"height":468},
+  "merchant": {"parts":6,"bytes":61202,"sha256":"74753673f57b8efb8e6e60d796b79a31265fe08dbf57160481d78f4f302938bd","width":512,"height":468},
+  "robot": {"parts":6,"bytes":65424,"sha256":"ba37f53803f31ac5a6cc5b1cc0bbe32458a6cfb00ed93cf0f04662bad2ae3319","width":512,"height":468},
+  "swordswoman": {"parts":5,"bytes":57698,"sha256":"ce8bda772743ba1f3e468f5c47246328e2629ffdc982ebe848d15963292758bf","width":512,"height":468},
+  "zombie": {"parts":4,"bytes":42322,"sha256":"62933490e0f7d6f9f400d5870c939ed700d5d01f7f0e59290e91de231e37d19e","width":512,"height":468}
+}
