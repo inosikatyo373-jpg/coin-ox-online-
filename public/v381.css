@@ -1,86 +1,9 @@
-/* BID GRID v3.10.2 - full-body HD character visibility */
-
-#characterMenu .charPortrait,
-.openingHeroPortrait{
-  overflow:visible!important;
-  display:grid!important;
-  place-items:center!important;
-}
-#characterMenu .charPortrait .characterSprite,
-.openingHeroPortrait .openingHeroSprite,
-.openingHeroPortrait .characterSprite{
-  width:100%!important;
-  height:100%!important;
-  max-width:100%!important;
-  max-height:100%!important;
-  aspect-ratio:1/1!important;
-  left:0!important;
-  top:0!important;
-  margin:0!important;
-  transform:none!important;
-  transform-origin:center center!important;
-  image-rendering:auto!important;
-}
-
+/* BID GRID v3.11.9 - full-body compatibility for individual images */
 #characterMenu .characterCard{overflow:visible!important}
 #characterMenu .charPortrait{width:150px!important;height:150px!important}
-
-.battleSidePanel{overflow:visible!important}
-.battleSideArt{
-  overflow:visible!important;
-  display:grid!important;
-  place-items:end center!important;
-  padding:6px!important;
+.battleSidePanel,.battleSideArt,.openingHeroPortrait{overflow:visible!important}
+.battleSideArt img,.openingHeroPortrait img,#characterMenu .charPortrait img{
+  image-rendering:auto!important;object-fit:contain!important;max-width:100%!important;max-height:100%!important;
 }
-.battleSideArt .characterSprite{
-  width:min(94%,340px)!important;
-  height:auto!important;
-  aspect-ratio:1/1!important;
-  max-width:94%!important;
-  max-height:94%!important;
-  margin:0 auto!important;
-  left:auto!important;
-  top:auto!important;
-  transform:none!important;
-  transform-origin:center bottom!important;
-  image-rendering:auto!important;
-}
-.battleSideArt .battleCharacterSprite,
-.battleSideArt .v310HdCharacterImage{
-  display:block!important;
-  opacity:1!important;
-  visibility:visible!important;
-  width:auto!important;
-  height:auto!important;
-  max-width:96%!important;
-  max-height:96%!important;
-  margin:0 auto!important;
-  object-fit:contain!important;
-  object-position:center bottom!important;
-  transform:none!important;
-  transform-origin:center bottom!important;
-  image-rendering:auto!important;
-}
-
-.battleSideArt img,
-.openingHeroPortrait img,
-#characterMenu .charPortrait img{
-  object-fit:contain!important;
-  width:auto!important;
-  height:auto!important;
-  max-width:100%!important;
-  max-height:100%!important;
-}
-
-@media(max-width:900px){
-  #characterMenu .charPortrait{width:112px!important;height:112px!important}
-  .battleSideArt{padding:4px!important}
-  .battleSideArt .characterSprite{width:min(94%,260px)!important;height:auto!important;aspect-ratio:1/1!important;max-width:94%!important;max-height:94%!important}
-  .battleSideArt .battleCharacterSprite,.battleSideArt .v310HdCharacterImage{max-width:96%!important;max-height:96%!important}
-}
-
-@media(max-width:600px){
-  #characterMenu .charPortrait{width:94px!important;height:94px!important}
-  .battleSideArt .characterSprite{width:min(96%,180px)!important;height:auto!important;aspect-ratio:1/1!important;max-width:96%!important;max-height:96%!important}
-  .battleSideArt .battleCharacterSprite,.battleSideArt .v310HdCharacterImage{max-width:98%!important;max-height:98%!important}
-}
+@media(max-width:900px){#characterMenu .charPortrait{width:112px!important;height:112px!important}}
+@media(max-width:600px){#characterMenu .charPortrait{width:94px!important;height:94px!important}}
