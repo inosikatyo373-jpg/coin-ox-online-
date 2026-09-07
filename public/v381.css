@@ -5,9 +5,23 @@
 .openingHeroPortrait .openingHeroSprite.nativeSourceImage{
   width:100%!important;height:100%!important;object-fit:contain!important;transform:none!important;
 }
-.characterAvatar .nativeSourceImage{
-  width:100%!important;height:100%!important;object-fit:contain!important;
+/* Per-character bust framing in the round match HUD; original art stays intact.
+   Translation percentages refer to the image, so framing scales with the circle. */
+.characterAvatar img.nativeSourceImage.battleFaceSprite{
+  position:absolute!important;left:50%!important;top:50%!important;
+  width:var(--portrait-zoom,190%)!important;height:auto!important;
+  max-width:none!important;max-height:none!important;aspect-ratio:auto!important;
+  transform:translate(var(--portrait-x,-53%),var(--portrait-y,-36%))!important;
+  margin:0!important;object-fit:contain!important;filter:none!important;
 }
+.characterAvatar.character-zombie{--portrait-zoom:185%;--portrait-x:-40%;--portrait-y:-34%}
+.characterAvatar.character-merchant{--portrait-zoom:192%;--portrait-x:-53%;--portrait-y:-36%}
+.characterAvatar.character-gunslinger{--portrait-zoom:180%;--portrait-x:-52%;--portrait-y:-34%}
+.characterAvatar.character-swordswoman{--portrait-zoom:190%;--portrait-x:-57%;--portrait-y:-32%}
+.characterAvatar.character-robot{--portrait-zoom:190%;--portrait-x:-59%;--portrait-y:-32%}
+.characterAvatar.character-dog{--portrait-zoom:170%;--portrait-x:-67%;--portrait-y:-43%}
+.characterAvatar.character-mage{--portrait-zoom:200%;--portrait-x:-52%;--portrait-y:-46%}
+.characterAvatar.character-doctor{--portrait-zoom:180%;--portrait-x:-51%;--portrait-y:-40%}
 .battleSideArt .nativeSourceImage{
   width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;
   object-fit:contain!important;aspect-ratio:auto!important;
