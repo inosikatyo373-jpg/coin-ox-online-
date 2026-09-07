@@ -1642,14 +1642,14 @@ let selectedCharacter=null;
 let pendingInviteRoom=null;
 const CHARACTER_STORAGE_KEY="bidGridCharacter";
 const CHARACTER_DEFS=[
-  {id:"zombie",name:"ゾンビ",sub:"GRAVE BIDDER",glyph:"Z"},
-  {id:"merchant",name:"商人",sub:"GOLD MERCHANT",glyph:"$"},
-  {id:"gunslinger",name:"ガンマン",sub:"GUNSLINGER",glyph:"G"},
-  {id:"swordswoman",name:"女の剣士",sub:"SWORD LADY",glyph:"剣"},
-  {id:"robot",name:"ロボット",sub:"BID-09",glyph:"R"},
-  {id:"dog",name:"犬",sub:"COIN DOG",glyph:"犬"},
-  {id:"mage",name:"魔法使いの子供",sub:"LITTLE MAGE",glyph:"M"},
-  {id:"doctor",name:"ヤバイ博士",sub:"MAD DOCTOR",glyph:"薬"}
+  {id:"zombie",name:"モルド",sub:"MOLD",glyph:"Z"},
+  {id:"merchant",name:"ガルド",sub:"GALD",glyph:"$"},
+  {id:"gunslinger",name:"ジャック",sub:"JACK",glyph:"G"},
+  {id:"swordswoman",name:"リゼル",sub:"LIZEL",glyph:"剣"},
+  {id:"robot",name:"BID-99",sub:"BID NINETY-NINE",glyph:"R"},
+  {id:"dog",name:"ポチップ",sub:"POCHIP",glyph:"犬"},
+  {id:"mage",name:"ルミナ",sub:"LUMINA",glyph:"M"},
+  {id:"doctor",name:"Dr.オッズ",sub:"DR. ODDS",glyph:"薬"}
 ];
 const CHARACTER_ORDER=["zombie","merchant","gunslinger","swordswoman","random","robot","dog","mage","doctor"];
 const BATTLE_MOTION_ASSETS={
@@ -2668,8 +2668,9 @@ function renderBattleArenaCharacters(ps){
       return;
     }
     const id=player.character||"merchant";
+    const character=getCharacterDef(id);
     const coins=state.coins?.[idx]??"--";
-    host.innerHTML=`<div class="battleSideLabel">${label}</div><div class="battleSideArt character-${id}" data-character="${id}">${battleCharacterMarkup(id,motion)}</div><div class="battleSideCoins"><span>${coins}</span><small> COINS</small></div>`;
+    host.innerHTML=`<div class="battleSideLabel"><span class="battleSideRole">${label}</span><strong class="battleSideCharacterName">${character.name}</strong><small class="battleSideCharacterSub">${character.sub}</small></div><div class="battleSideArt character-${id}" data-character="${id}">${battleCharacterMarkup(id,motion)}</div><div class="battleSideCoins"><span>${coins}</span><small> COINS</small></div>`;
   };
   paint(".battleSideSelf",selfIndex,"YOU");
   paint(".battleSideOpponent",oppIndex,"RIVAL");
@@ -2737,5 +2738,5 @@ if(s.connected)setTimeout(attemptRejoin,0);
   new MutationObserver(sync).observe(game,{attributes:true,attributeFilter:['class']});
 })();
 </script>
-<script src="/v38.js?v=31116"></script>
+<script src="/v38.js?v=31117"></script>
 </body></html>

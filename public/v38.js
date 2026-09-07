@@ -1,9 +1,9 @@
-/* BID GRID v3.11.16 - original PNG character artwork */
+/* BID GRID v3.11.17 - named character roster */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=31116';
+    link.href='/v381.css?v=31117';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
@@ -13,7 +13,7 @@
   function spriteMarkup(id,className=''){
     const safe=id==='random'?'random':safeCharacter(id);
     const c=safe==='random'?{name:'ランダム'}:getCharacterDef(safe);
-    return `<img class="nativeCharacterImage nativeSourceImage ${className}" data-character="${safe}" src="/characters/original/${safe}.png?v=31116" alt="${c.name}" draggable="false">`;
+    return `<img class="nativeCharacterImage nativeSourceImage ${className}" data-character="${safe}" src="/characters/original/${safe}.png?v=31117" alt="${c.name}" draggable="false">`;
   }
 
   // Render the supplied original PNGs without resampling or atlas cropping.

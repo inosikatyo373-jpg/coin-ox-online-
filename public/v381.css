@@ -66,3 +66,30 @@
 @media(max-width:600px){
   .auctionCharacter .characterSprite.nativeStableSprite{width:56px!important;height:56px!important}
 }
+
+/* Character names use the same two-line hierarchy in battle as in selection. */
+.battleSideLabel{
+  display:flex!important;flex-direction:column!important;align-items:center!important;gap:2px!important;
+  width:100%!important;margin-bottom:5px!important;text-align:center!important;letter-spacing:normal!important;
+}
+.battleSideRole{
+  font-family:"Cormorant Garamond","Times New Roman",serif;font-size:10px;font-weight:800;
+  letter-spacing:.18em;color:#bca15f;
+}
+.battleSideCharacterName{
+  font-family:"Shippori Mincho","Yu Mincho",serif;font-size:22px;font-weight:800;
+  line-height:1.08;color:#f3e3b2;text-shadow:0 2px 5px #000;
+}
+.battleSideCharacterSub{
+  font-size:9px;font-weight:900;line-height:1;letter-spacing:.12em;color:#978a73;
+}
+@media(max-width:1000px){
+  .battleSideLabel{align-items:flex-start!important;text-align:left!important}
+  .battleSideCharacterName{font-size:18px}
+}
+@media(max-width:600px){
+  .battleSideLabel{gap:1px!important}
+  .battleSideRole{font-size:8px}
+  .battleSideCharacterName{font-size:15px}
+  .battleSideCharacterSub{font-size:7px;letter-spacing:.08em}
+}
