@@ -1,9 +1,9 @@
-/* BID GRID v3.11.13 - stable HD atlas renderer for all characters */
+/* BID GRID v3.11.14 - stable atlas dimensions and compact opening portrait */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=31113';
+    link.href='/v381.css?v=31114';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
