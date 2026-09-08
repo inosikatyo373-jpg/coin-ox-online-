@@ -1,9 +1,9 @@
-/* BID GRID v3.15.0 - dedicated attack/hit sequencing and persistent idle sprites */
+/* BID GRID v3.15.2 - real 3-frame attack/hit sequencing and persistent idle sprites */
 (function(){
-  const ACTION_VERSION='3150';
-  const STYLE_VERSION='3150';
-  const ATTACK_MS=820;
-  const HIT_MS=620;
+  const ACTION_VERSION='3152';
+  const STYLE_VERSION='3152';
+  const ATTACK_MS=900;
+  const HIT_MS=720;
   const POST_HIT_GAP=120;
   window.BID_CHARACTER_BRIDGE_VERSION=ACTION_VERSION;
 
