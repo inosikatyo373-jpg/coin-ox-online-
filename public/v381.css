@@ -130,3 +130,19 @@
 .battleSideArt .jackIdleWrap>.battleCharacterSprite{
   flex:0 1 auto!important;
 }
+
+/* v3.11.20: Jack also idles in character select and the opening banner.
+   Use independent translate/rotate properties so transform:none!important
+   from the layout CSS cannot suppress the motion. */
+@keyframes jackIdleUiMotion{
+  0%,100%{translate:0 0;rotate:-.35deg}
+  42%{translate:1px -7px;rotate:.65deg}
+  70%{translate:-1px -2px;rotate:-.15deg}
+}
+#characterMenu .charPortrait img.nativeSourceImage[data-character="gunslinger"],
+#openingMenu .charPortrait img.nativeSourceImage[data-character="gunslinger"],
+.openingHeroPortrait img.nativeSourceImage[data-character="gunslinger"]{
+  animation:jackIdleUiMotion 1.8s ease-in-out infinite!important;
+  transform-origin:50% 84%!important;
+  will-change:translate,rotate;
+}
