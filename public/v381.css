@@ -71,57 +71,6 @@
 @media(max-width:1000px){.battleSideLabel{align-items:flex-start!important;text-align:left!important}.battleSideCharacterName{font-size:18px}}
 @media(max-width:600px){.battleSideLabel{gap:1px!important}.battleSideRole{font-size:8px}.battleSideCharacterName{font-size:15px}.battleSideCharacterSub{font-size:7px;letter-spacing:.08em}}
 
-/* Jack v3.12.7: four real PNG frames are preloaded and stacked.
-   The base image remains visible until all frames are ready, so Jack never disappears. */
-.jackFrameStack{
-  display:block!important;
-  position:relative!important;
-  overflow:hidden!important;
-  flex:0 0 auto!important;
-  aspect-ratio:1/1!important;
-  image-rendering:auto!important;
-  animation:none!important;
-  transition:none!important;
-  transform:none!important;
-  translate:none!important;
-  rotate:none!important;
-  pointer-events:none!important;
-}
-.jackFrameBase,.jackIdleFrame{
-  position:absolute!important;
-  inset:0!important;
-  display:block!important;
-  width:100%!important;height:100%!important;
-  max-width:100%!important;max-height:100%!important;
-  object-fit:contain!important;object-position:center center!important;
-  margin:0!important;
-  animation:none!important;transition:none!important;transform:none!important;
-  filter:drop-shadow(0 8px 8px #000a)!important;
-}
-.jackFrameBase{opacity:1!important;visibility:visible!important;z-index:1!important}
-.jackIdleFrame{opacity:0!important;visibility:hidden!important;z-index:2!important}
-html.jackFramesReady .jackFrameBase{opacity:0!important;visibility:hidden!important}
-html.jackFramesReady .jackFrameStack[data-jack-frame="0"] .jackIdleFrame0,
-html.jackFramesReady .jackFrameStack[data-jack-frame="1"] .jackIdleFrame1,
-html.jackFramesReady .jackFrameStack[data-jack-frame="2"] .jackIdleFrame2,
-html.jackFramesReady .jackFrameStack[data-jack-frame="3"] .jackIdleFrame3{
-  opacity:1!important;visibility:visible!important;
-}
-
-#characterMenu .charPortrait>.jackFrameStack,
-#openingMenu .charPortrait>.jackFrameStack,
-.openingHeroPortrait>.jackFrameStack{
-  width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;margin:auto!important;
-}
-.battleSideArt>.jackFrameStack{
-  width:100%!important;height:100%!important;max-width:360px!important;max-height:100%!important;
-  align-self:flex-end!important;margin:0 auto!important;
-}
-.auctionCharacter>.jackFrameStack{
-  width:82px!important;height:82px!important;max-width:100%!important;max-height:100%!important;margin:auto!important;
-}
-@media(max-width:600px){.auctionCharacter>.jackFrameStack{width:56px!important;height:56px!important}}
-
 /* Full-body idle poses use independent transform properties so image fitting
    and the HUD's existing bust crop are not affected. Negative delay keeps the
    phase continuous when a socket update recreates character markup. */
@@ -176,4 +125,11 @@ html.jackFramesReady .jackFrameStack[data-jack-frame="3"] .jackIdleFrame3{
 }
 @media(prefers-reduced-motion:reduce){
   .characterIdle{animation:none!important;translate:none;rotate:none;scale:none}
+}
+
+/* Jack keeps one decoded original PNG visible throughout his idle cycle. */
+.characterIdle[data-character="gunslinger"]{--idle-name:idleJack;--idle-period:3.8s}
+@keyframes idleJack{
+  0%,100%{translate:0 0;rotate:-.35deg;scale:1}
+  50%{translate:0 -.6%;rotate:.35deg;scale:1 1.012}
 }
