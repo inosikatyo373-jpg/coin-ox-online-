@@ -1,6 +1,6 @@
-/* BID GRID v3.14.3 - separated idle motion and auction action sprites */
+/* BID GRID v3.14.4 - separated idle wrapper motion and auction action sprites */
 (function(){
-  const ACTION_VERSION='3143';
+  const ACTION_VERSION='3144';
   function injectStyle(key,href){
     if(document.querySelector(`link[data-${key}]`))return;
     const link=document.createElement('link');
@@ -9,9 +9,9 @@
     link.setAttribute(`data-${key}`,'1');
     document.head.appendChild(link);
   }
-  injectStyle('v381-fullbody','/v381.css?v=3143');
-  injectStyle('v382-actions','/v382.css?v=3143');
-  injectStyle('character-motions-3143','/character-motions.css?v=3143');
+  injectStyle('v381-fullbody','/v381.css?v=3144');
+  injectStyle('v382-actions','/v382.css?v=3144');
+  injectStyle('character-motions-3144','/character-motions.css?v=3144');
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
   const IDLE_PERIODS={gunslinger:3.8,zombie:4.8,merchant:3.6,swordswoman:4.2,robot:3.2,dog:2.4,mage:4.6,doctor:3.4};
@@ -20,10 +20,10 @@
   function spriteMarkup(id,className=''){
     const safe=id==='random'?'random':safeCharacter(id);
     const c=safe==='random'?{name:'ランダム'}:getCharacterDef(safe);
-    return `<img class="nativeCharacterImage nativeSourceImage characterIdle ${className}" data-character="${safe}" style="--idle-delay:-${((performance.now()/1000)%(IDLE_PERIODS[safe]||4)).toFixed(3)}s" src="/characters/original/${safe}.png?v=31117" alt="${c.name}" draggable="false" decoding="async">`;
+    return `<img class="nativeCharacterImage nativeSourceImage ${className}" data-character="${safe}" src="/characters/original/${safe}.png?v=31117" alt="${c.name}" draggable="false" decoding="async">`;
   }
   function ensureActionMotionScript(){
-    if(window.BID_ACTION_MOTION_VERSION===ACTION_VERSION && typeof window.bidActionMotionMarkup==='function')return;
+    if(window.BID_ACTION_MOTION_VERSION===ACTION_VERSION && typeof window.bidActionMotionMarkup==='function' && typeof window.bidCharacterMotionMarkup==='function')return;
     if(document.querySelector(`script[data-character-motions-${ACTION_VERSION}]`))return;
     const script=document.createElement('script');
     script.src=`/character-motions.js?v=${ACTION_VERSION}`;
@@ -31,12 +31,18 @@
     script.onload=()=>{repaintCharacterUI();syncBattle();try{if(typeof renderAuctionCharacters==='function')renderAuctionCharacters()}catch(e){}};
     document.body.appendChild(script);
   }
+  function fallbackIdleMarkup(id,className='',motion='idle'){
+    const safe=safeCharacter(id);
+    const c=getCharacterDef(safe);
+    const staticClass=motion==='static'||className.includes('motion-static')?' motion-static':'';
+    return `<span class="bid-idle-motion characterIdle ${className}${staticClass}" data-character="${safe}" style="--idle-delay:-${((performance.now()/1000)%(IDLE_PERIODS[safe]||4)).toFixed(3)}s" role="img" aria-label="${c.name}"><img class="nativeCharacterImage nativeSourceImage bid-idle-img" data-character="${safe}" src="/characters/original/${safe}.png?v=31117" alt="" draggable="false" decoding="async"></span>`;
+  }
   function fullBodyMarkup(id,className='',motion='idle'){
     const safe=safeCharacter(id);
     if(window.BID_ACTION_MOTION_VERSION===ACTION_VERSION && window.bidCharacterMotionMarkup){
       return window.bidCharacterMotionMarkup(safe,className,motion,0);
     }
-    return spriteMarkup(safe,className);
+    return fallbackIdleMarkup(safe,className,motion);
   }
   function actionBodyMarkup(id,motion,side,className=''){
     const safe=safeCharacter(id);
