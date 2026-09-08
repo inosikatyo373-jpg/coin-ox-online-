@@ -1,9 +1,9 @@
-/* BID GRID v3.12.7 - Jack safe frame-stack idle loop */
+/* BID GRID v3.13.0 - individual character idle motions */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=3127';
+    link.href='/v381.css?v=3130';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
@@ -18,11 +18,13 @@
   const JACK_IDLE_SEQUENCE=[0,1,2,3,2,1];
   const JACK_IDLE_INTERVAL=220;
 
+  const IDLE_PERIODS={zombie:4.8,merchant:3.6,swordswoman:4.2,robot:3.2,dog:2.4,mage:4.6,doctor:3.4};
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
   function safeCharacter(id){return playable.includes(id)?id:'merchant'}
   function spriteMarkup(id,className=''){
     const safe=id==='random'?'random':safeCharacter(id);
     const c=safe==='random'?{name:'ランダム'}:getCharacterDef(safe);
-    return `<img class="nativeCharacterImage nativeSourceImage ${className}" data-character="${safe}" src="/characters/original/${safe}.png?v=31117" alt="${c.name}" draggable="false">`;
+    return `<img class="nativeCharacterImage nativeSourceImage ${className}" data-character="${safe}" style="--idle-delay:-${((performance.now()/1000)%(IDLE_PERIODS[safe]||4)).toFixed(3)}s" src="/characters/original/${safe}.png?v=31117" alt="${c.name}" draggable="false">`;
   }
   function jackStackMarkup(className=''){
     const c=getCharacterDef('gunslinger');
@@ -31,7 +33,7 @@
   }
   function fullBodyMarkup(id,className=''){
     const safe=safeCharacter(id);
-    return safe==='gunslinger'?jackStackMarkup(className):spriteMarkup(safe,className);
+    return safe==='gunslinger'?jackStackMarkup(className):spriteMarkup(safe,`${className} characterIdle`);
   }
 
   window.battleCharacterMarkup=function(characterId,motion='static'){
@@ -82,12 +84,13 @@
     });
   }
   function syncJackSprites(){
-    const frame=JACK_IDLE_SEQUENCE[jackIdleStep]||0;
+    const frame=reducedMotion.matches?0:(JACK_IDLE_SEQUENCE[jackIdleStep]||0);
     document.querySelectorAll('.jackFrameStack').forEach(sprite=>{
-      sprite.setAttribute('data-jack-frame',String(frame));
+      sprite.setAttribute('data-jack-frame',String(sprite.classList.contains('motion-static')?0:frame));
     });
   }
   function advanceJackIdle(){
+    if(document.hidden||reducedMotion.matches) return;
     jackIdleStep=(jackIdleStep+1)%JACK_IDLE_SEQUENCE.length;
     syncJackSprites();
   }

@@ -121,3 +121,59 @@ html.jackFramesReady .jackFrameStack[data-jack-frame="3"] .jackIdleFrame3{
   width:82px!important;height:82px!important;max-width:100%!important;max-height:100%!important;margin:auto!important;
 }
 @media(max-width:600px){.auctionCharacter>.jackFrameStack{width:56px!important;height:56px!important}}
+
+/* Full-body idle poses use independent transform properties so image fitting
+   and the HUD's existing bust crop are not affected. Negative delay keeps the
+   phase continuous when a socket update recreates character markup. */
+.characterIdle:not(.motion-static){
+  animation:var(--idle-name) var(--idle-period) ease-in-out infinite!important;
+  animation-delay:var(--idle-delay,0s)!important;
+  transform-origin:50% 90%;
+}
+.characterIdle[data-character="zombie"]{--idle-name:idleMold;--idle-period:4.8s}
+.characterIdle[data-character="merchant"]{--idle-name:idleGald;--idle-period:3.6s}
+.characterIdle[data-character="swordswoman"]{--idle-name:idleLizel;--idle-period:4.2s}
+.characterIdle[data-character="robot"]{--idle-name:idleBid99;--idle-period:3.2s}
+.characterIdle[data-character="dog"]{--idle-name:idlePochip;--idle-period:2.4s}
+.characterIdle[data-character="mage"]{--idle-name:idleLumina;--idle-period:4.6s}
+.characterIdle[data-character="doctor"]{--idle-name:idleOdds;--idle-period:3.4s}
+@keyframes idleMold{
+  0%,100%{rotate:-1.2deg;translate:0 0}
+  38%{rotate:1.5deg;translate:0 1%}
+  68%{rotate:.3deg;translate:0 -.5%}
+}
+@keyframes idleGald{
+  0%,100%{scale:1 1;translate:0 0}
+  50%{scale:1.012 1.022;translate:0 -.3%}
+}
+@keyframes idleLizel{
+  0%,100%{rotate:-.45deg;translate:0 0}
+  50%{rotate:.55deg;translate:0 -.8%}
+}
+@keyframes idleBid99{
+  0%,22%,50%,100%{translate:0 0;rotate:0deg}
+  26%,32%{translate:0 -.6%;rotate:-.65deg}
+  36%{translate:0 -.6%;rotate:.5deg}
+  40%{translate:0 0;rotate:0deg}
+  72%,78%{translate:0 -.4%;rotate:.4deg}
+}
+@keyframes idlePochip{
+  0%,48%,100%{translate:0 0;rotate:-.6deg;scale:1}
+  14%,34%{translate:0 -1.8%;rotate:.6deg;scale:1 1.012}
+  24%{translate:0 0;rotate:0deg;scale:1.012 .99}
+  70%{translate:0 -.5%;rotate:1.2deg;scale:1}
+}
+@keyframes idleLumina{
+  0%,100%{translate:0 -.5%;rotate:-.5deg}
+  50%{translate:0 -3%;rotate:.6deg}
+}
+@keyframes idleOdds{
+  0%,100%{rotate:-.6deg;translate:0 0}
+  30%{rotate:.8deg;translate:0 -.5%}
+  40%{rotate:-.4deg;translate:0 -.2%}
+  48%{rotate:.7deg;translate:0 -.5%}
+  70%{rotate:0deg;translate:0 0}
+}
+@media(prefers-reduced-motion:reduce){
+  .characterIdle{animation:none!important;translate:none;rotate:none;scale:none}
+}
