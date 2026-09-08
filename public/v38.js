@@ -1,6 +1,6 @@
-/* BID GRID v3.14.4 - separated idle wrapper motion and auction action sprites */
+/* BID GRID v3.14.5 - persistent idle wrapper motion and auction action sprites */
 (function(){
-  const ACTION_VERSION='3144';
+  const ACTION_VERSION='3145';
   function injectStyle(key,href){
     if(document.querySelector(`link[data-${key}]`))return;
     const link=document.createElement('link');
@@ -9,12 +9,12 @@
     link.setAttribute(`data-${key}`,'1');
     document.head.appendChild(link);
   }
-  injectStyle('v381-fullbody','/v381.css?v=3144');
-  injectStyle('v382-actions','/v382.css?v=3144');
-  injectStyle('character-motions-3144','/character-motions.css?v=3144');
+  injectStyle('v381-fullbody','/v381.css?v=3145');
+  injectStyle('v382-actions','/v382.css?v=3145');
+  injectStyle('character-motions-3145','/character-motions.css?v=3145');
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
-  const IDLE_PERIODS={gunslinger:3.8,zombie:4.8,merchant:3.6,swordswoman:4.2,robot:3.2,dog:2.4,mage:4.6,doctor:3.4};
+  const IDLE_PERIODS={gunslinger:4.4,zombie:5.4,merchant:4.6,swordswoman:4.8,robot:3.8,dog:3.2,mage:5.2,doctor:4.2};
 
   function safeCharacter(id){return playable.includes(id)?id:'merchant'}
   function spriteMarkup(id,className=''){
@@ -35,7 +35,7 @@
     const safe=safeCharacter(id);
     const c=getCharacterDef(safe);
     const staticClass=motion==='static'||className.includes('motion-static')?' motion-static':'';
-    return `<span class="bid-idle-motion characterIdle ${className}${staticClass}" data-character="${safe}" style="--idle-delay:-${((performance.now()/1000)%(IDLE_PERIODS[safe]||4)).toFixed(3)}s" role="img" aria-label="${c.name}"><img class="nativeCharacterImage nativeSourceImage bid-idle-img" data-character="${safe}" src="/characters/original/${safe}.png?v=31117" alt="" draggable="false" decoding="async"></span>`;
+    return `<span class="bid-idle-motion characterIdle ${className}${staticClass}" data-character="${safe}" style="--idle-delay:-${((performance.now()/1000)%(IDLE_PERIODS[safe]||4.5)).toFixed(3)}s" role="img" aria-label="${c.name}"><img class="nativeCharacterImage nativeSourceImage bid-idle-img" data-character="${safe}" src="/characters/original/${safe}.png?v=31117" alt="" draggable="false" decoding="async"></span>`;
   }
   function fullBodyMarkup(id,className='',motion='idle'){
     const safe=safeCharacter(id);
@@ -52,9 +52,10 @@
     return fullBodyMarkup(safe,className,motion==='idle'?'idle':'static');
   }
 
-  window.battleCharacterMarkup=function(characterId,motion='static'){
+  window.battleCharacterMarkup=function(characterId,motion='idle'){
     const id=safeCharacter(characterId||'merchant');
-    return fullBodyMarkup(id,`battleCharacterSprite nativeStableSprite motion-${motion}`,motion);
+    const resolvedMotion=(motion==='attack'||motion==='hit'||motion==='static')?motion:'idle';
+    return fullBodyMarkup(id,`battleCharacterSprite nativeStableSprite motion-${resolvedMotion}`,resolvedMotion);
   };
   try{battleCharacterMarkup=window.battleCharacterMarkup}catch(e){}
 
