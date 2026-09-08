@@ -153,7 +153,7 @@
 
     play(sheet, motion, token) {
       const frames = motion === 'hit' ? [3,4,5] : motion === 'attack' ? [0,1,2] : [0];
-      const delays = motion === 'hit' ? [0,120,250] : [0,120,245];
+      const delays = motion === 'hit' ? [0,120,250] : [0,180,360];
       if (frames.length === 1) {
         this.drawFrame(sheet, frames[0]);
         return;
