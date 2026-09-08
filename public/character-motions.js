@@ -1,8 +1,8 @@
-/* BIDGRID v3.14.6: real six-frame idle animation + auction action renderer. */
+/* BIDGRID v3.14.9: real six-frame idle animation + auction action renderer. */
 (() => {
   'use strict';
 
-  const VERSION = '3146';
+  const VERSION = '3149';
   const FRAME = 512;
   const specs = {
     gunslinger: {ms: 220},
@@ -107,7 +107,7 @@
     ctx.drawImage(sheet, sx, sy, w, h, 0, 0, FRAME, FRAME);
   }
 
-  class BidActionMotion3146 extends HTMLElement {
+  class BidActionMotion3149 extends HTMLElement {
     connectedCallback() {
       if (!this.readyBuilt) {
         this.readyBuilt = true;
@@ -166,7 +166,7 @@
     }
   }
 
-  class BidIdleMotion3146 extends HTMLElement {
+  class BidIdleMotion3149 extends HTMLElement {
     connectedCallback() {
       if (!this.readyBuilt) {
         this.readyBuilt = true;
@@ -212,10 +212,10 @@
     }
   }
 
-  const actionTag = 'bid-action-motion-v3146';
-  const idleTag = 'bid-idle-motion-v3146';
-  customElements.define(actionTag, BidActionMotion3146);
-  customElements.define(idleTag, BidIdleMotion3146);
+  const actionTag = 'bid-action-motion-v3149';
+  const idleTag = 'bid-idle-motion-v3149';
+  customElements.define(actionTag, BidActionMotion3149);
+  customElements.define(idleTag, BidIdleMotion3149);
 
   setInterval(() => {
     if (document.hidden) return;
@@ -245,8 +245,6 @@
   window.preloadBidActionMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
   window.preloadBidIdleMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
 
-  // index.html may still reference an older cache key for v38.js. After the
-  // parser has had a chance to run that script, load the current bridge if needed.
   setTimeout(() => {
     if (window.BID_CHARACTER_BRIDGE_VERSION === VERSION) return;
     if (document.querySelector(`script[data-v38-motion-${VERSION}]`)) return;
