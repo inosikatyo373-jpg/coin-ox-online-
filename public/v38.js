@@ -1,21 +1,16 @@
-/* BID GRID v3.12.3 - Jack no-flicker four-frame idle loop */
+/* BID GRID v3.12.4 - Jack sprite-sheet idle loop */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=3123';
+    link.href='/v381.css?v=3124';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
-  const JACK_IDLE_FRAMES=[
-    '/characters/gunslinger/gunslinger_idle_1.png?v=3123',
-    '/characters/gunslinger/gunslinger_idle_2.png?v=3123',
-    '/characters/gunslinger/gunslinger_idle_3.png?v=3123',
-    '/characters/gunslinger/gunslinger_idle_4.png?v=3123'
-  ];
-  const JACK_IDLE_SEQUENCE=[0,1,2,3,2,1];
+  const JACK_IDLE_SHEET='/characters/gunslinger/jack_idle_sheet_6f.png?v=3124';
+  const JACK_IDLE_FRAME_COUNT=6;
   const JACK_IDLE_INTERVAL=200;
 
   function safeCharacter(id){return playable.includes(id)?id:'merchant'}
@@ -24,14 +19,13 @@
     const c=safe==='random'?{name:'ランダム'}:getCharacterDef(safe);
     return `<img class="nativeCharacterImage nativeSourceImage ${className}" data-character="${safe}" src="/characters/original/${safe}.png?v=31117" alt="${c.name}" draggable="false">`;
   }
-  function jackFrameStack(className=''){
+  function jackSpriteMarkup(className=''){
     const c=getCharacterDef('gunslinger');
-    const frames=JACK_IDLE_FRAMES.map((src,index)=>`<img class="nativeCharacterImage nativeSourceImage jackIdleFrame ${className}" data-character="gunslinger" data-jack-frame-index="${index}" src="${src}" alt="${index===0?c.name:''}" ${index===0?'':'aria-hidden="true"'} draggable="false">`).join('');
-    return `<span class="jackFrameStack" data-character="gunslinger" data-jack-frame="0" aria-label="${c.name}">${frames}</span>`;
+    return `<span class="jackSpriteSheet ${className}" data-character="gunslinger" data-jack-frame="0" role="img" aria-label="${c.name}"></span>`;
   }
   function fullBodyMarkup(id,className=''){
     const safe=safeCharacter(id);
-    return safe==='gunslinger'?jackFrameStack(className):spriteMarkup(safe,className);
+    return safe==='gunslinger'?jackSpriteMarkup(className):spriteMarkup(safe,className);
   }
 
   window.battleCharacterMarkup=function(characterId,motion='static'){
@@ -40,7 +34,7 @@
   };
   try{battleCharacterMarkup=window.battleCharacterMarkup}catch(e){}
 
-  // Keep the tiny round HUD portrait static; only full-body Jack animates.
+  // Keep the small circular HUD portrait static and crisp.
   window.battleCharacterFaceMarkup=function(characterId){
     return spriteMarkup(safeCharacter(characterId||'merchant'),'battleFaceSprite nativeStableSprite');
   };
@@ -62,38 +56,39 @@
   };
   try{openingSelectedArt=window.openingSelectedArt}catch(e){}
 
-  let jackIdleStep=0;
   let jackIdleFrame=0;
   let jackIdleTimer=null;
+  let jackSheetReady=false;
 
-  function preloadJackFrames(){
-    return Promise.all(JACK_IDLE_FRAMES.map(src=>new Promise(resolve=>{
+  function preloadJackSheet(){
+    return new Promise(resolve=>{
       const img=new Image();
       img.decoding='async';
       img.onload=()=>{
-        if(typeof img.decode==='function') img.decode().catch(()=>{}).finally(resolve);
-        else resolve();
+        const finish=()=>{jackSheetReady=true;resolve();};
+        if(typeof img.decode==='function') img.decode().catch(()=>{}).finally(finish);
+        else finish();
       };
-      img.onerror=resolve;
-      img.src=src;
-    })));
+      img.onerror=()=>resolve();
+      img.src=JACK_IDLE_SHEET;
+    });
   }
-  function syncJackStacks(){
-    document.querySelectorAll('.jackFrameStack').forEach(stack=>{
-      stack.setAttribute('data-jack-frame',String(jackIdleFrame));
+  function syncJackSprites(){
+    document.querySelectorAll('.jackSpriteSheet').forEach(sprite=>{
+      sprite.setAttribute('data-jack-frame',String(jackIdleFrame));
     });
   }
   function advanceJackIdle(){
-    jackIdleFrame=JACK_IDLE_SEQUENCE[jackIdleStep];
-    jackIdleStep=(jackIdleStep+1)%JACK_IDLE_SEQUENCE.length;
-    syncJackStacks();
+    jackIdleFrame=(jackIdleFrame+1)%JACK_IDLE_FRAME_COUNT;
+    syncJackSprites();
   }
   function startJackIdleLoop(){
     if(jackIdleTimer) return;
-    preloadJackFrames().then(()=>{
+    preloadJackSheet().then(()=>{
       if(jackIdleTimer) return;
-      jackIdleStep=0;
-      advanceJackIdle();
+      jackIdleFrame=0;
+      syncJackSprites();
+      // Even if preload failed, retry through CSS background without swapping URLs.
       jackIdleTimer=setInterval(advanceJackIdle,JACK_IDLE_INTERVAL);
     });
   }
@@ -102,7 +97,7 @@
     try{if(typeof renderCharacterGrid==='function')renderCharacterGrid()}catch(e){console.warn('[character-art] grid repaint failed',e)}
     try{if(typeof renderOpeningCharacterGrid==='function')renderOpeningCharacterGrid()}catch(e){console.warn('[character-art] opening grid repaint failed',e)}
     try{if(typeof renderOpeningCharacterBanner==='function')renderOpeningCharacterBanner()}catch(e){console.warn('[character-art] banner repaint failed',e)}
-    syncJackStacks();
+    syncJackSprites();
   }
   function syncBattle(){
     try{
@@ -110,7 +105,7 @@
         renderBattleArenaCharacters(state.players);
       }
     }catch(e){console.warn('[character-art] battle repaint failed',e)}
-    syncJackStacks();
+    syncJackSprites();
   }
 
   repaintCharacterUI();

@@ -1,4 +1,4 @@
-/* BID GRID v3.12.3 - character layout + no-flicker Jack frame stack */
+/* BID GRID v3.12.4 - character layout + Jack sprite-sheet idle */
 .charPortrait .nativeSourceImage{
   width:100%!important;height:100%!important;object-fit:contain!important;
 }
@@ -71,38 +71,43 @@
 @media(max-width:1000px){.battleSideLabel{align-items:flex-start!important;text-align:left!important}.battleSideCharacterName{font-size:18px}}
 @media(max-width:600px){.battleSideLabel{gap:1px!important}.battleSideRole{font-size:8px}.battleSideCharacterName{font-size:15px}.battleSideCharacterSub{font-size:7px;letter-spacing:.08em}}
 
-/* Jack v3.12.3: all four PNGs stay mounted and decoded. Only visibility changes,
-   so there is no src swap / repaint flash between idle frames. */
-.jackFrameStack{
-  position:relative!important;display:block!important;overflow:visible!important;
-  line-height:0!important;isolation:isolate!important;
-}
-#characterMenu .charPortrait>.jackFrameStack,#openingMenu .charPortrait>.jackFrameStack,
-.openingHeroPortrait>.jackFrameStack,.auctionCharacter>.jackFrameStack{
-  width:100%!important;height:100%!important;
-}
-.battleSideArt>.jackFrameStack{
-  width:100%!important;max-width:360px!important;height:auto!important;aspect-ratio:1/1!important;
+/* Jack v3.12.4: one decoded image, six cells. Only background-position moves.
+   The sheet already contains the ping-pong order 1,2,3,4,3,2. */
+.jackSpriteSheet{
+  display:block!important;
+  position:relative!important;
+  overflow:hidden!important;
   flex:0 0 auto!important;
+  aspect-ratio:512/468!important;
+  background-image:url('/characters/gunslinger/jack_idle_sheet_6f.png?v=3124')!important;
+  background-repeat:no-repeat!important;
+  background-size:600% 100%!important;
+  background-position-y:0!important;
+  image-rendering:auto!important;
+  animation:none!important;
+  transition:none!important;
+  transform:none!important;
+  translate:none!important;
+  rotate:none!important;
+  pointer-events:none!important;
 }
-.jackFrameStack .jackIdleFrame{
-  position:absolute!important;inset:0!important;
-  width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;
-  object-fit:contain!important;object-position:center bottom!important;
-  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
-  animation:none!important;transition:none!important;transform:none!important;translate:none!important;rotate:none!important;
+.jackSpriteSheet[data-jack-frame="0"]{background-position-x:0%!important}
+.jackSpriteSheet[data-jack-frame="1"]{background-position-x:20%!important}
+.jackSpriteSheet[data-jack-frame="2"]{background-position-x:40%!important}
+.jackSpriteSheet[data-jack-frame="3"]{background-position-x:60%!important}
+.jackSpriteSheet[data-jack-frame="4"]{background-position-x:80%!important}
+.jackSpriteSheet[data-jack-frame="5"]{background-position-x:100%!important}
+
+#characterMenu .charPortrait>.jackSpriteSheet,
+#openingMenu .charPortrait>.jackSpriteSheet,
+.openingHeroPortrait>.jackSpriteSheet{
+  width:100%!important;height:auto!important;max-width:100%!important;max-height:100%!important;margin:auto!important;
 }
-.jackFrameStack[data-jack-frame="0"] .jackIdleFrame[data-jack-frame-index="0"],
-.jackFrameStack[data-jack-frame="1"] .jackIdleFrame[data-jack-frame-index="1"],
-.jackFrameStack[data-jack-frame="2"] .jackIdleFrame[data-jack-frame-index="2"],
-.jackFrameStack[data-jack-frame="3"] .jackIdleFrame[data-jack-frame-index="3"]{
-  opacity:1!important;visibility:visible!important;
+.battleSideArt>.jackSpriteSheet{
+  width:100%!important;height:auto!important;max-width:360px!important;max-height:100%!important;
+  align-self:flex-end!important;margin:0 auto!important;
 }
-.battleSideArt .jackFrameStack .battleCharacterSprite{
-  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
-  max-width:100%!important;max-height:100%!important;margin:0!important;
+.auctionCharacter>.jackSpriteSheet{
+  width:82px!important;height:auto!important;max-width:100%!important;max-height:100%!important;margin:auto!important;
 }
-.auctionCharacter .jackFrameStack .battleCharacterSprite{
-  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
-  max-width:100%!important;max-height:100%!important;margin:0!important;
-}
+@media(max-width:600px){.auctionCharacter>.jackSpriteSheet{width:56px!important}}
