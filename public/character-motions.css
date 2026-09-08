@@ -1,10 +1,9 @@
-/* BID GRID v3.15.0 - idle sprites + dedicated attack/hit motion */
+/* BID GRID v3.15.4 - current idle/action custom element sizing */
 
-/* Idle renderer */
-bid-idle-motion-v3150.partMotion,
-.charPortrait>bid-idle-motion-v3150.partMotion,
-.openingHeroPortrait>bid-idle-motion-v3150.partMotion,
-.battleSideArt>bid-idle-motion-v3150.partMotion{
+bid-idle-motion-v3154.partMotion,
+.charPortrait>bid-idle-motion-v3154.partMotion,
+.openingHeroPortrait>bid-idle-motion-v3154.partMotion,
+.battleSideArt>bid-idle-motion-v3154.partMotion{
   display:block!important;
   position:relative!important;
   width:100%!important;
@@ -23,14 +22,14 @@ bid-idle-motion-v3150.partMotion,
   animation:none!important;
   filter:drop-shadow(0 8px 7px #000a)!important;
 }
-.battleSideArt>bid-idle-motion-v3150.partMotion{
+.battleSideArt>bid-idle-motion-v3154.partMotion{
   width:100%!important;
   height:auto!important;
   aspect-ratio:1/1!important;
   max-width:360px!important;
   max-height:none!important;
 }
-.auctionCharacter>bid-idle-motion-v3150.partMotion{
+.auctionCharacter>bid-idle-motion-v3154.partMotion{
   width:82px!important;
   height:82px!important;
   max-width:none!important;
@@ -38,20 +37,6 @@ bid-idle-motion-v3150.partMotion,
   margin:auto!important;
 }
 
-/* Restore the battle-card frame to its original size. Jack gets a small inner fit only. */
-.battleSideArt.character-gunslinger{
-  width:100%!important;
-  margin-left:0!important;
-  margin-right:0!important;
-}
-.battleSideArt.character-gunslinger>bid-idle-motion-v3150.partMotion,
-.battleSideArt.character-gunslinger>.bid-idle-motion{
-  width:94%!important;
-  margin-left:6%!important;
-  margin-right:0!important;
-}
-
-/* Static fallback while the current script is loading. */
 .bid-idle-motion,
 .charPortrait>.bid-idle-motion,
 .openingHeroPortrait>.bid-idle-motion,
@@ -96,8 +81,7 @@ bid-idle-motion-v3150.partMotion,
   max-height:none!important;
 }
 
-/* Dedicated action renderer. The footprint always matches idle; no scale animation. */
-bid-action-motion-v3150.actionMotion{
+bid-action-motion-v3154.actionMotion{
   display:block!important;
   position:relative!important;
   width:100%!important;
@@ -115,179 +99,47 @@ bid-action-motion-v3150.actionMotion{
   rotate:none!important;
   scale:1!important;
 }
-.auctionCharacter>bid-action-motion-v3150.actionMotion{
-  width:82px!important;
-  height:82px!important;
+.auctionCharacter>bid-action-motion-v3154.actionMotion{
+  width:92px!important;
+  height:92px!important;
   max-width:none!important;
   max-height:none!important;
-  margin:auto!important;
+  margin:-5px auto -5px!important;
 }
 
-/* Direction: left player attacks to the right; right player attacks to the left. */
-bid-action-motion-v3150[side="0"]{--attack-x:12px;--recoil-x:-9px;--tiny-x:3px}
-bid-action-motion-v3150[side="1"]{--attack-x:-12px;--recoil-x:9px;--tiny-x:-3px}
-
-/* Base timing. Character-specific rules below only change the motion shape. */
-bid-action-motion-v3150[motion="attack"]{
-  animation:bidAttackBase .82s cubic-bezier(.2,.72,.22,1) both!important;
-}
-bid-action-motion-v3150[motion="hit"]{
-  animation:bidHitBase .62s cubic-bezier(.2,.72,.28,1) both!important;
-}
-
-@keyframes bidAttackBase{
+bid-action-motion-v3154[side="0"]{--attack-x:10px;--recoil-x:-8px;--tiny-x:3px}
+bid-action-motion-v3154[side="1"]{--attack-x:-10px;--recoil-x:8px;--tiny-x:-3px}
+bid-action-motion-v3154[motion="attack"]{animation:bidAttackCurrent .36s cubic-bezier(.2,.72,.22,1) both!important}
+bid-action-motion-v3154[motion="hit"]{animation:bidHitCurrent .38s cubic-bezier(.2,.72,.28,1) both!important}
+@keyframes bidAttackCurrent{
   0%{transform:translateX(0) rotate(0deg)}
-  18%{transform:translateX(calc(var(--attack-x) * -.16)) rotate(-.7deg)}
-  52%{transform:translateX(var(--attack-x)) rotate(1.4deg)}
-  72%{transform:translateX(calc(var(--attack-x) * .72)) rotate(.5deg)}
+  35%{transform:translateX(calc(var(--attack-x) * -.3)) rotate(-1deg)}
+  65%{transform:translateX(var(--attack-x)) rotate(1.5deg)}
   100%{transform:translateX(0) rotate(0deg)}
 }
-@keyframes bidHitBase{
+@keyframes bidHitCurrent{
   0%{transform:translateX(0) rotate(0deg)}
-  18%{transform:translateX(var(--recoil-x)) rotate(-2deg)}
-  36%{transform:translateX(calc(var(--recoil-x) * .55)) rotate(1.2deg)}
-  58%{transform:translateX(var(--tiny-x)) rotate(-.5deg)}
+  32%{transform:translateX(var(--recoil-x)) rotate(-2deg)}
+  58%{transform:translateX(var(--tiny-x)) rotate(1deg)}
   100%{transform:translateX(0) rotate(0deg)}
 }
 
-/* Jack: coat-heavy lunge / recoil. */
-bid-action-motion-v3150[character="gunslinger"][motion="attack"]{animation-name:bidAttackJack!important}
-bid-action-motion-v3150[character="gunslinger"][motion="hit"]{animation-name:bidHitJack!important}
-@keyframes bidAttackJack{
-  0%{transform:translateX(0) rotate(0deg)}
-  22%{transform:translateX(calc(var(--attack-x) * -.2)) rotate(-1.2deg)}
-  54%{transform:translateX(var(--attack-x)) rotate(2.2deg)}
-  76%{transform:translateX(calc(var(--attack-x) * .62)) rotate(.8deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
-@keyframes bidHitJack{
-  0%{transform:translateX(0) rotate(0deg)}
-  17%{transform:translateX(var(--recoil-x)) rotate(-2.8deg)}
-  38%{transform:translateX(calc(var(--recoil-x) * .5)) rotate(1.5deg)}
-  62%{transform:translateX(var(--tiny-x)) rotate(-.7deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
-
-/* Lizel: fast sword step. */
-bid-action-motion-v3150[character="swordswoman"][motion="attack"]{animation-name:bidAttackSword!important}
-bid-action-motion-v3150[character="swordswoman"][motion="hit"]{animation-name:bidHitSword!important}
-@keyframes bidAttackSword{
-  0%{transform:translateX(0) rotate(0deg)}
-  16%{transform:translateX(calc(var(--attack-x) * -.12)) rotate(-1.6deg)}
-  44%{transform:translateX(calc(var(--attack-x) * 1.12)) rotate(2.8deg)}
-  66%{transform:translateX(calc(var(--attack-x) * .72)) rotate(-.4deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
-@keyframes bidHitSword{
-  0%{transform:translateX(0) rotate(0deg)}
-  15%{transform:translateX(calc(var(--recoil-x) * 1.05)) rotate(-3deg)}
-  34%{transform:translateX(calc(var(--recoil-x) * .42)) rotate(1.8deg)}
-  58%{transform:translateX(var(--tiny-x)) rotate(-.6deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
-
-/* Lumina: measured staff cast and recoil. */
-bid-action-motion-v3150[character="mage"][motion="attack"]{animation-name:bidAttackMage!important}
-bid-action-motion-v3150[character="mage"][motion="hit"]{animation-name:bidHitMage!important}
-@keyframes bidAttackMage{
-  0%{transform:translate(0,0) rotate(0deg)}
-  24%{transform:translate(calc(var(--attack-x) * -.12),2px) rotate(-1deg)}
-  55%{transform:translate(calc(var(--attack-x) * .78),-3px) rotate(1.3deg)}
-  78%{transform:translate(calc(var(--attack-x) * .42),-1px) rotate(.4deg)}
-  100%{transform:translate(0,0) rotate(0deg)}
-}
-@keyframes bidHitMage{
-  0%{transform:translate(0,0) rotate(0deg)}
-  18%{transform:translate(var(--recoil-x),3px) rotate(-2.2deg)}
-  42%{transform:translate(calc(var(--recoil-x) * .45),1px) rotate(1deg)}
-  100%{transform:translate(0,0) rotate(0deg)}
-}
-
-/* Gald / Dr.Odds: a deliberate thrust or toss. */
-bid-action-motion-v3150[character="merchant"][motion="attack"],
-bid-action-motion-v3150[character="doctor"][motion="attack"]{animation-name:bidAttackThrow!important}
-@keyframes bidAttackThrow{
-  0%{transform:translateX(0) rotate(0deg)}
-  20%{transform:translateX(calc(var(--attack-x) * -.18)) rotate(-1.5deg)}
-  48%{transform:translateX(calc(var(--attack-x) * .9)) rotate(2deg)}
-  70%{transform:translateX(calc(var(--attack-x) * .5)) rotate(.5deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
-
-/* BID-99: stepped mechanical action and glitch-like hit. */
-bid-action-motion-v3150[character="robot"][motion="attack"]{animation:bidAttackRobot .82s steps(5,end) both!important}
-bid-action-motion-v3150[character="robot"][motion="hit"]{animation:bidHitRobot .62s steps(6,end) both!important}
-@keyframes bidAttackRobot{
-  0%{transform:translateX(0) rotate(0deg)}
-  20%{transform:translateX(calc(var(--attack-x) * .18)) rotate(-.7deg)}
-  40%{transform:translateX(calc(var(--attack-x) * .62)) rotate(.8deg)}
-  60%{transform:translateX(var(--attack-x)) rotate(0deg)}
-  80%{transform:translateX(calc(var(--attack-x) * .45)) rotate(-.4deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
-@keyframes bidHitRobot{
-  0%{transform:translateX(0) rotate(0deg)}
-  16%{transform:translateX(var(--recoil-x)) rotate(-1.2deg)}
-  32%{transform:translateX(calc(var(--recoil-x) * .22)) rotate(1.4deg)}
-  48%{transform:translateX(calc(var(--recoil-x) * .55)) rotate(-1deg)}
-  64%{transform:translateX(var(--tiny-x)) rotate(.8deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
-
-/* Pochip: small jump attack; hit sinks down briefly. */
-bid-action-motion-v3150[character="dog"][motion="attack"]{animation-name:bidAttackDog!important}
-bid-action-motion-v3150[character="dog"][motion="hit"]{animation-name:bidHitDog!important}
-@keyframes bidAttackDog{
-  0%{transform:translate(0,0) rotate(0deg)}
-  24%{transform:translate(calc(var(--attack-x) * .2),-5px) rotate(-1deg)}
-  52%{transform:translate(var(--attack-x),-3px) rotate(1.8deg)}
-  75%{transform:translate(calc(var(--attack-x) * .45),0) rotate(.4deg)}
-  100%{transform:translate(0,0) rotate(0deg)}
-}
-@keyframes bidHitDog{
-  0%{transform:translate(0,0) rotate(0deg)}
-  20%{transform:translate(var(--recoil-x),4px) rotate(-2.5deg)}
-  46%{transform:translate(calc(var(--recoil-x) * .35),3px) rotate(1deg)}
-  100%{transform:translate(0,0) rotate(0deg)}
-}
-
-/* Mold: slow shambling attack and loose recoil. */
-bid-action-motion-v3150[character="zombie"][motion="attack"]{animation-name:bidAttackZombie!important}
-bid-action-motion-v3150[character="zombie"][motion="hit"]{animation-name:bidHitZombie!important}
-@keyframes bidAttackZombie{
-  0%{transform:translateX(0) rotate(0deg)}
-  30%{transform:translateX(calc(var(--attack-x) * .2)) rotate(-1.3deg)}
-  62%{transform:translateX(calc(var(--attack-x) * .88)) rotate(2.5deg)}
-  82%{transform:translateX(calc(var(--attack-x) * .52)) rotate(1.2deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
-@keyframes bidHitZombie{
-  0%{transform:translateX(0) rotate(0deg)}
-  22%{transform:translateX(var(--recoil-x)) rotate(-3.4deg)}
-  54%{transform:translateX(calc(var(--recoil-x) * .42)) rotate(2deg)}
-  100%{transform:translateX(0) rotate(0deg)}
-}
+.battleSideArt.character-gunslinger{width:100%!important;margin-left:0!important;margin-right:0!important}
+.battleSideArt.character-gunslinger>bid-idle-motion-v3154.partMotion,
+.battleSideArt.character-gunslinger>.bid-idle-motion{width:94%!important;margin-left:6%!important;margin-right:0!important}
 
 .auctionCharacter.motion-sprite.motion-attack::after,
-.auctionCharacter.motion-sprite.motion-hit::before{
-  display:none!important;
-  content:none!important;
-}
+.auctionCharacter.motion-sprite.motion-hit::before{display:none!important;content:none!important}
 
-/* Legacy sizing during one cached paint. */
+/* Legacy one-paint safety while old cached HTML is being replaced. */
 bid-character-motion.partMotion,
+bid-idle-motion-v3153.partMotion,
+bid-idle-motion-v3150.partMotion,
 bid-idle-motion-v3149.partMotion,
 bid-idle-motion-v3146.partMotion,
-bid-idle-motion-v3144.partMotion{
-  display:block!important;
-  position:relative!important;
-  width:100%!important;
-  height:100%!important;
-  max-width:100%!important;
-  max-height:100%!important;
-  opacity:1!important;
-  visibility:visible!important;
-}
+bid-idle-motion-v3144.partMotion,
+bid-action-motion-v3153.actionMotion,
+bid-action-motion-v3150.actionMotion,
 bid-action-motion-v3149.actionMotion,
 bid-action-motion-v3146.actionMotion,
 bid-action-motion-v3144.actionMotion{
@@ -295,29 +147,15 @@ bid-action-motion-v3144.actionMotion{
   position:relative!important;
   width:100%!important;
   height:100%!important;
-  aspect-ratio:1/1!important;
   opacity:1!important;
   visibility:visible!important;
 }
 
 @media(max-width:600px){
-  .battleSideArt.character-gunslinger{
-    width:100%!important;
-    margin-left:0!important;
-    margin-right:0!important;
-  }
-  .battleSideArt.character-gunslinger>bid-idle-motion-v3150.partMotion,
-  .battleSideArt.character-gunslinger>.bid-idle-motion{
-    width:94%!important;
-    margin-left:6%!important;
-    margin-right:0!important;
-  }
-  .auctionCharacter>bid-idle-motion-v3150.partMotion,
+  .auctionCharacter>bid-idle-motion-v3154.partMotion,
   .auctionCharacter>.bid-idle-motion{width:56px!important;height:56px!important}
-  .auctionCharacter>bid-action-motion-v3150.actionMotion{width:56px!important;height:56px!important;margin:auto!important}
+  .auctionCharacter>bid-action-motion-v3154.actionMotion{width:68px!important;height:68px!important;margin:-4px auto!important}
+  .battleSideArt.character-gunslinger>bid-idle-motion-v3154.partMotion,
+  .battleSideArt.character-gunslinger>.bid-idle-motion{width:94%!important;margin-left:6%!important}
 }
-
-@media(prefers-reduced-motion:reduce){
-  bid-action-motion-v3150[motion="attack"]{animation-duration:1.05s!important}
-  bid-action-motion-v3150[motion="hit"]{animation-duration:.85s!important}
-}
+@media(prefers-reduced-motion:reduce){bid-action-motion-v3154.actionMotion{animation:none!important}}
