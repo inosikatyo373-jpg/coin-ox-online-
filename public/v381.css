@@ -1,4 +1,4 @@
-/* BID GRID v3.12.6 - character layout + Jack sprite-sheet idle with fallback */
+/* BID GRID v3.12.7 - character layout + safe Jack frame stack */
 .charPortrait .nativeSourceImage{
   width:100%!important;height:100%!important;object-fit:contain!important;
 }
@@ -71,17 +71,14 @@
 @media(max-width:1000px){.battleSideLabel{align-items:flex-start!important;text-align:left!important}.battleSideCharacterName{font-size:18px}}
 @media(max-width:600px){.battleSideLabel{gap:1px!important}.battleSideRole{font-size:8px}.battleSideCharacterName{font-size:15px}.battleSideCharacterSub{font-size:7px;letter-spacing:.08em}}
 
-/* Jack v3.12.6: one decoded sheet, six cells. Static PNG remains visible until the sheet loads. */
-.jackSpriteSheet{
+/* Jack v3.12.7: four real PNG frames are preloaded and stacked.
+   The base image remains visible until all frames are ready, so Jack never disappears. */
+.jackFrameStack{
   display:block!important;
   position:relative!important;
   overflow:hidden!important;
   flex:0 0 auto!important;
-  aspect-ratio:192/176!important;
-  background-image:url('/characters/gunslinger/jack_idle_sheet_6f.avif?v=3126')!important;
-  background-repeat:no-repeat!important;
-  background-size:600% 100%!important;
-  background-position-y:0!important;
+  aspect-ratio:1/1!important;
   image-rendering:auto!important;
   animation:none!important;
   transition:none!important;
@@ -90,32 +87,37 @@
   rotate:none!important;
   pointer-events:none!important;
 }
-.jackSpriteSheet[data-jack-frame="0"]{background-position-x:0%!important}
-.jackSpriteSheet[data-jack-frame="1"]{background-position-x:20%!important}
-.jackSpriteSheet[data-jack-frame="2"]{background-position-x:40%!important}
-.jackSpriteSheet[data-jack-frame="3"]{background-position-x:60%!important}
-.jackSpriteSheet[data-jack-frame="4"]{background-position-x:80%!important}
-.jackSpriteSheet[data-jack-frame="5"]{background-position-x:100%!important}
-
-.jackSpriteFallback{
+.jackFrameBase,.jackIdleFrame{
+  position:absolute!important;
+  inset:0!important;
   display:block!important;
   width:100%!important;height:100%!important;
   max-width:100%!important;max-height:100%!important;
   object-fit:contain!important;object-position:center center!important;
-  opacity:1!important;transition:opacity .08s linear!important;
+  margin:0!important;
+  animation:none!important;transition:none!important;transform:none!important;
+  filter:drop-shadow(0 8px 8px #000a)!important;
 }
-html.jackSheetReady .jackSpriteFallback{opacity:0!important}
+.jackFrameBase{opacity:1!important;visibility:visible!important;z-index:1!important}
+.jackIdleFrame{opacity:0!important;visibility:hidden!important;z-index:2!important}
+html.jackFramesReady .jackFrameBase{opacity:0!important;visibility:hidden!important}
+html.jackFramesReady .jackFrameStack[data-jack-frame="0"] .jackIdleFrame0,
+html.jackFramesReady .jackFrameStack[data-jack-frame="1"] .jackIdleFrame1,
+html.jackFramesReady .jackFrameStack[data-jack-frame="2"] .jackIdleFrame2,
+html.jackFramesReady .jackFrameStack[data-jack-frame="3"] .jackIdleFrame3{
+  opacity:1!important;visibility:visible!important;
+}
 
-#characterMenu .charPortrait>.jackSpriteSheet,
-#openingMenu .charPortrait>.jackSpriteSheet,
-.openingHeroPortrait>.jackSpriteSheet{
+#characterMenu .charPortrait>.jackFrameStack,
+#openingMenu .charPortrait>.jackFrameStack,
+.openingHeroPortrait>.jackFrameStack{
   width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;margin:auto!important;
 }
-.battleSideArt>.jackSpriteSheet{
+.battleSideArt>.jackFrameStack{
   width:100%!important;height:100%!important;max-width:360px!important;max-height:100%!important;
   align-self:flex-end!important;margin:0 auto!important;
 }
-.auctionCharacter>.jackSpriteSheet{
+.auctionCharacter>.jackFrameStack{
   width:82px!important;height:82px!important;max-width:100%!important;max-height:100%!important;margin:auto!important;
 }
-@media(max-width:600px){.auctionCharacter>.jackSpriteSheet{width:56px!important;height:56px!important}}
+@media(max-width:600px){.auctionCharacter>.jackFrameStack{width:56px!important;height:56px!important}}
