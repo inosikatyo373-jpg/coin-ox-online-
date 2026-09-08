@@ -26,6 +26,16 @@
   window.BID_ACTION_MOTION_VERSION = VERSION;
   window.BID_IDLE_MOTION_VERSION = VERSION;
 
+  function ensureCurrentStyle() {
+    if (document.querySelector(`link[data-character-motions-${VERSION}]`)) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `/character-motions.css?v=${VERSION}`;
+    link.setAttribute(`data-character-motions-${VERSION}`, '1');
+    document.head.appendChild(link);
+  }
+  ensureCurrentStyle();
+
   function safeId(id) {
     return idSet.has(id) ? id : 'merchant';
   }
@@ -39,8 +49,6 @@
     for (let i = 0; i < p.length; i += 4) {
       const key = p[i + (blue ? 2 : 1)];
       const other = Math.max(p[i], p[i + (blue ? 1 : 2)]);
-      // Remove the chroma matte once when the sheet is decoded. The threshold
-      // intentionally keeps dark outlines, gold/cyan effects and Doctor's green liquid.
       if (key > 100 && key - other > 75 && other < 115) p[i + 3] = 0;
     }
     ctx.putImageData(pixels, 0, 0);
@@ -78,8 +86,6 @@
 
   function frameAt(id, now) {
     const spec = specs[id];
-    // If the OS asks for reduced motion, keep the animation but run it gently
-    // instead of freezing it completely. The user explicitly wants visible idle motion.
     const clock = reduced.matches ? now * 0.55 : now;
     if (!spec.steps) return Math.floor(clock / spec.ms) % 6;
 
@@ -209,7 +215,6 @@
   const actionTag = 'bid-action-motion-v3146';
   const idleTag = 'bid-idle-motion-v3146';
   customElements.define(actionTag, BidActionMotion3146);
-  // Define idle second so the repository's renderer test captures the six-frame class.
   customElements.define(idleTag, BidIdleMotion3146);
 
   setInterval(() => {
@@ -239,4 +244,15 @@
 
   window.preloadBidActionMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
   window.preloadBidIdleMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
+
+  // index.html may still reference an older cache key for v38.js. After the
+  // parser has had a chance to run that script, load the current bridge if needed.
+  setTimeout(() => {
+    if (window.BID_CHARACTER_BRIDGE_VERSION === VERSION) return;
+    if (document.querySelector(`script[data-v38-motion-${VERSION}]`)) return;
+    const script = document.createElement('script');
+    script.src = `/v38.js?v=${VERSION}`;
+    script.setAttribute(`data-v38-motion-${VERSION}`, '1');
+    document.body.appendChild(script);
+  }, 0);
 })();
