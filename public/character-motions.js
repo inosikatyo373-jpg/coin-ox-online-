@@ -1,21 +1,27 @@
-/* BIDGRID v3.14.2: action sprite-sheet renderer for auction attack / hit. */
+/* BIDGRID v3.14.3: auction attack / hit sprites, idle kept separate. */
 (() => {
   'use strict';
+  const ACTION_VERSION = '3143';
   const ids = ['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
   const idSet = new Set(ids);
   const keyMode = {doctor: 'blue'};
   const original = id => `/characters/original/${id}.png?v=31117`;
-  const motionSheet = id => `/characters/motions/v314/${id}.png?v=3142`;
+  const motionSheet = id => `/characters/motions/v314/${id}.png?v=${ACTION_VERSION}`;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const sheets = new Map();
   const FRAME = 512;
 
-  function safeId(id) { return idSet.has(id) ? id : 'merchant'; }
+  window.BID_ACTION_MOTION_VERSION = ACTION_VERSION;
 
+  function safeId(id) { return idSet.has(id) ? id : 'merchant'; }
+  function idleDelay(id) {
+    const periods = {gunslinger:3.8,zombie:4.8,merchant:3.6,swordswoman:4.2,robot:3.2,dog:2.4,mage:4.6,doctor:3.4};
+    return -((performance.now() / 1000) % (periods[id] || 4)).toFixed(3);
+  }
   function originalMarkup(id, classes = '') {
     const safe = safeId(id);
     const c = getCharacterDef(safe);
-    return `<img class="nativeCharacterImage nativeSourceImage characterIdle ${classes}" data-character="${safe}" src="${original(safe)}" alt="${c.name}" draggable="false">`;
+    return `<img class="nativeCharacterImage nativeSourceImage characterIdle ${classes}" data-character="${safe}" style="--idle-delay:${idleDelay(safe)}s" src="${original(safe)}" alt="${c.name}" draggable="false" decoding="async">`;
   }
 
   function keyOutBackground(id, canvas) {
@@ -27,9 +33,9 @@
       const r = p[i], g = p[i + 1], b = p[i + 2];
       let bg;
       if (blue) {
-        bg = b > 115 && b - r > 58 && b - g > 58;
+        bg = b > 110 && b - r > 54 && b - g > 54;
       } else {
-        bg = g > 125 && g - r > 38 && g - b > 38;
+        bg = g > 120 && g - r > 44 && g - b > 44 && r < 135 && b < 145;
       }
       if (bg) p[i + 3] = 0;
     }
@@ -71,31 +77,31 @@
     return [0];
   }
 
-  class BidActionMotion extends HTMLElement {
+  class BidActionMotion3143 extends HTMLElement {
     connectedCallback() {
       if (!this.readyBuilt) {
         this.readyBuilt = true;
         const shadow = this.attachShadow({mode: 'open'});
         shadow.innerHTML = `<style>
-          :host{display:block;position:relative;contain:layout style paint;overflow:visible}
-          img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto}
+          :host{display:block;position:relative;contain:layout style paint;overflow:visible;transform-origin:50% 88%}
+          img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto;transform-origin:center bottom}
           canvas{visibility:hidden}
           :host([ready]) canvas{visibility:visible}
           :host([ready]) img{display:none}
           :host([side="1"]) img,:host([side="1"]) canvas{transform:scaleX(-1)}
-        </style><img alt="" draggable="false"><canvas aria-hidden="true"></canvas>`;
+        </style><img alt="" draggable="false" decoding="async"><canvas aria-hidden="true"></canvas>`;
         this.fallback = shadow.querySelector('img');
         this.canvas = shadow.querySelector('canvas');
         this.canvas.width = FRAME;
         this.canvas.height = FRAME;
         this.ctx = this.canvas.getContext('2d');
       }
-      this.id = safeId(this.getAttribute('character'));
+      this.characterId = safeId(this.getAttribute('character'));
       this.motion = this.getAttribute('motion') || 'attack';
-      this.fallback.src = original(this.id);
+      this.fallback.src = original(this.characterId);
       this.playToken = (this.playToken || 0) + 1;
       const token = this.playToken;
-      const entry = loadSheet(this.id);
+      const entry = loadSheet(this.characterId);
       const start = sheet => {
         if (!this.isConnected || token !== this.playToken) return;
         this.play(sheet, this.motion, token);
@@ -130,22 +136,23 @@
     }
   }
 
-  if (!customElements.get('bid-action-motion')) customElements.define('bid-action-motion', BidActionMotion);
+  const tagName = 'bid-action-motion-v3143';
+  if (!customElements.get(tagName)) customElements.define(tagName, BidActionMotion3143);
 
   window.bidActionMotionMarkup = (id, classes = '', motion = 'attack', side = 0) => {
     const safe = safeId(id);
     const c = getCharacterDef(safe);
     const m = motion === 'hit' ? 'hit' : motion === 'attack' ? 'attack' : 'static';
-    return `<bid-action-motion character="${safe}" motion="${m}" side="${side ? 1 : 0}" class="actionMotion ${classes}" role="img" aria-label="${c.name}"></bid-action-motion>`;
+    return `<${tagName} character="${safe}" motion="${m}" side="${side ? 1 : 0}" class="actionMotion ${classes}" role="img" aria-label="${c.name}"></${tagName}>`;
   };
 
+  // Important: idle/static and auction action sprites are separate systems.
+  // Idle returns the original character image with the CSS idle class; action/hit uses the sheet renderer only during auction reveal.
   window.bidCharacterMotionMarkup = (id, classes = '', motion = 'idle', side = 0) => {
     const m = motion || (/motion-(attack|hit)/.exec(classes)?.[1]) || 'idle';
     if (m === 'attack' || m === 'hit') return window.bidActionMotionMarkup(id, classes, m, side);
     return originalMarkup(id, classes);
   };
 
-  // Warm up only the two auction participants on demand; the sheets are large,
-  // so we intentionally avoid loading all eight at title screen startup.
   window.preloadBidActionMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
 })();
