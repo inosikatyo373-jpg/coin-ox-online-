@@ -1,8 +1,8 @@
-/* BID GRID v3.14.6 - real six-frame idle sprites and auction actions */
+/* BID GRID v3.14.9 - persistent idle sprites and readable auction action timing */
 (function(){
   const ACTION_VERSION='3146';
-  const STYLE_VERSION='3146';
-  window.BID_CHARACTER_BRIDGE_VERSION=STYLE_VERSION;
+  const STYLE_VERSION='3149';
+  window.BID_CHARACTER_BRIDGE_VERSION=ACTION_VERSION;
   function injectStyle(key,href){
     if(document.querySelector(`link[data-${key}]`))return;
     const link=document.createElement('link');
@@ -16,6 +16,11 @@
   injectStyle('character-motions-'+STYLE_VERSION,'/character-motions.css?v='+STYLE_VERSION);
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
+  let actionSequence=0;
+  let delayedHitTimer=0;
+  let overlayHoldTimer=0;
+  let overlayHoldUntil=0;
+  let overlayObserver=null;
 
   function safeCharacter(id){return playable.includes(id)?id:'merchant'}
   function spriteMarkup(id,className=''){
@@ -25,10 +30,10 @@
   }
   function ensureActionMotionScript(){
     if(window.BID_ACTION_MOTION_VERSION===ACTION_VERSION && window.BID_IDLE_MOTION_VERSION===ACTION_VERSION && typeof window.bidActionMotionMarkup==='function' && typeof window.bidCharacterMotionMarkup==='function')return;
-    if(document.querySelector(`script[data-character-motions-${ACTION_VERSION}]`))return;
+    if(document.querySelector(`script[data-character-motions-${STYLE_VERSION}]`))return;
     const script=document.createElement('script');
-    script.src=`/character-motions.js?v=${ACTION_VERSION}`;
-    script.setAttribute(`data-character-motions-${ACTION_VERSION}`,'1');
+    script.src=`/character-motions.js?v=${STYLE_VERSION}`;
+    script.setAttribute(`data-character-motions-${STYLE_VERSION}`,'1');
     script.onload=()=>{repaintCharacterUI();syncBattle();try{if(typeof renderAuctionCharacters==='function')renderAuctionCharacters()}catch(e){}};
     document.body.appendChild(script);
   }
@@ -83,8 +88,35 @@
   };
   try{openingSelectedArt=window.openingSelectedArt}catch(e){}
 
+  function clearActionSequence(){
+    actionSequence++;
+    clearTimeout(delayedHitTimer);
+    clearTimeout(overlayHoldTimer);
+    overlayHoldUntil=0;
+  }
+
+  function holdAuctionOverlayUntil(deadline){
+    overlayHoldUntil=Math.max(overlayHoldUntil,deadline);
+    const overlay=document.getElementById('auctionOverlay');
+    if(!overlay)return;
+    if(!overlayObserver){
+      overlayObserver=new MutationObserver(()=>{
+        if(!overlay.classList.contains('hidden'))return;
+        const remaining=overlayHoldUntil-performance.now();
+        if(remaining<=0)return;
+        overlay.classList.remove('hidden');
+        clearTimeout(overlayHoldTimer);
+        overlayHoldTimer=setTimeout(()=>{
+          if(performance.now()+8>=overlayHoldUntil)overlay.classList.add('hidden');
+        },Math.max(0,remaining));
+      });
+      overlayObserver.observe(overlay,{attributes:true,attributeFilter:['class']});
+    }
+  }
+
   window.renderAuctionCharacters=function(){
     ensureActionMotionScript();
+    clearActionSequence();
     for(let i=0;i<2;i++){
       const target=document.getElementById('auctionCharacter'+i);if(!target)continue;
       const id=state?.players?.[i]?.character||'merchant';
@@ -96,7 +128,7 @@
   };
   try{renderAuctionCharacters=window.renderAuctionCharacters}catch(e){}
 
-  window.setAuctionCharacterMotion=function(side,motion){
+  function renderAuctionMotionNow(side,motion){
     ensureActionMotionScript();
     const target=document.getElementById('auctionCharacter'+side);if(!target)return;
     const id=state?.players?.[side]?.character||target.dataset.character||'merchant';
@@ -106,6 +138,30 @@
     target.innerHTML=useSprite
       ? actionBodyMarkup(id,motion,side,'battleCharacterSprite nativeStableSprite')
       : fullBodyMarkup(id,'battleCharacterSprite nativeStableSprite motion-idle',motion==='idle'?'idle':'static');
+  }
+
+  window.setAuctionCharacterMotion=function(side,motion){
+    if(motion==='attack'){
+      clearTimeout(delayedHitTimer);
+      const seq=++actionSequence;
+      const started=performance.now();
+      window.__bidAttackSequence={seq,started};
+      renderAuctionMotionNow(side,'attack');
+      // Keep the reveal visible long enough to read the attack and ensuing hit.
+      holdAuctionOverlayUntil(started+1150);
+      return;
+    }
+    if(motion==='hit' && window.__bidAttackSequence){
+      const {seq,started}=window.__bidAttackSequence;
+      const delay=Math.max(0,800-(performance.now()-started));
+      clearTimeout(delayedHitTimer);
+      delayedHitTimer=setTimeout(()=>{
+        if(seq!==actionSequence)return;
+        renderAuctionMotionNow(side,'hit');
+      },delay);
+      return;
+    }
+    renderAuctionMotionNow(side,motion);
   };
   try{setAuctionCharacterMotion=window.setAuctionCharacterMotion}catch(e){}
 
