@@ -1,4 +1,4 @@
-/* BID GRID v3.13.1 - individual character idle motions */
+/* BID GRID v3.14.0 - individual character idle motions */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
@@ -20,7 +20,7 @@
   }
   function fullBodyMarkup(id,className=''){
     const safe=safeCharacter(id);
-    return spriteMarkup(safe,`${className} characterIdle`);
+    return window.bidCharacterMotionMarkup ? window.bidCharacterMotionMarkup(safe,className) : spriteMarkup(safe,`${className} characterIdle`);
   }
 
   window.battleCharacterMarkup=function(characterId,motion='static'){

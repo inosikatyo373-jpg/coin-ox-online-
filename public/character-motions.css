@@ -1,0 +1,16 @@
+/* Explicit sizes prevent legacy sprite rules from collapsing custom elements. */
+bid-character-motion.partMotion,
+.charPortrait>bid-character-motion.partMotion,
+.openingHeroPortrait>bid-character-motion.partMotion,
+.battleSideArt>bid-character-motion.partMotion{
+  display:block!important;position:relative!important;
+  width:100%!important;height:100%!important;
+  max-width:100%!important;max-height:100%!important;
+  aspect-ratio:auto!important;flex:0 0 auto!important;
+  animation:none!important;translate:none!important;rotate:none!important;scale:none!important;
+  opacity:1!important;visibility:visible!important;
+}
+.auctionCharacter>bid-character-motion.partMotion{
+  width:82px!important;height:82px!important;max-width:none!important;max-height:none!important;
+}
+@media(max-width:600px){.auctionCharacter>bid-character-motion.partMotion{width:56px!important;height:56px!important}}
