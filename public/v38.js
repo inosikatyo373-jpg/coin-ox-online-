@@ -1,17 +1,22 @@
-/* BID GRID v3.12.6 - Jack sprite-sheet idle loop with static fallback */
+/* BID GRID v3.12.7 - Jack safe frame-stack idle loop */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=3126';
+    link.href='/v381.css?v=3127';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
-  const JACK_IDLE_SHEET='/characters/gunslinger/jack_idle_sheet_6f.avif?v=3126';
-  const JACK_IDLE_FRAME_COUNT=6;
-  const JACK_IDLE_INTERVAL=200;
+  const JACK_IDLE_FRAMES=[
+    '/characters/gunslinger/gunslinger_idle_1.png?v=3127',
+    '/characters/gunslinger/gunslinger_idle_2.png?v=3127',
+    '/characters/gunslinger/gunslinger_idle_3.png?v=3127',
+    '/characters/gunslinger/gunslinger_idle_4.png?v=3127'
+  ];
+  const JACK_IDLE_SEQUENCE=[0,1,2,3,2,1];
+  const JACK_IDLE_INTERVAL=220;
 
   function safeCharacter(id){return playable.includes(id)?id:'merchant'}
   function spriteMarkup(id,className=''){
@@ -19,13 +24,14 @@
     const c=safe==='random'?{name:'ランダム'}:getCharacterDef(safe);
     return `<img class="nativeCharacterImage nativeSourceImage ${className}" data-character="${safe}" src="/characters/original/${safe}.png?v=31117" alt="${c.name}" draggable="false">`;
   }
-  function jackSpriteMarkup(className=''){
+  function jackStackMarkup(className=''){
     const c=getCharacterDef('gunslinger');
-    return `<span class="jackSpriteSheet ${className}" data-character="gunslinger" data-jack-frame="0" role="img" aria-label="${c.name}"><img class="jackSpriteFallback" src="/characters/original/gunslinger.png?v=31117" alt="${c.name}" draggable="false"></span>`;
+    const frames=JACK_IDLE_FRAMES.map((src,i)=>`<img class="jackIdleFrame jackIdleFrame${i}" src="${src}" alt="" draggable="false" aria-hidden="true">`).join('');
+    return `<span class="jackFrameStack ${className}" data-character="gunslinger" data-jack-frame="0" role="img" aria-label="${c.name}"><img class="jackFrameBase" src="/characters/original/gunslinger.png?v=31117" alt="" draggable="false" aria-hidden="true">${frames}</span>`;
   }
   function fullBodyMarkup(id,className=''){
     const safe=safeCharacter(id);
-    return safe==='gunslinger'?jackSpriteMarkup(className):spriteMarkup(safe,className);
+    return safe==='gunslinger'?jackStackMarkup(className):spriteMarkup(safe,className);
   }
 
   window.battleCharacterMarkup=function(characterId,motion='static'){
@@ -56,45 +62,41 @@
   };
   try{openingSelectedArt=window.openingSelectedArt}catch(e){}
 
-  let jackIdleFrame=0;
+  let jackIdleStep=0;
   let jackIdleTimer=null;
 
-  function preloadJackSheet(){
-    return new Promise(resolve=>{
+  function preloadJackFrames(){
+    const loads=JACK_IDLE_FRAMES.map(src=>new Promise(resolve=>{
       const img=new Image();
       img.decoding='async';
-      img.onload=()=>{
-        const finish=()=>{
-          document.documentElement.classList.add('jackSheetReady');
-          resolve(true);
-        };
-        if(typeof img.decode==='function') img.decode().catch(()=>{}).finally(finish);
-        else finish();
-      };
-      img.onerror=()=>{
-        document.documentElement.classList.remove('jackSheetReady');
-        resolve(false);
-      };
-      img.src=JACK_IDLE_SHEET;
+      img.onload=()=>resolve(true);
+      img.onerror=()=>resolve(false);
+      img.src=src;
+    }));
+    Promise.all(loads).then(results=>{
+      if(results.every(Boolean)){
+        document.documentElement.classList.add('jackFramesReady');
+      }else{
+        document.documentElement.classList.remove('jackFramesReady');
+      }
     });
   }
   function syncJackSprites(){
-    document.querySelectorAll('.jackSpriteSheet').forEach(sprite=>{
-      sprite.setAttribute('data-jack-frame',String(jackIdleFrame));
+    const frame=JACK_IDLE_SEQUENCE[jackIdleStep]||0;
+    document.querySelectorAll('.jackFrameStack').forEach(sprite=>{
+      sprite.setAttribute('data-jack-frame',String(frame));
     });
   }
   function advanceJackIdle(){
-    jackIdleFrame=(jackIdleFrame+1)%JACK_IDLE_FRAME_COUNT;
+    jackIdleStep=(jackIdleStep+1)%JACK_IDLE_SEQUENCE.length;
     syncJackSprites();
   }
   function startJackIdleLoop(){
     if(jackIdleTimer) return;
-    preloadJackSheet().then(()=>{
-      if(jackIdleTimer) return;
-      jackIdleFrame=0;
-      syncJackSprites();
-      jackIdleTimer=setInterval(advanceJackIdle,JACK_IDLE_INTERVAL);
-    });
+    preloadJackFrames();
+    jackIdleStep=0;
+    syncJackSprites();
+    jackIdleTimer=setInterval(advanceJackIdle,JACK_IDLE_INTERVAL);
   }
 
   function repaintCharacterUI(){
