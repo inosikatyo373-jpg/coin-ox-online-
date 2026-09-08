@@ -1,6 +1,6 @@
-/* BID GRID v3.15.4 - separated idle + immediate auction attack/hit sprites */
+/* BID GRID v3.15.6 - separated idle + immediate auction attack/hit sprites */
 (function(){
-  const VERSION='3154';
+  const VERSION='3156';
   window.BID_CHARACTER_BRIDGE_VERSION=VERSION;
 
   function injectStyle(key,href){
