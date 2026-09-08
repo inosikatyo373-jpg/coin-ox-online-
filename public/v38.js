@@ -1,7 +1,7 @@
-/* BID GRID v3.15.7 - 1.4s attack, then hit, then board claim. */
+/* BID GRID v3.15.8 - 1.2s attack, then hit, then board claim. */
 (function(){
-  const VERSION='3157';
-  const ATTACK_MS=1400;
+  const VERSION='3158';
+  const ATTACK_MS=1200;
   const HIT_MS=380;
   const POST_HIT_GAP=120;
   window.BID_CHARACTER_BRIDGE_VERSION=VERSION;
