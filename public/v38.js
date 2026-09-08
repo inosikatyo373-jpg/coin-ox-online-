@@ -1,7 +1,17 @@
-/* BID GRID v3.15.6 - separated idle + immediate auction attack/hit sprites */
+/* BID GRID v3.15.7 - 1.4s attack, then hit, then board claim. */
 (function(){
-  const VERSION='3156';
+  const VERSION='3157';
+  const ATTACK_MS=1400;
+  const HIT_MS=380;
+  const POST_HIT_GAP=120;
   window.BID_CHARACTER_BRIDGE_VERSION=VERSION;
+
+  let actionSequence=0;
+  let delayedHitTimer=0;
+  let delayedIdleTimers=[0,0];
+  let overlayHoldTimer=0;
+  let overlayHoldUntil=0;
+  let overlayObserver=null;
 
   function injectStyle(key,href){
     if(document.querySelector(`link[data-${key}]`))return;
@@ -89,8 +99,36 @@
   };
   try{openingSelectedArt=window.openingSelectedArt}catch(e){}
 
+  function clearActionTimers(){
+    clearTimeout(delayedHitTimer);
+    delayedIdleTimers.forEach(clearTimeout);
+    delayedIdleTimers=[0,0];
+  }
+
+  function holdAuctionOverlayUntil(deadline){
+    overlayHoldUntil=Math.max(overlayHoldUntil,deadline);
+    const overlay=document.getElementById('auctionOverlay');
+    if(!overlay)return;
+    if(!overlayObserver){
+      overlayObserver=new MutationObserver(()=>{
+        if(!overlay.classList.contains('hidden'))return;
+        const remaining=overlayHoldUntil-performance.now();
+        if(remaining<=0)return;
+        overlay.classList.remove('hidden');
+        clearTimeout(overlayHoldTimer);
+        overlayHoldTimer=setTimeout(()=>{
+          if(performance.now()+8>=overlayHoldUntil)overlay.classList.add('hidden');
+        },Math.max(0,remaining));
+      });
+      overlayObserver.observe(overlay,{attributes:true,attributeFilter:['class']});
+    }
+  }
+
   window.renderAuctionCharacters=function(){
     ensureMotionScript();
+    clearActionTimers();
+    window.__bidAttackTimeline=null;
+    window.__bidActionEndAt=0;
     for(let i=0;i<2;i++){
       const target=document.getElementById('auctionCharacter'+i);if(!target)continue;
       const id=state?.players?.[i]?.character||'merchant';
@@ -102,7 +140,7 @@
   };
   try{renderAuctionCharacters=window.renderAuctionCharacters}catch(e){}
 
-  window.setAuctionCharacterMotion=function(side,motion){
+  function renderAuctionMotionNow(side,motion){
     ensureMotionScript();
     const target=document.getElementById('auctionCharacter'+side);if(!target)return;
     const id=state?.players?.[side]?.character||target.dataset.character||'merchant';
@@ -112,8 +150,66 @@
     target.innerHTML=useSprite
       ? actionBody(id,motion,side,'battleCharacterSprite nativeStableSprite')
       : idleBody(id,'battleCharacterSprite nativeStableSprite motion-idle',motion==='idle'?'idle':'static');
+  }
+
+  window.setAuctionCharacterMotion=function(side,motion){
+    ensureMotionScript();
+
+    if(motion==='attack'){
+      clearActionTimers();
+      const seq=++actionSequence;
+      const attackStart=performance.now();
+      const attackEnd=attackStart+ATTACK_MS;
+      const hitEnd=attackEnd+HIT_MS;
+      const boardStart=hitEnd+POST_HIT_GAP;
+      window.__bidAttackTimeline={seq,attackStart,attackEnd,hitEnd,boardStart};
+      window.__bidActionEndAt=boardStart;
+      renderAuctionMotionNow(side,'attack');
+      holdAuctionOverlayUntil(hitEnd);
+      return;
+    }
+
+    const timeline=window.__bidAttackTimeline;
+    if(timeline && timeline.seq===actionSequence){
+      if(motion==='hit'){
+        const delay=Math.max(0,timeline.attackEnd-performance.now());
+        clearTimeout(delayedHitTimer);
+        delayedHitTimer=setTimeout(()=>{
+          if(timeline.seq!==actionSequence)return;
+          renderAuctionMotionNow(side,'hit');
+        },delay);
+        return;
+      }
+
+      if(motion==='idle' && performance.now()<timeline.boardStart){
+        clearTimeout(delayedIdleTimers[side]);
+        delayedIdleTimers[side]=setTimeout(()=>{
+          if(timeline.seq!==actionSequence)return;
+          renderAuctionMotionNow(side,'idle');
+        },Math.max(0,timeline.boardStart-performance.now()));
+        return;
+      }
+    }
+
+    renderAuctionMotionNow(side,motion);
   };
   try{setAuctionCharacterMotion=window.setAuctionCharacterMotion}catch(e){}
+
+  function installBoardClaimGate(){
+    const original=window.playBoardClaim;
+    if(typeof original!=='function'||original.__bidActionGate)return;
+    const wrapped=async function(...args){
+      const deadline=Number(window.__bidActionEndAt||0);
+      const remaining=deadline-performance.now();
+      if(remaining>0)await new Promise(resolve=>setTimeout(resolve,remaining));
+      window.__bidActionEndAt=0;
+      return original.apply(this,args);
+    };
+    wrapped.__bidActionGate=true;
+    window.playBoardClaim=wrapped;
+    try{playBoardClaim=wrapped}catch(e){}
+  }
+  installBoardClaimGate();
 
   function repaintCharacterUI(){
     try{if(typeof renderCharacterGrid==='function')renderCharacterGrid()}catch(e){console.warn('[character-art] grid repaint failed',e)}
@@ -130,6 +226,6 @@
 
   ensureMotionScript();
   repaintCharacterUI();
-  window.addEventListener('load',()=>{repaintCharacterUI();syncBattle();});
-  setTimeout(()=>{repaintCharacterUI();syncBattle();},0);
+  window.addEventListener('load',()=>{installBoardClaimGate();repaintCharacterUI();syncBattle();});
+  setTimeout(()=>{installBoardClaimGate();repaintCharacterUI();syncBattle();},0);
 })();
