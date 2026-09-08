@@ -1,5 +1,6 @@
-/* BID GRID v3.14.2 - real auction attack / hit sprite frames */
+/* BID GRID v3.14.3 - separated idle motion and auction action sprites */
 (function(){
+  const ACTION_VERSION='3143';
   function injectStyle(key,href){
     if(document.querySelector(`link[data-${key}]`))return;
     const link=document.createElement('link');
@@ -8,9 +9,9 @@
     link.setAttribute(`data-${key}`,'1');
     document.head.appendChild(link);
   }
-  injectStyle('v381-fullbody','/v381.css?v=3142');
-  injectStyle('v382-actions','/v382.css?v=3142');
-  injectStyle('character-motions-3142','/character-motions.css?v=3142');
+  injectStyle('v381-fullbody','/v381.css?v=3143');
+  injectStyle('v382-actions','/v382.css?v=3143');
+  injectStyle('character-motions-3143','/character-motions.css?v=3143');
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
   const IDLE_PERIODS={gunslinger:3.8,zombie:4.8,merchant:3.6,swordswoman:4.2,robot:3.2,dog:2.4,mage:4.6,doctor:3.4};
@@ -19,25 +20,27 @@
   function spriteMarkup(id,className=''){
     const safe=id==='random'?'random':safeCharacter(id);
     const c=safe==='random'?{name:'ランダム'}:getCharacterDef(safe);
-    return `<img class="nativeCharacterImage nativeSourceImage characterIdle ${className}" data-character="${safe}" style="--idle-delay:-${((performance.now()/1000)%(IDLE_PERIODS[safe]||4)).toFixed(3)}s" src="/characters/original/${safe}.png?v=31117" alt="${c.name}" draggable="false">`;
+    return `<img class="nativeCharacterImage nativeSourceImage characterIdle ${className}" data-character="${safe}" style="--idle-delay:-${((performance.now()/1000)%(IDLE_PERIODS[safe]||4)).toFixed(3)}s" src="/characters/original/${safe}.png?v=31117" alt="${c.name}" draggable="false" decoding="async">`;
   }
   function ensureActionMotionScript(){
-    if(typeof window.bidActionMotionMarkup==='function')return;
-    if(document.querySelector('script[data-character-motions-3142]'))return;
+    if(window.BID_ACTION_MOTION_VERSION===ACTION_VERSION && typeof window.bidActionMotionMarkup==='function')return;
+    if(document.querySelector(`script[data-character-motions-${ACTION_VERSION}]`))return;
     const script=document.createElement('script');
-    script.src='/character-motions.js?v=3142';
-    script.setAttribute('data-character-motions-3142','1');
+    script.src=`/character-motions.js?v=${ACTION_VERSION}`;
+    script.setAttribute(`data-character-motions-${ACTION_VERSION}`,'1');
     script.onload=()=>{repaintCharacterUI();syncBattle();try{if(typeof renderAuctionCharacters==='function')renderAuctionCharacters()}catch(e){}};
     document.body.appendChild(script);
   }
   function fullBodyMarkup(id,className='',motion='idle'){
     const safe=safeCharacter(id);
-    if(window.bidCharacterMotionMarkup)return window.bidCharacterMotionMarkup(safe,className,motion,0);
+    if(window.BID_ACTION_MOTION_VERSION===ACTION_VERSION && window.bidCharacterMotionMarkup){
+      return window.bidCharacterMotionMarkup(safe,className,motion,0);
+    }
     return spriteMarkup(safe,className);
   }
   function actionBodyMarkup(id,motion,side,className=''){
     const safe=safeCharacter(id);
-    if((motion==='attack'||motion==='hit') && window.bidActionMotionMarkup){
+    if((motion==='attack'||motion==='hit') && window.BID_ACTION_MOTION_VERSION===ACTION_VERSION && window.bidActionMotionMarkup){
       return window.bidActionMotionMarkup(safe,className,motion,side);
     }
     return fullBodyMarkup(safe,className,motion==='idle'?'idle':'static');
@@ -88,7 +91,7 @@
     ensureActionMotionScript();
     const target=document.getElementById('auctionCharacter'+side);if(!target)return;
     const id=state?.players?.[side]?.character||target.dataset.character||'merchant';
-    const useSprite=(motion==='attack'||motion==='hit') && typeof window.bidActionMotionMarkup==='function';
+    const useSprite=(motion==='attack'||motion==='hit') && window.BID_ACTION_MOTION_VERSION===ACTION_VERSION && typeof window.bidActionMotionMarkup==='function';
     target.dataset.character=id;
     target.className=`auctionCharacter motion-${motion}${useSprite?' motion-sprite':''}`;
     target.innerHTML=useSprite
