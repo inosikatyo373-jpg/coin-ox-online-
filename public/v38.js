@@ -1,8 +1,12 @@
-/* BID GRID v3.14.9 - persistent idle sprites and readable auction action timing */
+/* BID GRID v3.15.0 - dedicated attack/hit sequencing and persistent idle sprites */
 (function(){
-  const ACTION_VERSION='3149';
-  const STYLE_VERSION='3149';
+  const ACTION_VERSION='3150';
+  const STYLE_VERSION='3150';
+  const ATTACK_MS=820;
+  const HIT_MS=620;
+  const POST_HIT_GAP=120;
   window.BID_CHARACTER_BRIDGE_VERSION=ACTION_VERSION;
+
   function injectStyle(key,href){
     if(document.querySelector(`link[data-${key}]`))return;
     const link=document.createElement('link');
@@ -93,6 +97,8 @@
     clearTimeout(delayedHitTimer);
     clearTimeout(overlayHoldTimer);
     overlayHoldUntil=0;
+    window.__bidAttackSequence=null;
+    window.__bidActionEndAt=0;
   }
 
   function holdAuctionOverlayUntil(deadline){
@@ -123,7 +129,7 @@
       target.dataset.character=id;
       target.className='auctionCharacter motion-idle';
       target.innerHTML=fullBodyMarkup(id,'battleCharacterSprite nativeStableSprite motion-idle','idle');
-      try{window.preloadBidIdleMotion?.(id)}catch(e){}
+      try{window.preloadBidIdleMotion?.(id);window.preloadBidActionMotion?.(id)}catch(e){}
     }
   };
   try{renderAuctionCharacters=window.renderAuctionCharacters}catch(e){}
@@ -144,18 +150,22 @@
     if(motion==='attack'){
       clearTimeout(delayedHitTimer);
       const seq=++actionSequence;
-      const started=performance.now();
-      window.__bidAttackSequence={seq,started};
+      const attackStart=performance.now();
+      const hitStart=attackStart+ATTACK_MS;
+      const hitEnd=hitStart+HIT_MS;
+      const boardStart=hitEnd+POST_HIT_GAP;
+      window.__bidAttackSequence={seq,attackStart,hitStart,hitEnd,boardStart};
+      window.__bidActionEndAt=boardStart;
       renderAuctionMotionNow(side,'attack');
-      holdAuctionOverlayUntil(started+1150);
+      holdAuctionOverlayUntil(hitEnd);
       return;
     }
     if(motion==='hit' && window.__bidAttackSequence){
-      const {seq,started}=window.__bidAttackSequence;
-      const delay=Math.max(0,800-(performance.now()-started));
+      const timeline=window.__bidAttackSequence;
+      const delay=Math.max(0,timeline.hitStart-performance.now());
       clearTimeout(delayedHitTimer);
       delayedHitTimer=setTimeout(()=>{
-        if(seq!==actionSequence)return;
+        if(timeline.seq!==actionSequence)return;
         renderAuctionMotionNow(side,'hit');
       },delay);
       return;
@@ -163,6 +173,23 @@
     renderAuctionMotionNow(side,motion);
   };
   try{setAuctionCharacterMotion=window.setAuctionCharacterMotion}catch(e){}
+
+  /* Gate the board O/X drop so it starts only after the hit animation is finished. */
+  function installBoardClaimGate(){
+    const original=window.playBoardClaim;
+    if(typeof original!=='function'||original.__bidActionGate)return;
+    const wrapped=async function(...args){
+      const deadline=Number(window.__bidActionEndAt||0);
+      const remaining=deadline-performance.now();
+      if(remaining>0)await new Promise(resolve=>setTimeout(resolve,remaining));
+      window.__bidActionEndAt=0;
+      return original.apply(this,args);
+    };
+    wrapped.__bidActionGate=true;
+    window.playBoardClaim=wrapped;
+    try{playBoardClaim=wrapped}catch(e){}
+  }
+  installBoardClaimGate();
 
   function repaintCharacterUI(){
     try{if(typeof renderCharacterGrid==='function')renderCharacterGrid()}catch(e){console.warn('[character-art] grid repaint failed',e)}
@@ -179,6 +206,6 @@
 
   ensureActionMotionScript();
   repaintCharacterUI();
-  window.addEventListener('load',()=>{repaintCharacterUI();syncBattle();});
-  setTimeout(()=>{repaintCharacterUI();syncBattle();},0);
+  window.addEventListener('load',()=>{installBoardClaimGate();repaintCharacterUI();syncBattle();});
+  setTimeout(()=>{installBoardClaimGate();repaintCharacterUI();syncBattle();},0);
 })();
