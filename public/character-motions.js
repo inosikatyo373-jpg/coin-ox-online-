@@ -26,9 +26,12 @@
 
   const original = id => `/characters/original/${id}.png?v=31117`;
   const motionSheet = id => `/characters/motions/v314/${id}.png?v=${VERSION}`;
-  const actionAtlasSrc = `/characters/actions/v3159/actions-atlas.png?v=${VERSION}`;
+  const actionAtlasParts = Array.from(
+    {length: 6},
+    (_, i) => `/characters/actions/v3159/atlas.part${i + 1}.b64?v=${VERSION}`
+  );
 
-  /* 2 columns x 4 rows. Each character block is a 3x2 grid of 48px frames. */
+  /* 2 columns x 4 rows. Each character block is a 3x2 grid of 32px frames. */
   const actionAtlasLayout = {
     zombie:      {col:0,row:0},
     robot:       {col:1,row:0},
@@ -140,16 +143,30 @@
     if (actionAtlas) return Promise.resolve(actionAtlas);
     if (actionAtlasPromise) return actionAtlasPromise;
 
-    actionAtlasPromise = new Promise((resolve, reject) => {
+    actionAtlasPromise = Promise.all(
+      actionAtlasParts.map(url =>
+        fetch(url, {cache: 'force-cache'}).then(response => {
+          if (!response.ok) throw Error(`Cannot load action atlas part: ${response.status}`);
+          return response.text();
+        })
+      )
+    ).then(parts => new Promise((resolve, reject) => {
+      const base64 = parts.join('').replace(/\s+/g, '');
+      if (!base64.startsWith('iVBORw0KGgo')) {
+        reject(Error('Invalid action atlas data'));
+        return;
+      }
+
       const img = new Image();
       img.decoding = 'async';
       img.onload = () => {
         actionAtlas = img;
         resolve(img);
       };
-      img.onerror = () => reject(Error('Cannot load shared action atlas'));
-      img.src = actionAtlasSrc;
-    });
+      img.onerror = () => reject(Error('Cannot decode shared action atlas'));
+      img.src = `data:image/png;base64,${base64}`;
+    }));
+
     return actionAtlasPromise;
   }
 
@@ -188,13 +205,14 @@
 
   function drawActionFrame(ctx, atlas, id, frameIndex) {
     const pos = actionAtlasLayout[safeId(id)];
-    const frameSize = 48;
+    const frameSize = 32;
     const blockW = frameSize * 3;
     const blockH = frameSize * 2;
     const sx = pos.col * blockW + (frameIndex % 3) * frameSize;
     const sy = pos.row * blockH + Math.floor(frameIndex / 3) * frameSize;
 
     ctx.clearRect(0, 0, FRAME, FRAME);
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(atlas, sx, sy, frameSize, frameSize, 0, 0, FRAME, FRAME);
   }
 
@@ -255,7 +273,7 @@
         const shadow = this.attachShadow({mode: 'open'});
         shadow.innerHTML = `<style>
           :host{display:block;position:relative;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 8px 7px #000a)}
-          img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto}
+          img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:pixelated}
           canvas{visibility:hidden}:host([ready]) canvas{visibility:visible}:host([ready]) img{display:none}
           :host([side="1"]) img,:host([side="1"]) canvas{transform:scaleX(-1)}
         </style><img alt="" draggable="false" decoding="async"><canvas aria-hidden="true"></canvas>`;
