@@ -1,4 +1,4 @@
-/* BIDGRID v3.15.0: six-frame idle sprites + dedicated attack / hit motions. */
+/* BIDGRID v3.15.1: six-frame idle sprites + dedicated attack / hit motions. */
 (() => {
   'use strict';
 
@@ -167,6 +167,12 @@
       const frame = this.classList.contains('motion-static') ? 0 : frameAt(this.characterId, now);
       if (frame === this.lastFrame) return;
       drawSheetFrame(this.ctx, sheet, frame);
+      // Jack's sixth source frame contains two detached cape fragments on the
+      // extreme left (spill from the neighboring sprite cell). Remove only
+      // that empty-edge area after drawing; the main silhouette starts at x=30.
+      if (this.characterId === 'gunslinger' && frame === 5) {
+        this.ctx.clearRect(0, 250, 30, 160);
+      }
       this.lastFrame = frame;
       this.setAttribute('ready', '');
     }
