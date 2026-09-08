@@ -1,15 +1,15 @@
-/* BID GRID v3.12.5 - Jack sprite-sheet idle loop */
+/* BID GRID v3.12.6 - Jack sprite-sheet idle loop with static fallback */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=3125';
+    link.href='/v381.css?v=3126';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
-  const JACK_IDLE_SHEET='/characters/gunslinger/jack_idle_sheet_6f.avif?v=3125';
+  const JACK_IDLE_SHEET='/characters/gunslinger/jack_idle_sheet_6f.avif?v=3126';
   const JACK_IDLE_FRAME_COUNT=6;
   const JACK_IDLE_INTERVAL=200;
 
@@ -21,7 +21,7 @@
   }
   function jackSpriteMarkup(className=''){
     const c=getCharacterDef('gunslinger');
-    return `<span class="jackSpriteSheet ${className}" data-character="gunslinger" data-jack-frame="0" role="img" aria-label="${c.name}"></span>`;
+    return `<span class="jackSpriteSheet ${className}" data-character="gunslinger" data-jack-frame="0" role="img" aria-label="${c.name}"><img class="jackSpriteFallback" src="/characters/original/gunslinger.png?v=31117" alt="${c.name}" draggable="false"></span>`;
   }
   function fullBodyMarkup(id,className=''){
     const safe=safeCharacter(id);
@@ -58,18 +58,23 @@
 
   let jackIdleFrame=0;
   let jackIdleTimer=null;
-  let jackSheetReady=false;
 
   function preloadJackSheet(){
     return new Promise(resolve=>{
       const img=new Image();
       img.decoding='async';
       img.onload=()=>{
-        const finish=()=>{jackSheetReady=true;resolve();};
+        const finish=()=>{
+          document.documentElement.classList.add('jackSheetReady');
+          resolve(true);
+        };
         if(typeof img.decode==='function') img.decode().catch(()=>{}).finally(finish);
         else finish();
       };
-      img.onerror=()=>resolve();
+      img.onerror=()=>{
+        document.documentElement.classList.remove('jackSheetReady');
+        resolve(false);
+      };
       img.src=JACK_IDLE_SHEET;
     });
   }
@@ -88,7 +93,6 @@
       if(jackIdleTimer) return;
       jackIdleFrame=0;
       syncJackSprites();
-      // Even if preload failed, retry through CSS background without swapping URLs.
       jackIdleTimer=setInterval(advanceJackIdle,JACK_IDLE_INTERVAL);
     });
   }
