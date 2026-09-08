@@ -55,7 +55,7 @@
 
   window.battleCharacterMarkup=function(characterId,motion='idle'){
     const id=safeCharacter(characterId||'merchant');
-    const resolvedMotion=(motion==='attack'||motion==='hit'||motion==='static')?motion:'idle';
+    const resolvedMotion=(motion==='attack'||motion==='hit')?motion:'idle';
     return fullBodyMarkup(id,`battleCharacterSprite nativeStableSprite motion-${resolvedMotion}`,resolvedMotion);
   };
   try{battleCharacterMarkup=window.battleCharacterMarkup}catch(e){}
