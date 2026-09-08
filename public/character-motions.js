@@ -1,10 +1,10 @@
-/* BIDGRID v3.15.6: separated idle sprites and improved Jack action chroma key. */
+/* BIDGRID v3.15.7: separated idle sprites, improved Jack chroma key, 1.4s attack playback. */
 (() => {
   'use strict';
 
-  const VERSION = '3156';
+  const VERSION = '3157';
   const FRAME = 512;
-  const ATTACK_DELAYS = [0, 70, 140];
+  const ATTACK_DELAYS = [0, 470, 940];
   const HIT_DELAYS = [0, 95, 190];
   const specs = {
     gunslinger: {ms: 220}, swordswoman: {ms: 300}, mage: {ms: 220},
@@ -37,9 +37,9 @@
       const style = document.createElement('style');
       style.setAttribute(`data-action-motion-${VERSION}`, '1');
       style.textContent = `
-        bid-action-motion-v3156.actionMotion{display:block!important;position:relative!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;aspect-ratio:1/1!important;flex:0 0 auto!important;opacity:1!important;visibility:visible!important;overflow:visible!important;transform:none!important;translate:none!important;rotate:none!important;scale:1!important;animation:none!important;filter:drop-shadow(0 8px 7px #000a)!important}
-        .auctionCharacter>bid-action-motion-v3156.actionMotion{width:92px!important;height:92px!important;max-width:none!important;max-height:none!important;margin:-5px auto -5px!important}
-        @media(max-width:600px){.auctionCharacter>bid-action-motion-v3156.actionMotion{width:68px!important;height:68px!important;margin:-4px auto!important}}
+        bid-action-motion-v3157.actionMotion{display:block!important;position:relative!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;aspect-ratio:1/1!important;flex:0 0 auto!important;opacity:1!important;visibility:visible!important;overflow:visible!important;transform:none!important;translate:none!important;rotate:none!important;scale:1!important;animation:none!important;filter:drop-shadow(0 8px 7px #000a)!important}
+        .auctionCharacter>bid-action-motion-v3157.actionMotion{width:92px!important;height:92px!important;max-width:none!important;max-height:none!important;margin:-5px auto -5px!important}
+        @media(max-width:600px){.auctionCharacter>bid-action-motion-v3157.actionMotion{width:68px!important;height:68px!important;margin:-4px auto!important}}
       `;
       document.head.appendChild(style);
     }
@@ -84,13 +84,11 @@
       const other = Math.max(r, b);
       const dominance = g - other;
 
-      /* Normal idle sheets retain the established hard chroma key. */
       if (!softActionKey) {
         if (g > 100 && dominance > 75 && other < 115) p[i + 3] = 0;
         continue;
       }
 
-      /* Jack action sheet: remove solid green, then soften/de-spill edge green. */
       if (g > 108 && dominance > 78 && r < 142 && b < 142) {
         p[i + 3] = 0;
         continue;
@@ -100,8 +98,6 @@
         const strength = Math.max(0, Math.min(1, (dominance - 18) / 62));
         const alphaLoss = 0.82 * strength;
         p[i + 3] = Math.round(a * (1 - alphaLoss));
-
-        /* Neutralize green spill without altering the red/blue edge structure. */
         const neutral = Math.max(r, b);
         const deSpill = 0.72 * strength;
         p[i + 1] = Math.round(g * (1 - deSpill) + neutral * deSpill);
@@ -209,7 +205,7 @@
     }
   }
 
-  class BidActionMotion3156 extends HTMLElement {
+  class BidActionMotion3157 extends HTMLElement {
     connectedCallback() {
       if (!this.built) {
         this.built = true;
@@ -245,9 +241,9 @@
   }
 
   const idleTag = 'bid-idle-motion-v3154';
-  const actionTag = 'bid-action-motion-v3156';
+  const actionTag = 'bid-action-motion-v3157';
   if (!customElements.get(idleTag)) customElements.define(idleTag, BidIdleMotion3154);
-  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3156);
+  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3157);
 
   setInterval(() => {
     if (document.hidden) return;
