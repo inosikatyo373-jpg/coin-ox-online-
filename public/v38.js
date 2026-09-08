@@ -1,6 +1,7 @@
 /* BID GRID v3.14.5 - persistent idle wrapper motion and auction action sprites */
 (function(){
-  const ACTION_VERSION='3145';
+  const ACTION_VERSION='3144';
+  const STYLE_VERSION='3145';
   function injectStyle(key,href){
     if(document.querySelector(`link[data-${key}]`))return;
     const link=document.createElement('link');
@@ -9,9 +10,9 @@
     link.setAttribute(`data-${key}`,'1');
     document.head.appendChild(link);
   }
-  injectStyle('v381-fullbody','/v381.css?v=3145');
-  injectStyle('v382-actions','/v382.css?v=3145');
-  injectStyle('character-motions-3145','/character-motions.css?v=3145');
+  injectStyle('v381-fullbody','/v381.css?v='+STYLE_VERSION);
+  injectStyle('v382-actions','/v382.css?v='+STYLE_VERSION);
+  injectStyle('character-motions-'+STYLE_VERSION,'/character-motions.css?v='+STYLE_VERSION);
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
   const IDLE_PERIODS={gunslinger:4.4,zombie:5.4,merchant:4.6,swordswoman:4.8,robot:3.8,dog:3.2,mage:5.2,doctor:4.2};
@@ -59,7 +60,6 @@
   };
   try{battleCharacterMarkup=window.battleCharacterMarkup}catch(e){}
 
-  // Keep the small circular HUD portrait static and crisp.
   window.battleCharacterFaceMarkup=function(characterId){
     return spriteMarkup(safeCharacter(characterId||'merchant'),'battleFaceSprite nativeStableSprite');
   };
