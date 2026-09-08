@@ -1,9 +1,11 @@
-/* BIDGRID v3.15.1: six-frame idle sprites + dedicated attack / hit motions. */
+/* BIDGRID v3.15.2: six-frame idle sprites + real 3-frame attack / hit playback. */
 (() => {
   'use strict';
 
-  const VERSION = '3150';
+  const VERSION = '3152';
   const FRAME = 512;
+  const ATTACK_DELAYS = [0, 300, 600];
+  const HIT_DELAYS = [0, 240, 480];
   const specs = {
     gunslinger: {ms: 220},
     swordswoman: {ms: 300},
@@ -107,22 +109,66 @@
     ctx.drawImage(sheet, sx, sy, w, h, 0, 0, FRAME, FRAME);
   }
 
-  class BidActionMotion3150 extends HTMLElement {
+  function cleanFrame(ctx, id, frameIndex) {
+    if (id === 'gunslinger' && frameIndex === 5) {
+      ctx.clearRect(0, 250, 30, 160);
+    }
+  }
+
+  class BidActionMotion3152 extends HTMLElement {
     connectedCallback() {
       if (!this.readyBuilt) {
         this.readyBuilt = true;
         const shadow = this.attachShadow({mode: 'open'});
         shadow.innerHTML = `<style>
-          :host{display:block;position:relative;contain:layout style paint;overflow:visible;transform-origin:50% 88%}
-          img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto;transform-origin:center bottom}
-          :host([side="1"]) img{transform:scaleX(-1)}
-        </style><img alt="" draggable="false" decoding="async">`;
-        this.image = shadow.querySelector('img');
+          :host{display:block;position:relative;width:82px;height:82px;max-width:100%;max-height:100%;contain:layout style paint;overflow:visible;transform-origin:50% 88%;filter:drop-shadow(0 8px 7px #000a)}
+          img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto;transform-origin:center bottom}
+          canvas{visibility:hidden}
+          :host([ready]) canvas{visibility:visible}
+          :host([ready]) img{display:none}
+          :host([side="1"]) img,:host([side="1"]) canvas{transform:scaleX(-1)}
+          @media(max-width:600px){:host{width:56px;height:56px}}
+        </style><img alt="" draggable="false" decoding="async"><canvas aria-hidden="true"></canvas>`;
+        this.fallback = shadow.querySelector('img');
+        this.canvas = shadow.querySelector('canvas');
+        this.canvas.width = FRAME;
+        this.canvas.height = FRAME;
+        this.ctx = this.canvas.getContext('2d');
       }
+
       this.characterId = safeId(this.getAttribute('character'));
       this.motion = this.getAttribute('motion') || 'attack';
-      this.image.src = original(this.characterId);
+      this.fallback.src = original(this.characterId);
+      this.playToken = (this.playToken || 0) + 1;
+      const token = this.playToken;
+      const entry = loadSheet(this.characterId);
+
+      const start = sheet => {
+        if (!this.isConnected || token !== this.playToken) return;
+        this.play(sheet, this.motion, token);
+      };
+      if (entry.canvas) start(entry.canvas);
+      else entry.promise.then(start).catch(error => console.warn('[action-motion]', error.message));
+    }
+
+    disconnectedCallback() {
+      this.playToken = (this.playToken || 0) + 1;
+    }
+
+    drawFrame(sheet, frameIndex) {
+      drawSheetFrame(this.ctx, sheet, frameIndex);
+      cleanFrame(this.ctx, this.characterId, frameIndex);
       this.setAttribute('ready', '');
+    }
+
+    play(sheet, motion, token) {
+      const frames = motion === 'hit' ? [3, 4, 5] : motion === 'attack' ? [0, 1, 2] : [0];
+      const delays = motion === 'hit' ? HIT_DELAYS : motion === 'attack' ? ATTACK_DELAYS : [0];
+      frames.forEach((frame, i) => {
+        setTimeout(() => {
+          if (this.isConnected && token === this.playToken) this.drawFrame(sheet, frame);
+        }, delays[i] || 0);
+      });
     }
   }
 
@@ -167,20 +213,15 @@
       const frame = this.classList.contains('motion-static') ? 0 : frameAt(this.characterId, now);
       if (frame === this.lastFrame) return;
       drawSheetFrame(this.ctx, sheet, frame);
-      // Jack's sixth source frame contains two detached cape fragments on the
-      // extreme left (spill from the neighboring sprite cell). Remove only
-      // that empty-edge area after drawing; the main silhouette starts at x=30.
-      if (this.characterId === 'gunslinger' && frame === 5) {
-        this.ctx.clearRect(0, 250, 30, 160);
-      }
+      cleanFrame(this.ctx, this.characterId, frame);
       this.lastFrame = frame;
       this.setAttribute('ready', '');
     }
   }
 
-  const actionTag = 'bid-action-motion-v3150';
+  const actionTag = 'bid-action-motion-v3152';
   const idleTag = 'bid-idle-motion-v3150';
-  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3150);
+  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3152);
   if (!customElements.get(idleTag)) customElements.define(idleTag, BidIdleMotion3150);
 
   setInterval(() => {
@@ -208,12 +249,7 @@
     return `<${idleTag} character="${safe}" class="partMotion ${classes}${staticClass}" role="img" aria-label="${c.name}"></${idleTag}>`;
   };
 
-  window.preloadBidActionMotion = id => {
-    try {
-      const img = new Image();
-      img.src = original(safeId(id));
-    } catch (e) {}
-  };
+  window.preloadBidActionMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
   window.preloadBidIdleMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
 
   setTimeout(() => {
