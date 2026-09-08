@@ -411,6 +411,7 @@ function publicState(r,viewerSlot=null){
     matchDraw:!!r.matchDraw,
     roundWinner:r.roundWinner,
     roundEndReason:r.roundEndReason,
+    roundResultWaitMs:r.phase==="roundEnd"?Math.max(0,10000-(Date.now()-(r.roundEndedAt||Date.now()))):0,
     matchEndReason:r.matchEndReason,
     equalBidStreak:r.equalBidStreak||0,
     connected:r.players.map(p=>!!p?.connected),
@@ -564,31 +565,33 @@ function boardWinner(board){
 }
 
 function endRound(r,w){
+  if(r.gameOver) return;
   r.roundEndReason=r.roundEndReason||"normal";
-  if(w===-1){
+  // A full board still uses remaining coins as the existing tie-breaker.
+  if(w===-1 && r.roundEndReason!=="fourEqualBids"){
     if(r.coins[0]>r.coins[1]) w=0;
     else if(r.coins[1]>r.coins[0]) w=1;
   }
 
   r.roundWinner=w;
   r.gameOver=true;
+  r.roundEndedAt=Date.now();
   if(r.roundEndReason!=="disconnect") r.matchEndReason=null;
   r.deadline=0;
   r.readyNext=[false,false];
 
-  if(w===0 || w===1) r.matchWins[w]++;
-
-  if(r.matchWins[0]>=2){
-    r.matchWinner=0;
-    r.phase="matchEnd";
-  }else if(r.matchWins[1]>=2){
-    r.matchWinner=1;
-    r.phase="matchEnd";
+  if(w===-1){
+    r.matchWins[0]++;
+    r.matchWins[1]++;
   }else{
-    r.phase="roundEnd";
+    r.matchWins[w]++;
   }
 
-  log(r,w===0?`第${r.roundNumber}戦：〇の勝利！`:w===1?`第${r.roundNumber}戦：×の勝利！`:`第${r.roundNumber}戦：引き分け`);
+  r.matchDraw=r.matchWins[0]>=2 && r.matchWins[1]>=2;
+  r.matchWinner=r.matchDraw?null:r.matchWins[0]>=2?0:r.matchWins[1]>=2?1:null;
+  r.phase=r.matchDraw || r.matchWinner!==null?"matchEnd":"roundEnd";
+
+  log(r,w===0?`第${r.roundNumber}戦：〇の勝利！`:w===1?`第${r.roundNumber}戦：×の勝利！`:`第${r.roundNumber}戦：引き分け。両者に1ポイント（♦1個）を付与しました。`);
   send(r);
   if(r.phase==="matchEnd") void recordMatchStats(r);
   io.to(r.id).emit("roundResult",{
@@ -596,58 +599,16 @@ function endRound(r,w){
     coins:[...r.coins],
     matchWins:[...r.matchWins],
     matchWinner:r.matchWinner,
+    matchDraw:r.matchDraw,
     reason:r.roundEndReason,
     roundNumber:r.roundNumber
   });
 }
 
-
 function endEqualBidDeadlock(r){
   if(r.gameOver) return;
-
-  const before=[...r.matchWins];
-
-  r.roundWinner=-1;
   r.roundEndReason="fourEqualBids";
-  r.gameOver=true;
-  r.deadline=0;
-  r.readyNext=[false,false];
-
-  // この引き分けは両者1勝扱い（ダイヤを1個ずつ追加）
-  r.matchWins[0]++;
-  r.matchWins[1]++;
-
-  // 1勝-1勝の状態から発生した時だけ、マッチ全体を本当の引き分けにする
-  if(before[0]===1 && before[1]===1){
-    r.matchWinner=null;
-    r.matchDraw=true;
-    r.phase="matchEnd";
-  }else if(r.matchWins[0]>=2 && r.matchWins[1]<2){
-    r.matchWinner=0;
-    r.matchDraw=false;
-    r.phase="matchEnd";
-  }else if(r.matchWins[1]>=2 && r.matchWins[0]<2){
-    r.matchWinner=1;
-    r.matchDraw=false;
-    r.phase="matchEnd";
-  }else{
-    r.matchWinner=null;
-    r.matchDraw=false;
-    r.phase="roundEnd";
-  }
-
-  log(r,`第${r.roundNumber}戦：同額入札が4回連続したため引き分け。両者に1勝を付与しました。`);
-  send(r);
-  if(r.phase==="matchEnd") void recordMatchStats(r);
-  io.to(r.id).emit("roundResult",{
-    winner:-1,
-    reason:"fourEqualBids",
-    coins:[...r.coins],
-    matchWins:[...r.matchWins],
-    matchWinner:r.matchWinner,
-    matchDraw:!!r.matchDraw,
-    roundNumber:r.roundNumber
-  });
+  endRound(r,-1);
 }
 
 function nextTurn(r){
