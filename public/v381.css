@@ -93,3 +93,18 @@
   .battleSideCharacterName{font-size:15px}
   .battleSideCharacterSub{font-size:7px;letter-spacing:.08em}
 }
+
+/* Jack idle motion: a subtle body rise and sway without swapping image assets. */
+@keyframes jackIdleBreath{
+  0%,100%{transform:translateY(0) rotate(-.25deg)}
+  45%{transform:translateY(-4px) rotate(.35deg)}
+  72%{transform:translateY(-1px) rotate(0deg)}
+}
+.battleSideArt .characterSprite.sprite-gunslinger.nativeStableSprite{
+  transform-origin:50% 84%;
+  animation:jackIdleBreath 1.9s ease-in-out infinite;
+  will-change:transform;
+}
+@media(prefers-reduced-motion:reduce){
+  .battleSideArt .characterSprite.sprite-gunslinger.nativeStableSprite{animation:none!important}
+}
