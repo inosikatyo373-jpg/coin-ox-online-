@@ -1,8 +1,8 @@
-/* BIDGRID v3.14.9: real six-frame idle animation + auction action renderer. */
+/* BIDGRID v3.15.0: six-frame idle sprites + dedicated attack / hit motions. */
 (() => {
   'use strict';
 
-  const VERSION = '3149';
+  const VERSION = '3150';
   const FRAME = 512;
   const specs = {
     gunslinger: {ms: 220},
@@ -107,66 +107,26 @@
     ctx.drawImage(sheet, sx, sy, w, h, 0, 0, FRAME, FRAME);
   }
 
-  class BidActionMotion3149 extends HTMLElement {
+  class BidActionMotion3150 extends HTMLElement {
     connectedCallback() {
       if (!this.readyBuilt) {
         this.readyBuilt = true;
         const shadow = this.attachShadow({mode: 'open'});
         shadow.innerHTML = `<style>
           :host{display:block;position:relative;contain:layout style paint;overflow:visible;transform-origin:50% 88%}
-          img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto;transform-origin:center bottom}
-          canvas{visibility:hidden}
-          :host([ready]) canvas{visibility:visible}
-          :host([ready]) img{display:none}
-          :host([side="1"]) img,:host([side="1"]) canvas{transform:scaleX(-1)}
-        </style><img alt="" draggable="false" decoding="async"><canvas aria-hidden="true"></canvas>`;
-        this.fallback = shadow.querySelector('img');
-        this.canvas = shadow.querySelector('canvas');
-        this.canvas.width = FRAME;
-        this.canvas.height = FRAME;
-        this.ctx = this.canvas.getContext('2d');
+          img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto;transform-origin:center bottom}
+          :host([side="1"]) img{transform:scaleX(-1)}
+        </style><img alt="" draggable="false" decoding="async">`;
+        this.image = shadow.querySelector('img');
       }
-
       this.characterId = safeId(this.getAttribute('character'));
       this.motion = this.getAttribute('motion') || 'attack';
-      this.fallback.src = original(this.characterId);
-      this.playToken = (this.playToken || 0) + 1;
-      const token = this.playToken;
-      const entry = loadSheet(this.characterId);
-
-      const start = sheet => {
-        if (!this.isConnected || token !== this.playToken) return;
-        this.play(sheet, this.motion, token);
-      };
-      if (entry.canvas) start(entry.canvas);
-      else entry.promise.then(start).catch(error => console.warn('[action-motion]', error.message));
-    }
-
-    disconnectedCallback() {
-      this.playToken = (this.playToken || 0) + 1;
-    }
-
-    drawFrame(sheet, frameIndex) {
-      drawSheetFrame(this.ctx, sheet, frameIndex);
+      this.image.src = original(this.characterId);
       this.setAttribute('ready', '');
-    }
-
-    play(sheet, motion, token) {
-      const frames = motion === 'hit' ? [3,4,5] : motion === 'attack' ? [0,1,2] : [0];
-      const delays = motion === 'hit' ? [0,120,250] : [0,260,520];
-      if (frames.length === 1) {
-        this.drawFrame(sheet, frames[0]);
-        return;
-      }
-      frames.forEach((frame, i) => {
-        setTimeout(() => {
-          if (this.isConnected && token === this.playToken) this.drawFrame(sheet, frame);
-        }, delays[i] || i * 120);
-      });
     }
   }
 
-  class BidIdleMotion3149 extends HTMLElement {
+  class BidIdleMotion3150 extends HTMLElement {
     connectedCallback() {
       if (!this.readyBuilt) {
         this.readyBuilt = true;
@@ -212,10 +172,10 @@
     }
   }
 
-  const actionTag = 'bid-action-motion-v3149';
-  const idleTag = 'bid-idle-motion-v3149';
-  customElements.define(actionTag, BidActionMotion3149);
-  customElements.define(idleTag, BidIdleMotion3149);
+  const actionTag = 'bid-action-motion-v3150';
+  const idleTag = 'bid-idle-motion-v3150';
+  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3150);
+  if (!customElements.get(idleTag)) customElements.define(idleTag, BidIdleMotion3150);
 
   setInterval(() => {
     if (document.hidden) return;
@@ -242,7 +202,12 @@
     return `<${idleTag} character="${safe}" class="partMotion ${classes}${staticClass}" role="img" aria-label="${c.name}"></${idleTag}>`;
   };
 
-  window.preloadBidActionMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
+  window.preloadBidActionMotion = id => {
+    try {
+      const img = new Image();
+      img.src = original(safeId(id));
+    } catch (e) {}
+  };
   window.preloadBidIdleMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
 
   setTimeout(() => {
