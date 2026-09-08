@@ -1,4 +1,4 @@
-/* BIDGRID v3.15.4: separated idle sprites and fast auction attack / hit frames. */
+/* BIDGRID v3.15.5: separated idle sprites and fast auction attack / hit frames. */
 (() => {
   'use strict';
 
@@ -124,6 +124,15 @@
     ctx.drawImage(sheet, (frameIndex % 3) * w, Math.floor(frameIndex / 3) * h, w, h, 0, 0, FRAME, FRAME);
   }
 
+  /* Restore the original Jack idle cleanup: frame 6 contains two detached
+     cape fragments at the extreme left edge. Remove only that empty-edge
+     spill after the idle frame is drawn; action/hit artwork is untouched. */
+  function cleanIdleFrame(ctx, id, frameIndex) {
+    if (id === 'gunslinger' && frameIndex === 5) {
+      ctx.clearRect(0, 250, 30, 160);
+    }
+  }
+
   class BidIdleMotion3154 extends HTMLElement {
     connectedCallback() {
       if (!this.built) {
@@ -151,6 +160,7 @@
       const frame = this.classList.contains('motion-static') ? 0 : frameAt(this.characterId, now);
       if (frame === this.lastFrame) return;
       drawSheetFrame(this.ctx, sheet, frame);
+      cleanIdleFrame(this.ctx, this.characterId, frame);
       this.lastFrame = frame;
       this.setAttribute('ready', '');
     }
