@@ -1,15 +1,15 @@
-/* BID GRID v3.12.4 - Jack sprite-sheet idle loop */
+/* BID GRID v3.12.5 - Jack sprite-sheet idle loop */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=3124';
+    link.href='/v381.css?v=3125';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
-  const JACK_IDLE_SHEET='/characters/gunslinger/jack_idle_sheet_6f.png?v=3124';
+  const JACK_IDLE_SHEET='/characters/gunslinger/jack_idle_sheet_6f.avif?v=3125';
   const JACK_IDLE_FRAME_COUNT=6;
   const JACK_IDLE_INTERVAL=200;
 

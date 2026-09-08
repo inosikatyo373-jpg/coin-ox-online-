@@ -1,4 +1,4 @@
-/* BID GRID v3.12.4 - character layout + Jack sprite-sheet idle */
+/* BID GRID v3.12.5 - character layout + Jack sprite-sheet idle */
 .charPortrait .nativeSourceImage{
   width:100%!important;height:100%!important;object-fit:contain!important;
 }
@@ -71,15 +71,15 @@
 @media(max-width:1000px){.battleSideLabel{align-items:flex-start!important;text-align:left!important}.battleSideCharacterName{font-size:18px}}
 @media(max-width:600px){.battleSideLabel{gap:1px!important}.battleSideRole{font-size:8px}.battleSideCharacterName{font-size:15px}.battleSideCharacterSub{font-size:7px;letter-spacing:.08em}}
 
-/* Jack v3.12.4: one decoded image, six cells. Only background-position moves.
+/* Jack v3.12.5: one decoded image, six cells. Only background-position moves.
    The sheet already contains the ping-pong order 1,2,3,4,3,2. */
 .jackSpriteSheet{
   display:block!important;
   position:relative!important;
   overflow:hidden!important;
   flex:0 0 auto!important;
-  aspect-ratio:512/468!important;
-  background-image:url('/characters/gunslinger/jack_idle_sheet_6f.png?v=3124')!important;
+  aspect-ratio:192/176!important;
+  background-image:url('/characters/gunslinger/jack_idle_sheet_6f.avif?v=3125')!important;
   background-repeat:no-repeat!important;
   background-size:600% 100%!important;
   background-position-y:0!important;
