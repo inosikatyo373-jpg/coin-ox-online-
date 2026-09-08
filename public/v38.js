@@ -1,6 +1,6 @@
 /* BID GRID v3.14.9 - persistent idle sprites and readable auction action timing */
 (function(){
-  const ACTION_VERSION='3146';
+  const ACTION_VERSION='3149';
   const STYLE_VERSION='3149';
   window.BID_CHARACTER_BRIDGE_VERSION=ACTION_VERSION;
   function injectStyle(key,href){
@@ -147,7 +147,6 @@
       const started=performance.now();
       window.__bidAttackSequence={seq,started};
       renderAuctionMotionNow(side,'attack');
-      // Keep the reveal visible long enough to read the attack and ensuing hit.
       holdAuctionOverlayUntil(started+1150);
       return;
     }
