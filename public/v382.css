@@ -1,0 +1,107 @@
+/* BID GRID v3.14.1 - auction attack / hit motion layer */
+.auctionCharacter{
+  min-height:96px!important;
+  transform-style:preserve-3d!important;
+  will-change:transform,filter!important;
+}
+.auctionCharacter>.nativeCharacterImage,
+.auctionCharacter>.battleCharacterSprite,
+.auctionCharacter>.characterSprite,
+.auctionCharacter .nativeCharacterImage,
+.auctionCharacter .battleCharacterSprite,
+.auctionCharacter .characterSprite{
+  will-change:transform,opacity,filter!important;
+  transform-origin:50% 88%!important;
+}
+.auctionCharacter.motion-idle>.nativeCharacterImage,
+.auctionCharacter.motion-idle>.battleCharacterSprite,
+.auctionCharacter.motion-idle>.characterSprite,
+.auctionCharacter.motion-idle .nativeCharacterImage,
+.auctionCharacter.motion-idle .battleCharacterSprite,
+.auctionCharacter.motion-idle .characterSprite{
+  animation:none!important;
+}
+.coinSide:first-child .auctionCharacter.motion-attack>.nativeCharacterImage,
+.coinSide:first-child .auctionCharacter.motion-attack>.battleCharacterSprite,
+.coinSide:first-child .auctionCharacter.motion-attack>.characterSprite,
+.coinSide:first-child .auctionCharacter.motion-attack .nativeCharacterImage,
+.coinSide:first-child .auctionCharacter.motion-attack .battleCharacterSprite,
+.coinSide:first-child .auctionCharacter.motion-attack .characterSprite{
+  animation:bidAttackRight .62s cubic-bezier(.16,.86,.18,1.05) both!important;
+}
+.coinSide:last-child .auctionCharacter.motion-attack>.nativeCharacterImage,
+.coinSide:last-child .auctionCharacter.motion-attack>.battleCharacterSprite,
+.coinSide:last-child .auctionCharacter.motion-attack>.characterSprite,
+.coinSide:last-child .auctionCharacter.motion-attack .nativeCharacterImage,
+.coinSide:last-child .auctionCharacter.motion-attack .battleCharacterSprite,
+.coinSide:last-child .auctionCharacter.motion-attack .characterSprite{
+  animation:bidAttackLeft .62s cubic-bezier(.16,.86,.18,1.05) both!important;
+}
+.coinSide:first-child .auctionCharacter.motion-hit>.nativeCharacterImage,
+.coinSide:first-child .auctionCharacter.motion-hit>.battleCharacterSprite,
+.coinSide:first-child .auctionCharacter.motion-hit>.characterSprite,
+.coinSide:first-child .auctionCharacter.motion-hit .nativeCharacterImage,
+.coinSide:first-child .auctionCharacter.motion-hit .battleCharacterSprite,
+.coinSide:first-child .auctionCharacter.motion-hit .characterSprite{
+  animation:bidHitLeft .58s cubic-bezier(.15,.8,.22,1.12) both!important;
+}
+.coinSide:last-child .auctionCharacter.motion-hit>.nativeCharacterImage,
+.coinSide:last-child .auctionCharacter.motion-hit>.battleCharacterSprite,
+.coinSide:last-child .auctionCharacter.motion-hit>.characterSprite,
+.coinSide:last-child .auctionCharacter.motion-hit .nativeCharacterImage,
+.coinSide:last-child .auctionCharacter.motion-hit .battleCharacterSprite,
+.coinSide:last-child .auctionCharacter.motion-hit .characterSprite{
+  animation:bidHitRight .58s cubic-bezier(.15,.8,.22,1.12) both!important;
+}
+@keyframes bidAttackRight{
+  0%{translate:0 0;rotate:0deg;scale:1;filter:drop-shadow(0 6px 6px #000a) brightness(1)}
+  28%{translate:-7% 0;rotate:-3deg;scale:1.03;filter:drop-shadow(0 6px 6px #000a) brightness(1.04)}
+  52%{translate:18% -3%;rotate:5deg;scale:1.12;filter:drop-shadow(0 11px 10px #000b) brightness(1.26)}
+  72%{translate:7% 0;rotate:1deg;scale:1.04;filter:drop-shadow(0 7px 6px #000a) brightness(1.08)}
+  100%{translate:0 0;rotate:0deg;scale:1;filter:drop-shadow(0 6px 6px #000a) brightness(1)}
+}
+@keyframes bidAttackLeft{
+  0%{translate:0 0;rotate:0deg;scale:1;filter:drop-shadow(0 6px 6px #000a) brightness(1)}
+  28%{translate:7% 0;rotate:3deg;scale:1.03;filter:drop-shadow(0 6px 6px #000a) brightness(1.04)}
+  52%{translate:-18% -3%;rotate:-5deg;scale:1.12;filter:drop-shadow(0 11px 10px #000b) brightness(1.26)}
+  72%{translate:-7% 0;rotate:-1deg;scale:1.04;filter:drop-shadow(0 7px 6px #000a) brightness(1.08)}
+  100%{translate:0 0;rotate:0deg;scale:1;filter:drop-shadow(0 6px 6px #000a) brightness(1)}
+}
+@keyframes bidHitLeft{
+  0%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+  16%{translate:-12% -1%;rotate:-7deg;scale:.98;filter:brightness(1.85) saturate(.7)}
+  31%{translate:8% 1%;rotate:3deg;scale:1.02;filter:brightness(.95)}
+  47%{translate:-5% 0;rotate:-3deg;scale:.99;filter:brightness(1.25)}
+  70%{translate:2% 0;rotate:1deg;scale:1;filter:brightness(1.05)}
+  100%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+}
+@keyframes bidHitRight{
+  0%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+  16%{translate:12% -1%;rotate:7deg;scale:.98;filter:brightness(1.85) saturate(.7)}
+  31%{translate:-8% 1%;rotate:-3deg;scale:1.02;filter:brightness(.95)}
+  47%{translate:5% 0;rotate:3deg;scale:.99;filter:brightness(1.25)}
+  70%{translate:-2% 0;rotate:-1deg;scale:1;filter:brightness(1.05)}
+  100%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+}
+.auctionCharacter.motion-attack::after{
+  content:"";position:absolute;z-index:20;top:34%;width:82px;height:34px;pointer-events:none;
+  background:radial-gradient(circle at 15% 50%,#fff8c9 0 13%,#ffd84e 14% 31%,#ff8a00 33% 45%,transparent 47%),linear-gradient(90deg,#fff4a8,transparent 72%);
+  clip-path:polygon(0 48%,28% 0,100% 50%,28% 100%);opacity:0;filter:drop-shadow(0 0 12px #ffd24d);
+  animation:bidAttackFlash .62s ease-out both!important;
+}
+.coinSide:first-child .auctionCharacter.motion-attack::after{right:-50px;transform-origin:left center}
+.coinSide:last-child .auctionCharacter.motion-attack::after{left:-50px;transform:scaleX(-1);transform-origin:right center}
+@keyframes bidAttackFlash{
+  0%,35%,100%{opacity:0;scale:.45 1}
+  46%{opacity:1;scale:1.08 1.16}
+  62%{opacity:.45;scale:.82 .92}
+}
+.auctionCharacter.motion-hit::before{
+  content:"";position:absolute;inset:8% 10%;z-index:19;pointer-events:none;border-radius:24px;
+  background:radial-gradient(circle,#fff7d1 0 10%,#ffda5d88 11% 22%,transparent 45%);
+  opacity:0;animation:bidHitBurst .58s ease-out both!important;
+}
+@keyframes bidHitBurst{0%,12%,100%{opacity:0;scale:.6}22%{opacity:.95;scale:1.15}42%{opacity:.34;scale:1.35}}
+@media(prefers-reduced-motion:reduce){
+  .auctionCharacter.motion-attack *,.auctionCharacter.motion-hit *,.auctionCharacter.motion-attack::after,.auctionCharacter.motion-hit::before{animation:none!important}
+}
