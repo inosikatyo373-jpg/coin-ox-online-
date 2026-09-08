@@ -1,9 +1,9 @@
-/* BID GRID v3.11.18 - named character roster */
+/* BID GRID v3.11.19 - named character roster */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=31118';
+    link.href='/v381.css?v=31119';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
@@ -19,7 +19,10 @@
   // Render the supplied original PNGs without resampling or atlas cropping.
   window.battleCharacterMarkup=function(characterId,motion='static'){
     const id=safeCharacter(characterId||'merchant');
-    return spriteMarkup(id,`battleCharacterSprite nativeStableSprite motion-${motion}`);
+    const art=spriteMarkup(id,`battleCharacterSprite nativeStableSprite motion-${motion}`);
+    // Jack uses a dedicated animation layer so image layout rules cannot
+    // cancel his idle transform.
+    return id==='gunslinger'?`<span class="jackIdleWrap" data-jack-idle="1">${art}</span>`:art;
   };
   try{battleCharacterMarkup=window.battleCharacterMarkup}catch(e){}
 
