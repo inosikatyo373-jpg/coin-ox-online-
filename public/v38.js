@@ -1,9 +1,9 @@
-/* BID GRID v3.11.17 - named character roster */
+/* BID GRID v3.11.18 - named character roster */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=31117';
+    link.href='/v381.css?v=31118';
     link.dataset.v381Fullbody='1';
     document.head.appendChild(link);
   }
