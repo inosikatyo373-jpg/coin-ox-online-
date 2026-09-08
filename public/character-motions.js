@@ -1,104 +1,151 @@
-/* BIDGRID: cached six-frame, part-animated character art. */
+/* BIDGRID v3.14.2: action sprite-sheet renderer for auction attack / hit. */
 (() => {
   'use strict';
-  const specs = {
-    gunslinger: {ms: 220}, swordswoman: {ms: 300}, mage: {ms: 220},
-    merchant: {ms: 200}, doctor: {ms: 230, key: 'blue'},
-    robot: {ms: 300}, zombie: {ms: 280},
-    dog: {steps: [[0,600],[1,130],[2,180],[3,140],[1,130],[2,180],[3,140],[4,600],[5,600]]}
-  };
-  const sheets = new Map();
-  const active = new Set();
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const ids = ['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
+  const idSet = new Set(ids);
+  const keyMode = {doctor: 'blue'};
   const original = id => `/characters/original/${id}.png?v=31117`;
+  const motionSheet = id => `/characters/motions/v314/${id}.png?v=3142`;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const sheets = new Map();
+  const FRAME = 512;
 
-  // Key once at decode time, never between frames. Keep the original fallback
-  // visible until an entire sheet is available; failures leave that image intact.
+  function safeId(id) { return idSet.has(id) ? id : 'merchant'; }
+
+  function originalMarkup(id, classes = '') {
+    const safe = safeId(id);
+    const c = getCharacterDef(safe);
+    return `<img class="nativeCharacterImage nativeSourceImage characterIdle ${classes}" data-character="${safe}" src="${original(safe)}" alt="${c.name}" draggable="false">`;
+  }
+
+  function keyOutBackground(id, canvas) {
+    const ctx = canvas.getContext('2d', {willReadFrequently: true});
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const p = pixels.data;
+    const blue = keyMode[id] === 'blue';
+    for (let i = 0; i < p.length; i += 4) {
+      const r = p[i], g = p[i + 1], b = p[i + 2];
+      let bg;
+      if (blue) {
+        bg = b > 115 && b - r > 58 && b - g > 58;
+      } else {
+        bg = g > 125 && g - r > 38 && g - b > 38;
+      }
+      if (bg) p[i + 3] = 0;
+    }
+    ctx.putImageData(pixels, 0, 0);
+  }
+
   function loadSheet(id) {
-    if (sheets.has(id)) return sheets.get(id);
+    const safe = safeId(id);
+    if (sheets.has(safe)) return sheets.get(safe);
     const entry = {canvas: null, promise: null};
-    sheets.set(id, entry);
+    sheets.set(safe, entry);
     entry.promise = new Promise((resolve, reject) => {
       const img = new Image();
+      img.decoding = 'async';
       img.onload = () => {
         try {
-          if (img.naturalWidth % 3 || img.naturalHeight % 2) throw Error('Invalid sprite grid');
+          if (img.naturalWidth % 3 || img.naturalHeight % 2) throw Error('Invalid action sprite grid');
           const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d', {willReadFrequently: true});
           ctx.drawImage(img, 0, 0);
-          const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const p = pixels.data;
-          const blue = specs[id].key === 'blue';
-          for (let i = 0; i < p.length; i += 4) {
-            const key = p[i + (blue ? 2 : 1)];
-            const other = Math.max(p[i], p[i + (blue ? 1 : 2)]);
-            // The artwork has dark outlines. This includes antialiased matte
-            // edges while retaining gold, cyan magic and green Doctor liquid.
-            if (key > 100 && key - other > 75 && other < 115) p[i + 3] = 0;
-          }
-          ctx.putImageData(pixels, 0, 0);
+          keyOutBackground(safe, canvas);
           entry.canvas = canvas;
           resolve(canvas);
-        } catch (error) { reject(error); }
+        } catch (error) {
+          reject(error);
+        }
       };
-      img.onerror = () => reject(Error(`Cannot load ${id} motion`));
-      img.src = `/characters/motions/v314/${id}.png`;
+      img.onerror = () => reject(Error(`Cannot load action motion sheet: ${safe}`));
+      img.src = motionSheet(safe);
     });
     return entry;
   }
-  function frameAt(id, now) {
-    const spec = specs[id];
-    if (!spec.steps) return Math.floor(now / spec.ms) % 6;
-    let t = now % spec.steps.reduce((sum, step) => sum + step[1], 0);
-    for (const [frame, duration] of spec.steps) {
-      if (t < duration) return frame;
-      t -= duration;
-    }
-    return 0;
+
+  function frameListFor(motion) {
+    if (motion === 'hit') return [3, 4, 5];
+    if (motion === 'attack') return [0, 1, 2];
+    return [0];
   }
-  class CharacterMotion extends HTMLElement {
+
+  class BidActionMotion extends HTMLElement {
     connectedCallback() {
-      if (!this.canvas) {
-        this.idleId = this.getAttribute('character');
-        if (!Object.hasOwn(specs, this.idleId)) return;
+      if (!this.readyBuilt) {
+        this.readyBuilt = true;
         const shadow = this.attachShadow({mode: 'open'});
-        shadow.innerHTML = `<style>:host{display:block}img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}canvas{visibility:hidden} :host([ready]) canvas{visibility:visible}:host([ready]) img{display:none}</style><img alt="" draggable="false"><canvas aria-hidden="true"></canvas>`;
-        shadow.querySelector('img').src = original(this.idleId);
+        shadow.innerHTML = `<style>
+          :host{display:block;position:relative;contain:layout style paint;overflow:visible}
+          img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto}
+          canvas{visibility:hidden}
+          :host([ready]) canvas{visibility:visible}
+          :host([ready]) img{display:none}
+          :host([side="1"]) img,:host([side="1"]) canvas{transform:scaleX(-1)}
+        </style><img alt="" draggable="false"><canvas aria-hidden="true"></canvas>`;
+        this.fallback = shadow.querySelector('img');
         this.canvas = shadow.querySelector('canvas');
-        this.canvas.width = this.canvas.height = 512;
+        this.canvas.width = FRAME;
+        this.canvas.height = FRAME;
         this.ctx = this.canvas.getContext('2d');
-        this.lastFrame = -1;
       }
-      active.add(this);
-      const entry = loadSheet(this.idleId);
-      if (entry.canvas) this.draw(performance.now());
-      else entry.promise.then(() => { if (this.isConnected) this.draw(performance.now()); }).catch(error => console.warn('[character-motion]', error.message));
+      this.id = safeId(this.getAttribute('character'));
+      this.motion = this.getAttribute('motion') || 'attack';
+      this.fallback.src = original(this.id);
+      this.playToken = (this.playToken || 0) + 1;
+      const token = this.playToken;
+      const entry = loadSheet(this.id);
+      const start = sheet => {
+        if (!this.isConnected || token !== this.playToken) return;
+        this.play(sheet, this.motion, token);
+      };
+      if (entry.canvas) start(entry.canvas);
+      else entry.promise.then(start).catch(error => console.warn('[action-motion]', error.message));
     }
-    disconnectedCallback() { active.delete(this); }
-    draw(now) {
-      const sheet = sheets.get(this.idleId)?.canvas;
-      if (!sheet) return;
-      const frame = reduced.matches || this.classList.contains('motion-static') ? 0 : frameAt(this.idleId, now);
-      if (frame === this.lastFrame) return;
-      const w = sheet.width / 3, h = sheet.height / 2;
-      // clear + draw run in the same task, with no intermediate blank paint.
-      this.ctx.clearRect(0, 0, 512, 512);
-      this.ctx.drawImage(sheet, (frame % 3) * w, Math.floor(frame / 3) * h, w, h, 0, 0, 512, 512);
-      this.lastFrame = frame;
+    disconnectedCallback() {
+      this.playToken = (this.playToken || 0) + 1;
+    }
+    drawFrame(sheet, frameIndex) {
+      const w = sheet.width / 3;
+      const h = sheet.height / 2;
+      const sx = (frameIndex % 3) * w;
+      const sy = Math.floor(frameIndex / 3) * h;
+      this.ctx.clearRect(0, 0, FRAME, FRAME);
+      this.ctx.drawImage(sheet, sx, sy, w, h, 0, 0, FRAME, FRAME);
       this.setAttribute('ready', '');
     }
+    play(sheet, motion, token) {
+      const frames = frameListFor(motion);
+      const delays = motion === 'hit' ? [0, 115, 235] : [0, 120, 250];
+      if (reduced.matches || frames.length === 1) {
+        this.drawFrame(sheet, frames[0]);
+        return;
+      }
+      frames.forEach((frame, i) => {
+        setTimeout(() => {
+          if (this.isConnected && token === this.playToken) this.drawFrame(sheet, frame);
+        }, delays[i] || i * 120);
+      });
+    }
   }
-  customElements.define('bid-character-motion', CharacterMotion);
-  setInterval(() => {
-    if (document.hidden) return;
-    const now = performance.now();
-    active.forEach(sprite => { if (sprite.getClientRects().length) sprite.draw(now); });
-  }, 60);
 
-  window.bidCharacterMotionMarkup = (id, classes = '') => {
-    const safe = Object.hasOwn(specs, id) ? id : 'merchant';
-    const name = getCharacterDef(safe).name;
-    return `<bid-character-motion character="${safe}" class="partMotion ${classes}" role="img" aria-label="${name}"></bid-character-motion>`;
+  if (!customElements.get('bid-action-motion')) customElements.define('bid-action-motion', BidActionMotion);
+
+  window.bidActionMotionMarkup = (id, classes = '', motion = 'attack', side = 0) => {
+    const safe = safeId(id);
+    const c = getCharacterDef(safe);
+    const m = motion === 'hit' ? 'hit' : motion === 'attack' ? 'attack' : 'static';
+    return `<bid-action-motion character="${safe}" motion="${m}" side="${side ? 1 : 0}" class="actionMotion ${classes}" role="img" aria-label="${c.name}"></bid-action-motion>`;
   };
+
+  window.bidCharacterMotionMarkup = (id, classes = '', motion = 'idle', side = 0) => {
+    const m = motion || (/motion-(attack|hit)/.exec(classes)?.[1]) || 'idle';
+    if (m === 'attack' || m === 'hit') return window.bidActionMotionMarkup(id, classes, m, side);
+    return originalMarkup(id, classes);
+  };
+
+  // Warm up only the two auction participants on demand; the sheets are large,
+  // so we intentionally avoid loading all eight at title screen startup.
+  window.preloadBidActionMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
 })();
