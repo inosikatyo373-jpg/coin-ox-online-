@@ -1,8 +1,10 @@
-/* BID GRID v3.14.5 - subtle grounded idle motion + auction action sprite sizing */
-.bid-idle-motion,
-.charPortrait>.bid-idle-motion,
-.openingHeroPortrait>.bid-idle-motion,
-.battleSideArt>.bid-idle-motion{
+/* BID GRID v3.14.6 - real six-frame idle canvas sprites + auction actions */
+
+/* Real idle renderer. The artwork itself animates; no whole-body CSS bob/rotate. */
+bid-idle-motion-v3146.partMotion,
+.charPortrait>bid-idle-motion-v3146.partMotion,
+.openingHeroPortrait>bid-idle-motion-v3146.partMotion,
+.battleSideArt>bid-idle-motion-v3146.partMotion{
   display:block!important;
   position:relative!important;
   width:100%!important;
@@ -18,6 +20,40 @@
   translate:none!important;
   rotate:none!important;
   scale:none!important;
+  animation:none!important;
+  filter:drop-shadow(0 8px 7px #000a)!important;
+}
+.battleSideArt>bid-idle-motion-v3146.partMotion{
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:1/1!important;
+  max-width:360px!important;
+  max-height:none!important;
+}
+.auctionCharacter>bid-idle-motion-v3146.partMotion{
+  width:82px!important;
+  height:82px!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:auto!important;
+}
+
+/* Static fallback used only while the new JS is loading. */
+.bid-idle-motion,
+.charPortrait>.bid-idle-motion,
+.openingHeroPortrait>.bid-idle-motion,
+.battleSideArt>.bid-idle-motion{
+  display:block!important;
+  position:relative!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  opacity:1!important;
+  visibility:visible!important;
+  overflow:visible!important;
+  transform:none!important;
+  animation:none!important;
 }
 .bid-idle-motion>.bid-idle-img{
   display:block!important;
@@ -25,31 +61,20 @@
   inset:0!important;
   width:100%!important;
   height:100%!important;
-  max-width:none!important;
-  max-height:none!important;
   object-fit:contain!important;
   object-position:center bottom!important;
   margin:0!important;
   opacity:1!important;
   visibility:visible!important;
-  transform-origin:50% 91%!important;
-  animation:var(--bid-idle-name,bidIdleDefault) var(--bid-idle-period,4.8s) ease-in-out infinite!important;
-  animation-delay:var(--idle-delay,0s)!important;
-  will-change:transform!important;
+  transform:none!important;
+  animation:none!important;
   filter:drop-shadow(0 8px 7px #000a)!important;
 }
-.bid-idle-motion.motion-static>.bid-idle-img{
-  animation:none!important;
-  transform:none!important;
-}
-
-/* Layout sizes for every place where full-body characters appear. */
 .battleSideArt>.bid-idle-motion{
   width:100%!important;
   height:auto!important;
   aspect-ratio:1/1!important;
   max-width:360px!important;
-  max-height:none!important;
 }
 .auctionCharacter>.bid-idle-motion{
   width:82px!important;
@@ -58,98 +83,40 @@
   max-height:none!important;
 }
 
-/* Grounded idle personalities: no translateY. Movement stays around the feet. */
-.bid-idle-motion[data-character="gunslinger"]{--bid-idle-name:bidIdleJack;--bid-idle-period:4.4s}
-.bid-idle-motion[data-character="zombie"]{--bid-idle-name:bidIdleMold;--bid-idle-period:5.4s}
-.bid-idle-motion[data-character="merchant"]{--bid-idle-name:bidIdleGald;--bid-idle-period:4.6s}
-.bid-idle-motion[data-character="swordswoman"]{--bid-idle-name:bidIdleLizel;--bid-idle-period:4.8s}
-.bid-idle-motion[data-character="robot"]{--bid-idle-name:bidIdleBid99;--bid-idle-period:3.8s}
-.bid-idle-motion[data-character="dog"]{--bid-idle-name:bidIdlePochip;--bid-idle-period:3.2s}
-.bid-idle-motion[data-character="mage"]{--bid-idle-name:bidIdleLumina;--bid-idle-period:5.2s}
-.bid-idle-motion[data-character="doctor"]{--bid-idle-name:bidIdleOdds;--bid-idle-period:4.2s}
-
-@keyframes bidIdleDefault{
-  0%,100%{transform:rotate(0deg) scale(1)}
-  50%{transform:rotate(.25deg) scale(1.006,1.01)}
-}
-/* Jack: coat/shoulder weight shift, restrained and confident. */
-@keyframes bidIdleJack{
-  0%,100%{transform:rotate(-.35deg) scale(1)}
-  34%{transform:rotate(.28deg) scale(1.005,1.008)}
-  68%{transform:rotate(.08deg) scale(.998,1.004)}
-}
-/* Mold: slow, uneven zombie sway without lifting off the ground. */
-@keyframes bidIdleMold{
-  0%,100%{transform:rotate(-.6deg) scale(1)}
-  38%{transform:rotate(.55deg) scale(1.006,.998)}
-  72%{transform:rotate(-.12deg) scale(.999,1.006)}
-}
-/* Gald: breathing through chest/coat, almost no lateral movement. */
-@keyframes bidIdleGald{
-  0%,100%{transform:rotate(-.08deg) scale(1)}
-  46%{transform:rotate(.12deg) scale(1.008,1.014)}
-  72%{transform:rotate(0deg) scale(1.002,1.004)}
-}
-/* Lizel: poised sword stance with a tiny controlled balance shift. */
-@keyframes bidIdleLizel{
-  0%,100%{transform:rotate(-.28deg) scale(1)}
-  52%{transform:rotate(.34deg) scale(1.004,1.007)}
-}
-/* BID-99: short mechanical corrections rather than organic bobbing. */
-@keyframes bidIdleBid99{
-  0%,20%,46%,100%{transform:rotate(0deg) scale(1)}
-  24%,29%{transform:rotate(-.38deg) scale(1.003,1)}
-  34%{transform:rotate(.28deg) scale(.999,1.003)}
-  68%,73%{transform:rotate(.24deg) scale(1.002)}
-}
-/* Pochip: eager little body compressions and head-weight shifts. */
-@keyframes bidIdlePochip{
-  0%,44%,100%{transform:rotate(-.35deg) scale(1)}
-  16%{transform:rotate(.55deg) scale(1.012,.995)}
-  28%{transform:rotate(-.1deg) scale(.998,1.012)}
-  70%{transform:rotate(.42deg) scale(1.006,1.002)}
-}
-/* Lumina: robe and staff feel, very slow magical composure. */
-@keyframes bidIdleLumina{
-  0%,100%{transform:rotate(-.32deg) scale(1)}
-  50%{transform:rotate(.38deg) scale(1.006,1.01)}
-}
-/* Dr. Odds: slightly irregular laboratory fidget, still grounded. */
-@keyframes bidIdleOdds{
-  0%,100%{transform:rotate(-.3deg) scale(1)}
-  28%{transform:rotate(.4deg) scale(1.006,1.004)}
-  39%{transform:rotate(-.16deg) scale(1.001,1.008)}
-  51%{transform:rotate(.3deg) scale(1.005,1.002)}
-  72%{transform:rotate(0deg) scale(1)}
-}
-
-/* Legacy custom element rules kept harmless for older cached markup. */
-bid-character-motion.partMotion{
-  display:block!important;position:relative!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;
-  aspect-ratio:auto!important;flex:0 0 auto!important;animation:none!important;translate:none!important;rotate:none!important;scale:none!important;opacity:1!important;visibility:visible!important;
-}
-
-bid-action-motion-v3144.actionMotion{
-  display:block!important;position:relative!important;
-  width:100%!important;height:100%!important;
-  max-width:100%!important;max-height:100%!important;
-  aspect-ratio:1/1!important;flex:0 0 auto!important;
-  opacity:1!important;visibility:visible!important;
+/* Current action renderer. */
+bid-action-motion-v3146.actionMotion{
+  display:block!important;
+  position:relative!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  aspect-ratio:1/1!important;
+  flex:0 0 auto!important;
+  opacity:1!important;
+  visibility:visible!important;
   overflow:visible!important;
   transform-origin:50% 88%!important;
   filter:drop-shadow(0 8px 7px #000a)!important;
   animation:none!important;
-  translate:none!important;rotate:none!important;scale:none!important;
+  translate:none!important;
+  rotate:none!important;
+  scale:none!important;
 }
-.auctionCharacter>bid-action-motion-v3144.actionMotion{
-  width:156px!important;height:156px!important;max-width:none!important;max-height:none!important;
+.auctionCharacter>bid-action-motion-v3146.actionMotion{
+  width:156px!important;
+  height:156px!important;
+  max-width:none!important;
+  max-height:none!important;
   margin:-30px auto -12px!important;
 }
-.auctionCharacter.motion-sprite>bid-action-motion-v3144.actionMotion,
-.coinSide:first-child .auctionCharacter.motion-sprite>bid-action-motion-v3144.actionMotion,
-.coinSide:last-child .auctionCharacter.motion-sprite>bid-action-motion-v3144.actionMotion{
+.auctionCharacter.motion-sprite>bid-action-motion-v3146.actionMotion,
+.coinSide:first-child .auctionCharacter.motion-sprite>bid-action-motion-v3146.actionMotion,
+.coinSide:last-child .auctionCharacter.motion-sprite>bid-action-motion-v3146.actionMotion{
   animation:none!important;
-  translate:none!important;rotate:none!important;scale:none!important;
+  translate:none!important;
+  rotate:none!important;
+  scale:none!important;
 }
 .auctionCharacter.motion-sprite.motion-attack::after,
 .auctionCharacter.motion-sprite.motion-hit::before{
@@ -157,17 +124,30 @@ bid-action-motion-v3144.actionMotion{
   content:none!important;
 }
 
-/* Override the old v382 idle blocker inside the auction panel. */
-.auctionCharacter.motion-idle .bid-idle-motion>.bid-idle-img{
-  animation:var(--bid-idle-name,bidIdleDefault) var(--bid-idle-period,4.8s) ease-in-out infinite!important;
-  animation-delay:var(--idle-delay,0s)!important;
+/* Harmless legacy sizing for markup that may exist for one paint during cache refresh. */
+bid-character-motion.partMotion,
+bid-idle-motion-v3144.partMotion{
+  display:block!important;
+  position:relative!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+bid-action-motion-v3144.actionMotion{
+  display:block!important;
+  position:relative!important;
+  width:100%!important;
+  height:100%!important;
+  aspect-ratio:1/1!important;
+  opacity:1!important;
+  visibility:visible!important;
 }
 
 @media(max-width:600px){
+  .auctionCharacter>bid-idle-motion-v3146.partMotion,
   .auctionCharacter>.bid-idle-motion{width:56px!important;height:56px!important}
-  .auctionCharacter>bid-action-motion-v3144.actionMotion{width:108px!important;height:108px!important;margin:-20px auto -8px!important}
-}
-@media(prefers-reduced-motion:reduce){
-  bid-action-motion-v3144.actionMotion{animation:none!important;transform:none!important;translate:none!important;rotate:none!important;scale:none!important}
-  .bid-idle-motion>.bid-idle-img{animation-duration:8s!important}
+  .auctionCharacter>bid-action-motion-v3146.actionMotion{width:108px!important;height:108px!important;margin:-20px auto -8px!important}
 }
