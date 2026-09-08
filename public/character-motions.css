@@ -1,4 +1,4 @@
-/* Explicit sizes prevent legacy sprite rules from collapsing custom elements. */
+/* BID GRID v3.14.2 - character motion element sizing */
 bid-character-motion.partMotion,
 .charPortrait>bid-character-motion.partMotion,
 .openingHeroPortrait>bid-character-motion.partMotion,
@@ -10,7 +10,32 @@ bid-character-motion.partMotion,
   animation:none!important;translate:none!important;rotate:none!important;scale:none!important;
   opacity:1!important;visibility:visible!important;
 }
+
+bid-action-motion.actionMotion{
+  display:block!important;position:relative!important;
+  width:100%!important;height:100%!important;
+  max-width:100%!important;max-height:100%!important;
+  aspect-ratio:1/1!important;flex:0 0 auto!important;
+  opacity:1!important;visibility:visible!important;
+  overflow:visible!important;
+  transform-origin:50% 88%!important;
+  filter:drop-shadow(0 8px 7px #000a)!important;
+}
 .auctionCharacter>bid-character-motion.partMotion{
   width:82px!important;height:82px!important;max-width:none!important;max-height:none!important;
 }
-@media(max-width:600px){.auctionCharacter>bid-character-motion.partMotion{width:56px!important;height:56px!important}}
+.auctionCharacter>bid-action-motion.actionMotion{
+  width:128px!important;height:128px!important;max-width:none!important;max-height:none!important;
+  margin:-18px auto -8px!important;
+}
+.coinSide:first-child .auctionCharacter.motion-attack>bid-action-motion.actionMotion{animation:bidAttackRight .62s cubic-bezier(.16,.86,.18,1.05) both!important}
+.coinSide:last-child .auctionCharacter.motion-attack>bid-action-motion.actionMotion{animation:bidAttackLeft .62s cubic-bezier(.16,.86,.18,1.05) both!important}
+.coinSide:first-child .auctionCharacter.motion-hit>bid-action-motion.actionMotion{animation:bidHitLeft .58s cubic-bezier(.15,.8,.22,1.12) both!important}
+.coinSide:last-child .auctionCharacter.motion-hit>bid-action-motion.actionMotion{animation:bidHitRight .58s cubic-bezier(.15,.8,.22,1.12) both!important}
+.auctionCharacter.motion-sprite.motion-attack::after,
+.auctionCharacter.motion-sprite.motion-hit::before{display:none!important}
+@media(max-width:600px){
+  .auctionCharacter>bid-character-motion.partMotion{width:56px!important;height:56px!important}
+  .auctionCharacter>bid-action-motion.actionMotion{width:86px!important;height:86px!important;margin:-12px auto -6px!important}
+}
+@media(prefers-reduced-motion:reduce){bid-action-motion.actionMotion{animation:none!important}}
