@@ -1,4 +1,4 @@
-/* BID GRID v3.14.6 - real six-frame idle canvas sprites + auction actions */
+/* BID GRID v3.14.7 - real six-frame idle canvas sprites + auction actions */
 
 /* Real idle renderer. The artwork itself animates; no whole-body CSS bob/rotate. */
 bid-idle-motion-v3146.partMotion,
@@ -36,6 +36,13 @@ bid-idle-motion-v3146.partMotion,
   max-width:none!important;
   max-height:none!important;
   margin:auto!important;
+}
+
+/* Jack is slightly left-heavy because of the long cape. Nudge only his battle-card art right. */
+.battleSideArt.character-gunslinger>bid-idle-motion-v3146.partMotion,
+.battleSideArt.character-gunslinger>.bid-idle-motion{
+  margin-left:8px!important;
+  margin-right:-8px!important;
 }
 
 /* Static fallback used only while the new JS is loading. */
@@ -147,6 +154,11 @@ bid-action-motion-v3144.actionMotion{
 }
 
 @media(max-width:600px){
+  .battleSideArt.character-gunslinger>bid-idle-motion-v3146.partMotion,
+  .battleSideArt.character-gunslinger>.bid-idle-motion{
+    margin-left:5px!important;
+    margin-right:-5px!important;
+  }
   .auctionCharacter>bid-idle-motion-v3146.partMotion,
   .auctionCharacter>.bid-idle-motion{width:56px!important;height:56px!important}
   .auctionCharacter>bid-action-motion-v3146.actionMotion{width:108px!important;height:108px!important;margin:-20px auto -8px!important}
