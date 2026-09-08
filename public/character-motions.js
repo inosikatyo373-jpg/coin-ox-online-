@@ -1,7 +1,7 @@
-/* BIDGRID v3.14.3: auction attack / hit sprites, idle kept separate. */
+/* BIDGRID v3.14.4: separated visible idle wrapper + auction attack / hit sprites. */
 (() => {
   'use strict';
-  const ACTION_VERSION = '3143';
+  const ACTION_VERSION = '3144';
   const ids = ['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
   const idSet = new Set(ids);
   const keyMode = {doctor: 'blue'};
@@ -18,10 +18,11 @@
     const periods = {gunslinger:3.8,zombie:4.8,merchant:3.6,swordswoman:4.2,robot:3.2,dog:2.4,mage:4.6,doctor:3.4};
     return -((performance.now() / 1000) % (periods[id] || 4)).toFixed(3);
   }
-  function originalMarkup(id, classes = '') {
+  function idleMarkup(id, classes = '', motion = 'idle') {
     const safe = safeId(id);
     const c = getCharacterDef(safe);
-    return `<img class="nativeCharacterImage nativeSourceImage characterIdle ${classes}" data-character="${safe}" style="--idle-delay:${idleDelay(safe)}s" src="${original(safe)}" alt="${c.name}" draggable="false" decoding="async">`;
+    const staticClass = motion === 'static' || classes.includes('motion-static') ? ' motion-static' : '';
+    return `<span class="bid-idle-motion characterIdle ${classes}${staticClass}" data-character="${safe}" style="--idle-delay:${idleDelay(safe)}s" role="img" aria-label="${c.name}"><img class="nativeCharacterImage nativeSourceImage bid-idle-img" data-character="${safe}" src="${original(safe)}" alt="" draggable="false" decoding="async"></span>`;
   }
 
   function keyOutBackground(id, canvas) {
@@ -77,7 +78,7 @@
     return [0];
   }
 
-  class BidActionMotion3143 extends HTMLElement {
+  class BidActionMotion3144 extends HTMLElement {
     connectedCallback() {
       if (!this.readyBuilt) {
         this.readyBuilt = true;
@@ -123,7 +124,7 @@
     }
     play(sheet, motion, token) {
       const frames = frameListFor(motion);
-      const delays = motion === 'hit' ? [0, 115, 235] : [0, 120, 250];
+      const delays = motion === 'hit' ? [0, 120, 250] : [0, 120, 245];
       if (reduced.matches || frames.length === 1) {
         this.drawFrame(sheet, frames[0]);
         return;
@@ -136,8 +137,8 @@
     }
   }
 
-  const tagName = 'bid-action-motion-v3143';
-  if (!customElements.get(tagName)) customElements.define(tagName, BidActionMotion3143);
+  const tagName = 'bid-action-motion-v3144';
+  if (!customElements.get(tagName)) customElements.define(tagName, BidActionMotion3144);
 
   window.bidActionMotionMarkup = (id, classes = '', motion = 'attack', side = 0) => {
     const safe = safeId(id);
@@ -146,12 +147,10 @@
     return `<${tagName} character="${safe}" motion="${m}" side="${side ? 1 : 0}" class="actionMotion ${classes}" role="img" aria-label="${c.name}"></${tagName}>`;
   };
 
-  // Important: idle/static and auction action sprites are separate systems.
-  // Idle returns the original character image with the CSS idle class; action/hit uses the sheet renderer only during auction reveal.
   window.bidCharacterMotionMarkup = (id, classes = '', motion = 'idle', side = 0) => {
     const m = motion || (/motion-(attack|hit)/.exec(classes)?.[1]) || 'idle';
     if (m === 'attack' || m === 'hit') return window.bidActionMotionMarkup(id, classes, m, side);
-    return originalMarkup(id, classes);
+    return idleMarkup(id, classes, m);
   };
 
   window.preloadBidActionMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
