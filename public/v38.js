@@ -2,6 +2,7 @@
 (function(){
   const ACTION_VERSION='3146';
   const STYLE_VERSION='3146';
+  window.BID_CHARACTER_BRIDGE_VERSION=STYLE_VERSION;
   function injectStyle(key,href){
     if(document.querySelector(`link[data-${key}]`))return;
     const link=document.createElement('link');
