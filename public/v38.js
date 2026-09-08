@@ -14,7 +14,6 @@
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
   const IDLE_PERIODS={gunslinger:3.8,zombie:4.8,merchant:3.6,swordswoman:4.2,robot:3.2,dog:2.4,mage:4.6,doctor:3.4};
-  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function safeCharacter(id){return playable.includes(id)?id:'merchant'}
   function spriteMarkup(id,className=''){
@@ -27,7 +26,7 @@
     if(document.querySelector('script[data-character-motions-3142]'))return;
     const script=document.createElement('script');
     script.src='/character-motions.js?v=3142';
-    script.dataset.characterMotions3142='1';
+    script.setAttribute('data-character-motions-3142','1');
     script.onload=()=>{repaintCharacterUI();syncBattle();try{if(typeof renderAuctionCharacters==='function')renderAuctionCharacters()}catch(e){}};
     document.body.appendChild(script);
   }
