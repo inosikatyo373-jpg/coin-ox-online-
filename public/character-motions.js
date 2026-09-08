@@ -1,4 +1,4 @@
-/* BIDGRID v3.15.9: persistent idle sprites + shared 8-character action atlas. */
+/* BIDGRID v3.15.10: full-resolution action sheets; v3159 bridge/timing compatibility. */
 (() => {
   'use strict';
 
@@ -26,25 +26,8 @@
 
   const original = id => `/characters/original/${id}.png?v=31117`;
   const motionSheet = id => `/characters/motions/v314/${id}.png?v=${VERSION}`;
-  const actionAtlasParts = Array.from(
-    {length: 6},
-    (_, i) => `/characters/actions/v3159/atlas.part${i + 1}.b64?v=${VERSION}`
-  );
-
-  /* 2 columns x 4 rows. Each character block is a 3x2 grid of 32px frames. */
-  const actionAtlasLayout = {
-    zombie:      {col:0,row:0},
-    robot:       {col:1,row:0},
-    swordswoman: {col:0,row:1},
-    dog:         {col:1,row:1},
-    merchant:    {col:0,row:2},
-    doctor:      {col:1,row:2},
-    mage:        {col:0,row:3},
-    gunslinger:  {col:1,row:3}
-  };
-
-  let actionAtlas = null;
-  let actionAtlasPromise = null;
+  // Keep the v3159 bridge contract while independently versioning the art.
+  const actionSheets = new Map();
 
   window.BID_ACTION_MOTION_VERSION = VERSION;
   window.BID_IDLE_MOTION_VERSION = VERSION;
@@ -139,35 +122,46 @@
     return entry;
   }
 
-  function loadActionAtlas() {
-    if (actionAtlas) return Promise.resolve(actionAtlas);
-    if (actionAtlasPromise) return actionAtlasPromise;
-
-    actionAtlasPromise = Promise.all(
-      actionAtlasParts.map(url =>
-        fetch(url, {cache: 'force-cache'}).then(response => {
-          if (!response.ok) throw Error(`Cannot load action atlas part: ${response.status}`);
-          return response.text();
-        })
-      )
-    ).then(parts => new Promise((resolve, reject) => {
-      const base64 = parts.join('').replace(/\s+/g, '');
-      if (!base64.startsWith('iVBORw0KGgo')) {
-        reject(Error('Invalid action atlas data'));
-        return;
-      }
-
+  function loadActionAtlas(id) {
+    const safe = safeId(id);
+    if (actionSheets.has(safe)) return actionSheets.get(safe);
+    const promise = new Promise((resolve, reject) => {
       const img = new Image();
       img.decoding = 'async';
       img.onload = () => {
-        actionAtlas = img;
-        resolve(img);
+        try {
+          if (img.naturalWidth !== 1536 || img.naturalHeight !== 1024) throw Error('Invalid action sheet');
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d', {willReadFrequently:true});
+          ctx.drawImage(img, 0, 0);
+          keyOutIdleBackground(safe, canvas);
+          const pixels = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+          // Inspect content only once, keeping a shared scale across all six poses.
+          // Row registration compensates for the sheet's empty production margins.
+          const bounds = [0,1].map(row => {
+            let left=512, top=512, right=0, bottom=0;
+            for (let y=0;y<512;y++) for(let x=0;x<512;x++) for(let col=0;col<3;col++) {
+              if(pixels[((row*512+y)*1536+col*512+x)*4+3]>128){
+                left=Math.min(left,x);right=Math.max(right,x);
+                top=Math.min(top,y);bottom=Math.max(bottom,y);
+              }
+            }
+            return {left,top,right,bottom};
+          });
+          const size=Math.min(512,Math.max(...bounds.map(b=>Math.max(b.right-b.left+1,b.bottom-b.top+1)))+12);
+          const crops=bounds.map(b=>({
+            x:Math.max(0,Math.min(512-size,(b.left+b.right-size)/2)),
+            y:Math.max(0,Math.min(512-size,b.bottom-size+7)),size
+          }));
+          resolve({canvas,crops});
+        } catch(error) { reject(error); }
       };
-      img.onerror = () => reject(Error('Cannot decode shared action atlas'));
-      img.src = `data:image/png;base64,${base64}`;
-    }));
-
-    return actionAtlasPromise;
+      img.onerror=()=>reject(Error('Cannot load high-resolution action: '+safe));
+      img.src='/characters/motions/v315/'+safe+'.png?v=31510';
+    });
+    actionSheets.set(safe,promise);
+    return promise;
   }
 
   function frameAt(id, now) {
@@ -203,17 +197,14 @@
     }
   }
 
-  function drawActionFrame(ctx, atlas, id, frameIndex) {
-    const pos = actionAtlasLayout[safeId(id)];
-    const frameSize = 32;
-    const blockW = frameSize * 3;
-    const blockH = frameSize * 2;
-    const sx = pos.col * blockW + (frameIndex % 3) * frameSize;
-    const sy = pos.row * blockH + Math.floor(frameIndex / 3) * frameSize;
-
-    ctx.clearRect(0, 0, FRAME, FRAME);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(atlas, sx, sy, frameSize, frameSize, 0, 0, FRAME, FRAME);
+  function drawActionFrame(ctx, sheet, id, frameIndex) {
+    const row=Math.floor(frameIndex/3);
+    const crop=sheet.crops[row];
+    ctx.clearRect(0,0,FRAME,FRAME);
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality='high';
+    ctx.drawImage(sheet.canvas,(frameIndex%3)*512+crop.x,row*512+crop.y,
+      crop.size,crop.size,0,0,FRAME,FRAME);
   }
 
   class BidIdleMotion3154 extends HTMLElement {
@@ -273,7 +264,7 @@
         const shadow = this.attachShadow({mode: 'open'});
         shadow.innerHTML = `<style>
           :host{display:block;position:relative;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 8px 7px #000a)}
-          img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:pixelated}
+          img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto}
           canvas{visibility:hidden}:host([ready]) canvas{visibility:visible}:host([ready]) img{display:none}
           :host([side="1"]) img,:host([side="1"]) canvas{transform:scaleX(-1)}
         </style><img alt="" draggable="false" decoding="async"><canvas aria-hidden="true"></canvas>`;
@@ -292,7 +283,7 @@
       this.playToken = (this.playToken || 0) + 1;
       const token = this.playToken;
 
-      loadActionAtlas()
+      loadActionAtlas(this.characterId)
         .then(atlas => {
           if (this.isConnected && token === this.playToken) {
             this.play(atlas, token);
@@ -357,7 +348,8 @@
   window.preloadBidIdleMotion = id => {
     try { loadIdleSheet(safeId(id)); } catch (e) {}
   };
-  window.preloadBidActionMotion = () => {
-    try { loadActionAtlas(); } catch (e) {}
+  window.preloadBidActionMotion = id => {
+    loadActionAtlas(id).catch(e => console.warn('[action-preload]', e.message));
   };
 })();
+
