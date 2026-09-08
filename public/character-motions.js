@@ -1,8 +1,8 @@
-/* BIDGRID v3.15.2: six-frame idle sprites + real 3-frame attack / hit playback. */
+/* BIDGRID v3.15.3: idle sprites + dedicated real 3-frame attack / hit playback. */
 (() => {
   'use strict';
 
-  const VERSION = '3152';
+  const VERSION = '3153';
   const FRAME = 512;
   const ATTACK_DELAYS = [0, 300, 600];
   const HIT_DELAYS = [0, 240, 480];
@@ -18,12 +18,14 @@
   };
   const ids = Object.keys(specs);
   const idSet = new Set(ids);
-  const sheets = new Map();
+  const idleSheets = new Map();
+  const actionSheets = new Map();
   const activeIdle = new Set();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  let jackActionDataPromise = null;
 
   const original = id => `/characters/original/${id}.png?v=31117`;
-  const motionSheet = id => `/characters/motions/v314/${id}.png?v=${VERSION}`;
+  const idleSheet = id => `/characters/motions/v314/${id}.png?v=${VERSION}`;
 
   window.BID_ACTION_MOTION_VERSION = VERSION;
   window.BID_IDLE_MOTION_VERSION = VERSION;
@@ -38,6 +40,23 @@
   }
   ensureCurrentStyle();
 
+  function ensureJackActionData() {
+    if (window.BID_JACK_ACTION_SHEET) return Promise.resolve(window.BID_JACK_ACTION_SHEET);
+    if (jackActionDataPromise) return jackActionDataPromise;
+    jackActionDataPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = `/jack-action-data.js?v=${VERSION}`;
+      script.setAttribute(`data-jack-action-data-${VERSION}`, '1');
+      script.onload = () => {
+        if (window.BID_JACK_ACTION_SHEET) resolve(window.BID_JACK_ACTION_SHEET);
+        else reject(Error('Jack action sheet data was not initialized'));
+      };
+      script.onerror = () => reject(Error('Cannot load Jack action sheet data'));
+      document.head.appendChild(script);
+    });
+    return jackActionDataPromise;
+  }
+
   function safeId(id) {
     return idSet.has(id) ? id : 'merchant';
   }
@@ -47,7 +66,6 @@
     const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const p = pixels.data;
     const blue = specs[id]?.key === 'blue';
-
     for (let i = 0; i < p.length; i += 4) {
       const key = p[i + (blue ? 2 : 1)];
       const other = Math.max(p[i], p[i + (blue ? 1 : 2)]);
@@ -56,13 +74,8 @@
     ctx.putImageData(pixels, 0, 0);
   }
 
-  function loadSheet(id) {
-    const safe = safeId(id);
-    if (sheets.has(safe)) return sheets.get(safe);
-
-    const entry = {canvas: null, promise: null};
-    sheets.set(safe, entry);
-    entry.promise = new Promise((resolve, reject) => {
+  function loadCanvasFromSource(id, src) {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       img.decoding = 'async';
       img.onload = () => {
@@ -73,16 +86,43 @@
           canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d', {willReadFrequently: true});
           ctx.drawImage(img, 0, 0);
-          keyOutBackground(safe, canvas);
-          entry.canvas = canvas;
+          keyOutBackground(id, canvas);
           resolve(canvas);
         } catch (error) {
           reject(error);
         }
       };
-      img.onerror = () => reject(Error(`Cannot load character motion sheet: ${safe}`));
-      img.src = motionSheet(safe);
+      img.onerror = () => reject(Error(`Cannot load character sheet: ${id}`));
+      img.src = src;
     });
+  }
+
+  function loadIdleSheet(id) {
+    const safe = safeId(id);
+    if (idleSheets.has(safe)) return idleSheets.get(safe);
+    const entry = {canvas: null, promise: null};
+    idleSheets.set(safe, entry);
+    entry.promise = loadCanvasFromSource(safe, idleSheet(safe)).then(canvas => {
+      entry.canvas = canvas;
+      return canvas;
+    });
+    return entry;
+  }
+
+  function loadActionSheet(id) {
+    const safe = safeId(id);
+    if (actionSheets.has(safe)) return actionSheets.get(safe);
+    const entry = {canvas: null, promise: null};
+    actionSheets.set(safe, entry);
+    const sourcePromise = safe === 'gunslinger'
+      ? ensureJackActionData()
+      : Promise.resolve(idleSheet(safe));
+    entry.promise = sourcePromise
+      .then(src => loadCanvasFromSource(safe, src))
+      .then(canvas => {
+        entry.canvas = canvas;
+        return canvas;
+      });
     return entry;
   }
 
@@ -90,7 +130,6 @@
     const spec = specs[id];
     const clock = reduced.matches ? now * 0.55 : now;
     if (!spec.steps) return Math.floor(clock / spec.ms) % 6;
-
     const total = spec.steps.reduce((sum, step) => sum + step[1], 0);
     let t = clock % total;
     for (const [frame, duration] of spec.steps) {
@@ -109,19 +148,19 @@
     ctx.drawImage(sheet, sx, sy, w, h, 0, 0, FRAME, FRAME);
   }
 
-  function cleanFrame(ctx, id, frameIndex) {
+  function cleanIdleFrame(ctx, id, frameIndex) {
     if (id === 'gunslinger' && frameIndex === 5) {
       ctx.clearRect(0, 250, 30, 160);
     }
   }
 
-  class BidActionMotion3152 extends HTMLElement {
+  class BidActionMotion3153 extends HTMLElement {
     connectedCallback() {
       if (!this.readyBuilt) {
         this.readyBuilt = true;
         const shadow = this.attachShadow({mode: 'open'});
         shadow.innerHTML = `<style>
-          :host{display:block;position:relative;width:82px;height:82px;max-width:100%;max-height:100%;contain:layout style paint;overflow:visible;transform-origin:50% 88%;filter:drop-shadow(0 8px 7px #000a)}
+          :host{display:block;position:relative;width:82px;height:82px;max-width:100%;max-height:100%;contain:layout style paint;overflow:visible;transform:none!important;animation:none!important;filter:drop-shadow(0 8px 7px #000a)}
           img,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;image-rendering:auto;transform-origin:center bottom}
           canvas{visibility:hidden}
           :host([ready]) canvas{visibility:visible}
@@ -141,8 +180,7 @@
       this.fallback.src = original(this.characterId);
       this.playToken = (this.playToken || 0) + 1;
       const token = this.playToken;
-      const entry = loadSheet(this.characterId);
-
+      const entry = loadActionSheet(this.characterId);
       const start = sheet => {
         if (!this.isConnected || token !== this.playToken) return;
         this.play(sheet, this.motion, token);
@@ -157,12 +195,11 @@
 
     drawFrame(sheet, frameIndex) {
       drawSheetFrame(this.ctx, sheet, frameIndex);
-      cleanFrame(this.ctx, this.characterId, frameIndex);
       this.setAttribute('ready', '');
     }
 
     play(sheet, motion, token) {
-      const frames = motion === 'hit' ? [3, 4, 5] : motion === 'attack' ? [0, 1, 2] : [0];
+      const frames = motion === 'hit' ? [3,4,5] : motion === 'attack' ? [0,1,2] : [0];
       const delays = motion === 'hit' ? HIT_DELAYS : motion === 'attack' ? ATTACK_DELAYS : [0];
       frames.forEach((frame, i) => {
         setTimeout(() => {
@@ -172,7 +209,7 @@
     }
   }
 
-  class BidIdleMotion3150 extends HTMLElement {
+  class BidIdleMotion3153 extends HTMLElement {
     connectedCallback() {
       if (!this.readyBuilt) {
         this.readyBuilt = true;
@@ -195,8 +232,7 @@
       this.characterId = safeId(this.getAttribute('character'));
       this.fallback.src = original(this.characterId);
       activeIdle.add(this);
-      const entry = loadSheet(this.characterId);
-
+      const entry = loadIdleSheet(this.characterId);
       if (entry.canvas) this.draw(performance.now());
       else entry.promise
         .then(() => { if (this.isConnected) this.draw(performance.now()); })
@@ -208,21 +244,21 @@
     }
 
     draw(now) {
-      const sheet = sheets.get(this.characterId)?.canvas;
+      const sheet = idleSheets.get(this.characterId)?.canvas;
       if (!sheet) return;
       const frame = this.classList.contains('motion-static') ? 0 : frameAt(this.characterId, now);
       if (frame === this.lastFrame) return;
       drawSheetFrame(this.ctx, sheet, frame);
-      cleanFrame(this.ctx, this.characterId, frame);
+      cleanIdleFrame(this.ctx, this.characterId, frame);
       this.lastFrame = frame;
       this.setAttribute('ready', '');
     }
   }
 
-  const actionTag = 'bid-action-motion-v3152';
-  const idleTag = 'bid-idle-motion-v3150';
-  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3152);
-  if (!customElements.get(idleTag)) customElements.define(idleTag, BidIdleMotion3150);
+  const actionTag = 'bid-action-motion-v3153';
+  const idleTag = 'bid-idle-motion-v3153';
+  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3153);
+  if (!customElements.get(idleTag)) customElements.define(idleTag, BidIdleMotion3153);
 
   setInterval(() => {
     if (document.hidden) return;
@@ -249,8 +285,10 @@
     return `<${idleTag} character="${safe}" class="partMotion ${classes}${staticClass}" role="img" aria-label="${c.name}"></${idleTag}>`;
   };
 
-  window.preloadBidActionMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
-  window.preloadBidIdleMotion = id => { try { loadSheet(safeId(id)); } catch (e) {} };
+  window.preloadBidActionMotion = id => { try { loadActionSheet(safeId(id)); } catch (e) {} };
+  window.preloadBidIdleMotion = id => { try { loadIdleSheet(safeId(id)); } catch (e) {} };
+
+  ensureJackActionData().catch(error => console.warn('[jack-action-data]', error.message));
 
   setTimeout(() => {
     if (window.BID_CHARACTER_BRIDGE_VERSION === VERSION) return;
