@@ -1,7 +1,7 @@
-/* BID GRID v3.15.2 - real 3-frame attack/hit sequencing and persistent idle sprites */
+/* BID GRID v3.15.3 - dedicated Jack action sheet + real 3-frame attack/hit sequencing */
 (function(){
-  const ACTION_VERSION='3152';
-  const STYLE_VERSION='3152';
+  const ACTION_VERSION='3153';
+  const STYLE_VERSION='3153';
   const ATTACK_MS=900;
   const HIT_MS=720;
   const POST_HIT_GAP=120;
@@ -174,7 +174,6 @@
   };
   try{setAuctionCharacterMotion=window.setAuctionCharacterMotion}catch(e){}
 
-  /* Gate the board O/X drop so it starts only after the hit animation is finished. */
   function installBoardClaimGate(){
     const original=window.playBoardClaim;
     if(typeof original!=='function'||original.__bidActionGate)return;
