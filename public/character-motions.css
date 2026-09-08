@@ -1,4 +1,4 @@
-/* BID GRID v3.14.7 - real six-frame idle canvas sprites + auction actions */
+/* BID GRID v3.14.9 - real six-frame idle canvas sprites + auction actions */
 
 /* Real idle renderer. The artwork itself animates; no whole-body CSS bob/rotate. */
 bid-idle-motion-v3146.partMotion,
@@ -38,9 +38,16 @@ bid-idle-motion-v3146.partMotion,
   margin:auto!important;
 }
 
-/* Jack is slightly left-heavy because of the long cape. Nudge only his battle-card art right. */
+/* Jack: widen the battle-card art window, keep the sprite itself the same size,
+   and leave a little extra breathing room on the cape side. */
+.battleSideArt.character-gunslinger{
+  width:calc(100% + 28px)!important;
+  margin-left:-14px!important;
+  margin-right:-14px!important;
+}
 .battleSideArt.character-gunslinger>bid-idle-motion-v3146.partMotion,
 .battleSideArt.character-gunslinger>.bid-idle-motion{
+  width:calc(100% - 28px)!important;
   margin-left:8px!important;
   margin-right:-8px!important;
 }
@@ -90,7 +97,7 @@ bid-idle-motion-v3146.partMotion,
   max-height:none!important;
 }
 
-/* Current action renderer. */
+/* Current action renderer. Keep the same footprint as idle so attacks do not pop larger. */
 bid-action-motion-v3146.actionMotion{
   display:block!important;
   position:relative!important;
@@ -111,11 +118,11 @@ bid-action-motion-v3146.actionMotion{
   scale:none!important;
 }
 .auctionCharacter>bid-action-motion-v3146.actionMotion{
-  width:156px!important;
-  height:156px!important;
+  width:82px!important;
+  height:82px!important;
   max-width:none!important;
   max-height:none!important;
-  margin:-30px auto -12px!important;
+  margin:auto!important;
 }
 .auctionCharacter.motion-sprite>bid-action-motion-v3146.actionMotion,
 .coinSide:first-child .auctionCharacter.motion-sprite>bid-action-motion-v3146.actionMotion,
@@ -154,12 +161,18 @@ bid-action-motion-v3144.actionMotion{
 }
 
 @media(max-width:600px){
+  .battleSideArt.character-gunslinger{
+    width:calc(100% + 14px)!important;
+    margin-left:-7px!important;
+    margin-right:-7px!important;
+  }
   .battleSideArt.character-gunslinger>bid-idle-motion-v3146.partMotion,
   .battleSideArt.character-gunslinger>.bid-idle-motion{
-    margin-left:5px!important;
-    margin-right:-5px!important;
+    width:calc(100% - 14px)!important;
+    margin-left:4px!important;
+    margin-right:-4px!important;
   }
   .auctionCharacter>bid-idle-motion-v3146.partMotion,
   .auctionCharacter>.bid-idle-motion{width:56px!important;height:56px!important}
-  .auctionCharacter>bid-action-motion-v3146.actionMotion{width:108px!important;height:108px!important;margin:-20px auto -8px!important}
+  .auctionCharacter>bid-action-motion-v3146.actionMotion{width:56px!important;height:56px!important;margin:auto!important}
 }
