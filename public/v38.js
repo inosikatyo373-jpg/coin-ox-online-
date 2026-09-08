@@ -1,10 +1,17 @@
-/* BID GRID v3.14.0 - individual character idle motions */
+/* BID GRID v3.14.1 - individual character idle motions + auction action layer */
 (function(){
   if(!document.querySelector('link[data-v381-fullbody]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/v381.css?v=3131';
+    link.href='/v381.css?v=3141';
     link.dataset.v381Fullbody='1';
+    document.head.appendChild(link);
+  }
+  if(!document.querySelector('link[data-v382-actions]')){
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='/v382.css?v=3141';
+    link.dataset.v382Actions='1';
     document.head.appendChild(link);
   }
 
