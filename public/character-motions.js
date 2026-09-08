@@ -1,8 +1,8 @@
-/* BIDGRID v3.15.5: separated idle sprites and fast auction attack / hit frames. */
+/* BIDGRID v3.15.6: separated idle sprites and improved Jack action chroma key. */
 (() => {
   'use strict';
 
-  const VERSION = '3154';
+  const VERSION = '3156';
   const FRAME = 512;
   const ATTACK_DELAYS = [0, 70, 140];
   const HIT_DELAYS = [0, 95, 190];
@@ -26,12 +26,23 @@
   window.BID_IDLE_MOTION_VERSION = VERSION;
 
   function addStyle() {
-    if (document.querySelector(`link[data-character-motions-${VERSION}]`)) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `/character-motions.css?v=${VERSION}`;
-    link.setAttribute(`data-character-motions-${VERSION}`, '1');
-    document.head.appendChild(link);
+    if (!document.querySelector(`link[data-character-motions-${VERSION}]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `/character-motions.css?v=${VERSION}`;
+      link.setAttribute(`data-character-motions-${VERSION}`, '1');
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector(`style[data-action-motion-${VERSION}]`)) {
+      const style = document.createElement('style');
+      style.setAttribute(`data-action-motion-${VERSION}`, '1');
+      style.textContent = `
+        bid-action-motion-v3156.actionMotion{display:block!important;position:relative!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;aspect-ratio:1/1!important;flex:0 0 auto!important;opacity:1!important;visibility:visible!important;overflow:visible!important;transform:none!important;translate:none!important;rotate:none!important;scale:1!important;animation:none!important;filter:drop-shadow(0 8px 7px #000a)!important}
+        .auctionCharacter>bid-action-motion-v3156.actionMotion{width:92px!important;height:92px!important;max-width:none!important;max-height:none!important;margin:-5px auto -5px!important}
+        @media(max-width:600px){.auctionCharacter>bid-action-motion-v3156.actionMotion{width:68px!important;height:68px!important;margin:-4px auto!important}}
+      `;
+      document.head.appendChild(style);
+    }
   }
   addStyle();
 
@@ -51,20 +62,55 @@
     return jackActionDataPromise;
   }
 
-  function keyOutBackground(id, canvas) {
+  function keyOutBackground(id, canvas, softActionKey = false) {
     const ctx = canvas.getContext('2d', {willReadFrequently: true});
     const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const p = pixels.data;
     const blue = specs[id]?.key === 'blue';
+
     for (let i = 0; i < p.length; i += 4) {
-      const key = p[i + (blue ? 2 : 1)];
-      const other = Math.max(p[i], p[i + (blue ? 1 : 2)]);
-      if (key > 100 && key - other > 75 && other < 115) p[i + 3] = 0;
+      const r = p[i];
+      const g = p[i + 1];
+      const b = p[i + 2];
+      const a = p[i + 3];
+      if (!a) continue;
+
+      if (blue) {
+        const dominance = b - Math.max(r, g);
+        if (b > 100 && dominance > 75 && Math.max(r, g) < 115) p[i + 3] = 0;
+        continue;
+      }
+
+      const other = Math.max(r, b);
+      const dominance = g - other;
+
+      /* Normal idle sheets retain the established hard chroma key. */
+      if (!softActionKey) {
+        if (g > 100 && dominance > 75 && other < 115) p[i + 3] = 0;
+        continue;
+      }
+
+      /* Jack action sheet: remove solid green, then soften/de-spill edge green. */
+      if (g > 108 && dominance > 78 && r < 142 && b < 142) {
+        p[i + 3] = 0;
+        continue;
+      }
+
+      if (g > 78 && dominance > 18) {
+        const strength = Math.max(0, Math.min(1, (dominance - 18) / 62));
+        const alphaLoss = 0.82 * strength;
+        p[i + 3] = Math.round(a * (1 - alphaLoss));
+
+        /* Neutralize green spill without altering the red/blue edge structure. */
+        const neutral = Math.max(r, b);
+        const deSpill = 0.72 * strength;
+        p[i + 1] = Math.round(g * (1 - deSpill) + neutral * deSpill);
+      }
     }
     ctx.putImageData(pixels, 0, 0);
   }
 
-  function loadCanvas(id, src) {
+  function loadCanvas(id, src, softActionKey = false) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.decoding = 'async';
@@ -76,7 +122,7 @@
           canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d', {willReadFrequently: true});
           ctx.drawImage(img, 0, 0);
-          keyOutBackground(id, canvas);
+          keyOutBackground(id, canvas, softActionKey);
           resolve(canvas);
         } catch (error) { reject(error); }
       };
@@ -90,7 +136,7 @@
     if (idleSheets.has(safe)) return idleSheets.get(safe);
     const entry = {canvas: null, promise: null};
     idleSheets.set(safe, entry);
-    entry.promise = loadCanvas(safe, motionSheet(safe)).then(canvas => (entry.canvas = canvas));
+    entry.promise = loadCanvas(safe, motionSheet(safe), false).then(canvas => (entry.canvas = canvas));
     return entry;
   }
 
@@ -100,7 +146,9 @@
     const entry = {canvas: null, promise: null};
     actionSheets.set(safe, entry);
     const source = safe === 'gunslinger' ? ensureJackActionData() : Promise.resolve(motionSheet(safe));
-    entry.promise = source.then(src => loadCanvas(safe, src)).then(canvas => (entry.canvas = canvas));
+    entry.promise = source
+      .then(src => loadCanvas(safe, src, safe === 'gunslinger'))
+      .then(canvas => (entry.canvas = canvas));
     return entry;
   }
 
@@ -124,13 +172,8 @@
     ctx.drawImage(sheet, (frameIndex % 3) * w, Math.floor(frameIndex / 3) * h, w, h, 0, 0, FRAME, FRAME);
   }
 
-  /* Restore the original Jack idle cleanup: frame 6 contains two detached
-     cape fragments at the extreme left edge. Remove only that empty-edge
-     spill after the idle frame is drawn; action/hit artwork is untouched. */
   function cleanIdleFrame(ctx, id, frameIndex) {
-    if (id === 'gunslinger' && frameIndex === 5) {
-      ctx.clearRect(0, 250, 30, 160);
-    }
+    if (id === 'gunslinger' && frameIndex === 5) ctx.clearRect(0, 250, 30, 160);
   }
 
   class BidIdleMotion3154 extends HTMLElement {
@@ -166,7 +209,7 @@
     }
   }
 
-  class BidActionMotion3154 extends HTMLElement {
+  class BidActionMotion3156 extends HTMLElement {
     connectedCallback() {
       if (!this.built) {
         this.built = true;
@@ -202,9 +245,9 @@
   }
 
   const idleTag = 'bid-idle-motion-v3154';
-  const actionTag = 'bid-action-motion-v3154';
+  const actionTag = 'bid-action-motion-v3156';
   if (!customElements.get(idleTag)) customElements.define(idleTag, BidIdleMotion3154);
-  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3154);
+  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3156);
 
   setInterval(() => {
     if (document.hidden) return;
