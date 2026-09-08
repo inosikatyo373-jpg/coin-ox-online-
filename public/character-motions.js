@@ -1,10 +1,10 @@
-/* BIDGRID v3.15.7: separated idle sprites, improved Jack chroma key, 1.4s attack playback. */
+/* BIDGRID v3.15.8: separated idle sprites, improved Jack chroma key, 1.2s attack playback. */
 (() => {
   'use strict';
 
-  const VERSION = '3157';
+  const VERSION = '3158';
   const FRAME = 512;
-  const ATTACK_DELAYS = [0, 470, 940];
+  const ATTACK_DELAYS = [0, 400, 800];
   const HIT_DELAYS = [0, 95, 190];
   const specs = {
     gunslinger: {ms: 220}, swordswoman: {ms: 300}, mage: {ms: 220},
@@ -37,9 +37,9 @@
       const style = document.createElement('style');
       style.setAttribute(`data-action-motion-${VERSION}`, '1');
       style.textContent = `
-        bid-action-motion-v3157.actionMotion{display:block!important;position:relative!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;aspect-ratio:1/1!important;flex:0 0 auto!important;opacity:1!important;visibility:visible!important;overflow:visible!important;transform:none!important;translate:none!important;rotate:none!important;scale:1!important;animation:none!important;filter:drop-shadow(0 8px 7px #000a)!important}
-        .auctionCharacter>bid-action-motion-v3157.actionMotion{width:92px!important;height:92px!important;max-width:none!important;max-height:none!important;margin:-5px auto -5px!important}
-        @media(max-width:600px){.auctionCharacter>bid-action-motion-v3157.actionMotion{width:68px!important;height:68px!important;margin:-4px auto!important}}
+        bid-action-motion-v3158.actionMotion{display:block!important;position:relative!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;aspect-ratio:1/1!important;flex:0 0 auto!important;opacity:1!important;visibility:visible!important;overflow:visible!important;transform:none!important;translate:none!important;rotate:none!important;scale:1!important;animation:none!important;filter:drop-shadow(0 8px 7px #000a)!important}
+        .auctionCharacter>bid-action-motion-v3158.actionMotion{width:92px!important;height:92px!important;max-width:none!important;max-height:none!important;margin:-5px auto -5px!important}
+        @media(max-width:600px){.auctionCharacter>bid-action-motion-v3158.actionMotion{width:68px!important;height:68px!important;margin:-4px auto!important}}
       `;
       document.head.appendChild(style);
     }
@@ -205,7 +205,7 @@
     }
   }
 
-  class BidActionMotion3157 extends HTMLElement {
+  class BidActionMotion3158 extends HTMLElement {
     connectedCallback() {
       if (!this.built) {
         this.built = true;
@@ -241,9 +241,9 @@
   }
 
   const idleTag = 'bid-idle-motion-v3154';
-  const actionTag = 'bid-action-motion-v3157';
+  const actionTag = 'bid-action-motion-v3158';
   if (!customElements.get(idleTag)) customElements.define(idleTag, BidIdleMotion3154);
-  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3157);
+  if (!customElements.get(actionTag)) customElements.define(actionTag, BidActionMotion3158);
 
   setInterval(() => {
     if (document.hidden) return;
