@@ -1,4 +1,4 @@
-/* Both BGM sources are attenuated by 3 dB, including on iPhone. */
+/* Sources are attenuated by 3 dB; playback gain adds a further 6 dB reduction. */
 (() => {
   const lobby = document.getElementById('lobby');
   const game = document.getElementById('game');
@@ -7,6 +7,26 @@
   const audio = new Audio();
   audio.loop = true;
   audio.preload = 'none';
+  audio.volume = 0.5;
+  let audioContext = null;
+  let gainConnected = false;
+  const unlockVolume = () => {
+    const Context = window.AudioContext || window.webkitAudioContext;
+    if (!Context) return;
+    try {
+      if (!audioContext) audioContext = new Context();
+      if (!gainConnected) {
+        const source = audioContext.createMediaElementSource(audio);
+        const gain = audioContext.createGain();
+        gain.gain.value = 0.5;
+        source.connect(gain);
+        gain.connect(audioContext.destination);
+        audio.volume = 1;
+        gainConnected = true;
+      }
+      if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+    } catch (_) { /* Keep the media-element volume fallback. */ }
+  };
   const tracks = {
     opening: '/audio/shady-opening.mp3?v=1',
     game: '/audio/lucky-girl-game.mp3?v=1'
@@ -48,12 +68,16 @@
     }).catch(label);
   };
   buttons.forEach(button => button.addEventListener('click', () => {
+    unlockVolume();
     enabled = !enabled || audio.paused;
     try { localStorage.setItem('bidgrid-opening-bgm', enabled ? 'on' : 'off'); } catch (_) {}
     sync();
   }));
   // Browsers may require a tap/click before allowing audible playback.
-  const unlock = event => { if (!buttons.some(button => button.contains(event.target))) sync(); };
+  const unlock = event => {
+    unlockVolume();
+    if (!buttons.some(button => button.contains(event.target))) sync();
+  };
   document.addEventListener('pointerdown', unlock);
   document.addEventListener('keydown', unlock);
   document.addEventListener('click', unlock);
