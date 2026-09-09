@@ -33,7 +33,6 @@
   };
   let currentTrack = null;
   let enabled = true;
-  try { enabled = localStorage.getItem('bidgrid-opening-bgm') !== 'off'; } catch (_) {}
   const buttons = [lobby, game].map((host, index) => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -70,7 +69,6 @@
   buttons.forEach(button => button.addEventListener('click', () => {
     unlockVolume();
     enabled = !enabled || audio.paused;
-    try { localStorage.setItem('bidgrid-opening-bgm', enabled ? 'on' : 'off'); } catch (_) {}
     sync();
   }));
   // Browsers may require a tap/click before allowing audible playback.
