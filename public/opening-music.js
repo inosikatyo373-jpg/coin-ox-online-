@@ -1,4 +1,4 @@
-/* Sources are attenuated by 3 dB; playback gain adds a further 6 dB reduction. */
+/* Sources are attenuated by 3 dB; playback gain adds a further 12 dB reduction. */
 (() => {
   const lobby = document.getElementById('lobby');
   const game = document.getElementById('game');
@@ -7,7 +7,7 @@
   const audio = new Audio();
   audio.loop = true;
   audio.preload = 'none';
-  audio.volume = 0.5;
+  audio.volume = 0.25;
   let audioContext = null;
   let gainConnected = false;
   const unlockVolume = () => {
@@ -18,7 +18,7 @@
       if (!gainConnected) {
         const source = audioContext.createMediaElementSource(audio);
         const gain = audioContext.createGain();
-        gain.gain.value = 0.5;
+        gain.gain.value = 0.25;
         source.connect(gain);
         gain.connect(audioContext.destination);
         audio.volume = 1;
