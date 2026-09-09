@@ -1,38 +1,61 @@
-/* Sources are attenuated by 3 dB; playback gain adds a further 12 dB reduction. */
+/* BID GRID opening/game BGM controller. */
 (() => {
+  const BGM_VOLUME = 0.15;
   const lobby = document.getElementById('lobby');
   const game = document.getElementById('game');
   if (!lobby || !game) return;
+
+  // If an older copy was initialized by cache or hot reload, stop it first.
+  try { window.__BIDGRID_BGM__?.destroy?.(); } catch (_) {}
+
   // One audio element prevents the opening and game tracks from overlapping.
   const audio = new Audio();
   audio.loop = true;
-  audio.preload = 'none';
-  audio.volume = 0.25;
+  audio.preload = 'auto';
+  audio.volume = BGM_VOLUME;
+
   let audioContext = null;
   let gainConnected = false;
+  let gainNode = null;
+  let currentTrack = null;
+  let enabled = true;
+  let userUnlocked = false;
+
+  const tracks = {
+    opening: '/audio/shady-opening.mp3?v=2',
+    game: '/audio/lucky-girl-game.mp3?v=2'
+  };
+
+  const cleanup = [];
+  const add = (target, type, listener, options) => {
+    target.addEventListener(type, listener, options);
+    cleanup.push(() => target.removeEventListener(type, listener, options));
+  };
+
   const unlockVolume = () => {
+    userUnlocked = true;
     const Context = window.AudioContext || window.webkitAudioContext;
     if (!Context) return;
     try {
       if (!audioContext) audioContext = new Context();
       if (!gainConnected) {
         const source = audioContext.createMediaElementSource(audio);
-        const gain = audioContext.createGain();
-        gain.gain.value = 0.25;
-        source.connect(gain);
-        gain.connect(audioContext.destination);
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = BGM_VOLUME;
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
         audio.volume = 1;
         gainConnected = true;
+      } else if (gainNode) {
+        gainNode.gain.value = BGM_VOLUME;
       }
       if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
-    } catch (_) { /* Keep the media-element volume fallback. */ }
+    } catch (_) {
+      // Keep the media-element volume fallback.
+      audio.volume = BGM_VOLUME;
+    }
   };
-  const tracks = {
-    opening: '/audio/shady-opening.mp3?v=1',
-    game: '/audio/lucky-girl-game.mp3?v=1'
-  };
-  let currentTrack = null;
-  let enabled = true;
+
   const buttons = [lobby, game].map((host, index) => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -41,51 +64,97 @@
     if (index) host.prepend(button); else host.appendChild(button);
     return button;
   });
+
   const selectedTrack = () => !game.classList.contains('hidden') ? 'game'
     : !lobby.classList.contains('hidden') ? 'opening' : null;
+
   const label = () => buttons.forEach(button => {
     button.textContent = !enabled ? '♪ BGM：OFF' : audio.paused ? '♪ BGMを再生' : '♪ BGM：ON';
     button.setAttribute('aria-pressed', String(enabled && !audio.paused));
     button.setAttribute('aria-label', enabled && !audio.paused ? 'BGMを停止' : 'BGMを再生');
   });
-  const sync = () => {
-    const nextTrack = selectedTrack();
-    if (nextTrack !== currentTrack) {
-      audio.pause();
-      currentTrack = nextTrack;
-      if (nextTrack) audio.src = tracks[nextTrack];
+
+  const setTrack = nextTrack => {
+    if (nextTrack === currentTrack) return;
+    audio.pause();
+    currentTrack = nextTrack;
+    if (!nextTrack) {
+      audio.removeAttribute('src');
+      return;
     }
+    audio.src = tracks[nextTrack];
+    audio.currentTime = 0;
+    audio.load();
+  };
+
+  const playFromOpeningStart = () => {
+    // Opening should start from the beginning when the title/lobby first appears.
+    if (currentTrack === 'opening') {
+      try { audio.currentTime = 0; } catch (_) {}
+    }
+  };
+
+  const sync = ({resetOpening = false} = {}) => {
+    const nextTrack = selectedTrack();
+    const wasTrack = currentTrack;
+    setTrack(nextTrack);
+    if (resetOpening || (nextTrack === 'opening' && wasTrack !== 'opening')) playFromOpeningStart();
+
     if (!enabled || !nextTrack || document.hidden) {
       audio.pause();
       label();
       return;
     }
-    if (!audio.paused) return;
+
+    if (!gainConnected) audio.volume = BGM_VOLUME;
+    if (gainNode) gainNode.gain.value = BGM_VOLUME;
+
     audio.play().then(() => {
       if (!enabled || !selectedTrack() || document.hidden) audio.pause();
       label();
-    }).catch(label);
+    }).catch(() => {
+      // Browser autoplay may be blocked until the first click/tap/key.
+      label();
+    });
   };
-  buttons.forEach(button => button.addEventListener('click', () => {
+
+  buttons.forEach(button => add(button, 'click', () => {
     unlockVolume();
     enabled = !enabled || audio.paused;
     sync();
   }));
+
   // Browsers may require a tap/click before allowing audible playback.
   const unlock = event => {
     unlockVolume();
     if (!buttons.some(button => button.contains(event.target))) sync();
   };
-  document.addEventListener('pointerdown', unlock);
-  document.addEventListener('keydown', unlock);
-  document.addEventListener('click', unlock);
-  document.addEventListener('visibilitychange', sync);
-  window.addEventListener('pagehide', () => audio.pause());
-  window.addEventListener('pageshow', sync);
-  audio.addEventListener('playing', label);
-  audio.addEventListener('pause', label);
-  const observer = new MutationObserver(sync);
+  add(document, 'pointerdown', unlock);
+  add(document, 'keydown', unlock);
+  add(document, 'click', unlock);
+  add(document, 'visibilitychange', () => sync());
+  add(window, 'pagehide', () => audio.pause());
+  add(window, 'pageshow', () => sync({resetOpening: selectedTrack() === 'opening' && !userUnlocked}));
+  add(audio, 'playing', label);
+  add(audio, 'pause', label);
+
+  const observer = new MutationObserver(() => sync());
   [lobby, game].forEach(host => observer.observe(host, {attributes:true, attributeFilter:['class']}));
+  cleanup.push(() => observer.disconnect());
+
+  window.__BIDGRID_BGM__ = {
+    audio,
+    sync,
+    destroy() {
+      cleanup.splice(0).forEach(fn => { try { fn(); } catch (_) {} });
+      audio.pause();
+      buttons.forEach(button => button.remove());
+      if (window.__BIDGRID_BGM__ === this) delete window.__BIDGRID_BGM__;
+    }
+  };
+
   label();
-  sync();
+  sync({resetOpening: true});
+  requestAnimationFrame(() => sync({resetOpening: true}));
+  setTimeout(() => sync({resetOpening: true}), 0);
 })();
