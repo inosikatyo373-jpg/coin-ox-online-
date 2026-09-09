@@ -99,3 +99,84 @@
 @media(prefers-reduced-motion:reduce){
   .auctionCharacter.motion-attack *,.auctionCharacter.motion-hit *,.auctionCharacter.motion-attack::after,.auctionCharacter.motion-hit::before{animation:none!important}
 }
+
+/* ===== BID GRID v3.16.1 : stable large-character action + cleaner top player row ===== */
+/* The sticky HUD and the large battle-side panels already show coin totals, so the
+   duplicate coin total in the upper player identity row is intentionally hidden. */
+.playerPanel .playerCoinsWrap{display:none!important}
+.playerPanel .player{grid-template-columns:minmax(0,1fr) 100px!important}
+@media(max-width:760px){
+  .playerPanel .player{grid-template-columns:minmax(0,1fr) 64px!important}
+}
+
+/* Action sheets must never participate in layout sizing. Keep the 512px action
+   canvas pinned inside the same full-body box used by the idle character. */
+.battleArenaStage .battleSideArt.motion-sprite{
+  position:relative!important;
+  overflow:visible!important;
+  isolation:isolate;
+}
+.battleArenaStage .battleSideArt.motion-sprite>bid-action-motion-v3159.actionMotion{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  aspect-ratio:auto!important;
+  margin:0!important;
+  padding:0!important;
+  transform:none!important;
+  translate:none!important;
+  rotate:none!important;
+  scale:1!important;
+  overflow:visible!important;
+  z-index:2!important;
+}
+
+/* The high-resolution sheet already contains the attack/hit poses. Use only a
+   small outer movement so the side panel never stretches, jumps, or clips. */
+.battleArenaStage .battleSideSelf .battleSideArt.arena-motion-attack{
+  animation:bidArenaAttackStableLeft 1200ms cubic-bezier(.18,.78,.2,1) both!important;
+}
+.battleArenaStage .battleSideOpponent .battleSideArt.arena-motion-attack{
+  animation:bidArenaAttackStableRight 1200ms cubic-bezier(.18,.78,.2,1) both!important;
+}
+.battleArenaStage .battleSideSelf .battleSideArt.arena-motion-hit{
+  animation:bidArenaHitStableLeft 380ms cubic-bezier(.16,.8,.22,1) both!important;
+}
+.battleArenaStage .battleSideOpponent .battleSideArt.arena-motion-hit{
+  animation:bidArenaHitStableRight 380ms cubic-bezier(.16,.8,.22,1) both!important;
+}
+@keyframes bidArenaAttackStableLeft{
+  0%,100%{translate:0 0;rotate:0deg;scale:1;filter:none}
+  28%{translate:-2% 0;rotate:-1deg;scale:1.01}
+  58%{translate:8% -1%;rotate:1deg;scale:1.035;filter:brightness(1.12)}
+  78%{translate:3% 0;rotate:0deg;scale:1.015}
+}
+@keyframes bidArenaAttackStableRight{
+  0%,100%{translate:0 0;rotate:0deg;scale:1;filter:none}
+  28%{translate:2% 0;rotate:1deg;scale:1.01}
+  58%{translate:-8% -1%;rotate:-1deg;scale:1.035;filter:brightness(1.12)}
+  78%{translate:-3% 0;rotate:0deg;scale:1.015}
+}
+@keyframes bidArenaHitStableLeft{
+  0%,100%{translate:0 0;rotate:0deg;scale:1;filter:none}
+  22%{translate:-7% 0;rotate:-3deg;scale:.98;filter:brightness(1.55)}
+  52%{translate:3% 0;rotate:1deg;scale:1.01}
+}
+@keyframes bidArenaHitStableRight{
+  0%,100%{translate:0 0;rotate:0deg;scale:1;filter:none}
+  22%{translate:7% 0;rotate:3deg;scale:.98;filter:brightness(1.55)}
+  52%{translate:-3% 0;rotate:-1deg;scale:1.01}
+}
+@media(max-width:760px){
+  .battleArenaStage .battleSideSelf .battleSideArt.arena-motion-attack{
+    animation-name:bidArenaAttackStableLeft!important;
+  }
+  .battleArenaStage .battleSideOpponent .battleSideArt.arena-motion-attack{
+    animation-name:bidArenaAttackStableRight!important;
+  }
+}
