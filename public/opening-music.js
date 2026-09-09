@@ -5,10 +5,8 @@
   const game = document.getElementById('game');
   if (!lobby || !game) return;
 
-  // If an older copy was initialized by cache or hot reload, stop it first.
   try { window.__BIDGRID_BGM__?.destroy?.(); } catch (_) {}
 
-  // One audio element prevents the opening and game tracks from overlapping.
   const audio = new Audio();
   audio.loop = true;
   audio.preload = 'auto';
@@ -22,8 +20,8 @@
   let userUnlocked = false;
 
   const tracks = {
-    opening: '/audio/shady-opening.mp3?v=2',
-    game: '/audio/lucky-girl-game.mp3?v=2'
+    opening: '/audio/shady-opening.mp3?v=3',
+    game: '/audio/lucky-girl-game.mp3?v=3'
   };
 
   const cleanup = [];
@@ -51,7 +49,6 @@
       }
       if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
     } catch (_) {
-      // Keep the media-element volume fallback.
       audio.volume = BGM_VOLUME;
     }
   };
@@ -88,7 +85,6 @@
   };
 
   const playFromOpeningStart = () => {
-    // Opening should start from the beginning when the title/lobby first appears.
     if (currentTrack === 'opening') {
       try { audio.currentTime = 0; } catch (_) {}
     }
@@ -113,7 +109,6 @@
       if (!enabled || !selectedTrack() || document.hidden) audio.pause();
       label();
     }).catch(() => {
-      // Browser autoplay may be blocked until the first click/tap/key.
       label();
     });
   };
@@ -124,14 +119,17 @@
     sync();
   }));
 
-  // Browsers may require a tap/click before allowing audible playback.
+  // Start audio inside the earliest user-activation phase. Capture mode is
+  // important: it runs before menu buttons can switch screens/tracks.
   const unlock = event => {
     unlockVolume();
     if (!buttons.some(button => button.contains(event.target))) sync();
   };
-  add(document, 'pointerdown', unlock);
-  add(document, 'keydown', unlock);
-  add(document, 'click', unlock);
+  add(document, 'pointerdown', unlock, {capture:true, passive:true});
+  add(document, 'touchstart', unlock, {capture:true, passive:true});
+  add(document, 'mousedown', unlock, {capture:true, passive:true});
+  add(document, 'keydown', unlock, {capture:true});
+  add(document, 'click', unlock, {capture:true});
   add(document, 'visibilitychange', () => sync());
   add(window, 'pagehide', () => audio.pause());
   add(window, 'pageshow', () => sync({resetOpening: selectedTrack() === 'opening' && !userUnlocked}));
