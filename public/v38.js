@@ -1,17 +1,18 @@
-/* BID GRID v3.15.9 - 1.2s attack, then hit, then board claim for all 8 characters. */
+/* BID GRID v3.16.0 - coin reveal on podium, large arena character attack/hit, then board claim. */
 (function(){
-  const VERSION='3159';
+  const BRIDGE_VERSION='3160';
+  const MOTION_VERSION='3159';
+  const RESULT_HOLD_MS=500;
   const ATTACK_MS=1200;
   const HIT_MS=380;
-  const POST_HIT_GAP=120;
-  window.BID_CHARACTER_BRIDGE_VERSION=VERSION;
+  const POST_HIT_GAP=160;
+  window.BID_CHARACTER_BRIDGE_VERSION=BRIDGE_VERSION;
 
   let actionSequence=0;
+  let attackTimer=0;
   let delayedHitTimer=0;
-  let delayedIdleTimers=[0,0];
-  let overlayHoldTimer=0;
-  let overlayHoldUntil=0;
-  let overlayObserver=null;
+  let attackerIdleTimer=0;
+  let victimIdleTimer=0;
 
   function injectStyle(key,href){
     if(document.querySelector(`link[data-${key}]`))return;
@@ -22,9 +23,89 @@
     document.head.appendChild(link);
   }
 
-  injectStyle('v381-fullbody','/v381.css?v='+VERSION);
-  injectStyle('v382-actions','/v382.css?v='+VERSION);
-  injectStyle('character-motions-'+VERSION,'/character-motions.css?v='+VERSION);
+  injectStyle('v381-fullbody','/v381.css?v='+BRIDGE_VERSION);
+  injectStyle('v382-actions','/v382.css?v='+BRIDGE_VERSION);
+  injectStyle('character-motions-'+MOTION_VERSION,'/character-motions.css?v='+MOTION_VERSION);
+
+  function addArenaActionStyle(){
+    if(document.querySelector(`style[data-arena-action-${BRIDGE_VERSION}]`))return;
+    const style=document.createElement('style');
+    style.setAttribute(`data-arena-action-${BRIDGE_VERSION}`,'1');
+    style.textContent=`
+      .battleSideArt.arena-motion-attack,
+      .battleSideArt.arena-motion-hit{
+        z-index:20!important;
+        overflow:visible!important;
+        will-change:transform,filter!important;
+        transform-origin:50% 88%!important;
+      }
+      .battleSideSelf .battleSideArt.arena-motion-attack{
+        animation:bidArenaAttackFromLeft ${ATTACK_MS}ms cubic-bezier(.16,.86,.18,1.05) both!important;
+      }
+      .battleSideOpponent .battleSideArt.arena-motion-attack{
+        animation:bidArenaAttackFromRight ${ATTACK_MS}ms cubic-bezier(.16,.86,.18,1.05) both!important;
+      }
+      .battleSideSelf .battleSideArt.arena-motion-hit{
+        animation:bidArenaHitLeft ${HIT_MS}ms cubic-bezier(.15,.8,.22,1.12) both!important;
+      }
+      .battleSideOpponent .battleSideArt.arena-motion-hit{
+        animation:bidArenaHitRight ${HIT_MS}ms cubic-bezier(.15,.8,.22,1.12) both!important;
+      }
+      @keyframes bidArenaAttackFromLeft{
+        0%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+        18%{translate:-5% 0;rotate:-2deg;scale:1.02;filter:brightness(1.04)}
+        48%{translate:30% -3%;rotate:4deg;scale:1.14;filter:brightness(1.24) drop-shadow(0 12px 12px #000c)}
+        72%{translate:13% 0;rotate:1deg;scale:1.06;filter:brightness(1.08)}
+        100%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+      }
+      @keyframes bidArenaAttackFromRight{
+        0%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+        18%{translate:5% 0;rotate:2deg;scale:1.02;filter:brightness(1.04)}
+        48%{translate:-30% -3%;rotate:-4deg;scale:1.14;filter:brightness(1.24) drop-shadow(0 12px 12px #000c)}
+        72%{translate:-13% 0;rotate:-1deg;scale:1.06;filter:brightness(1.08)}
+        100%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+      }
+      @keyframes bidArenaHitLeft{
+        0%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+        18%{translate:-14% -1%;rotate:-7deg;scale:.96;filter:brightness(1.8) saturate(.7)}
+        42%{translate:8% 1%;rotate:3deg;scale:1.02;filter:brightness(.9)}
+        68%{translate:-4% 0;rotate:-2deg;scale:.99;filter:brightness(1.2)}
+        100%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+      }
+      @keyframes bidArenaHitRight{
+        0%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+        18%{translate:14% -1%;rotate:7deg;scale:.96;filter:brightness(1.8) saturate(.7)}
+        42%{translate:-8% 1%;rotate:-3deg;scale:1.02;filter:brightness(.9)}
+        68%{translate:4% 0;rotate:2deg;scale:.99;filter:brightness(1.2)}
+        100%{translate:0 0;rotate:0deg;scale:1;filter:brightness(1)}
+      }
+      .battleSideArt.arena-motion-hit::after{
+        content:"";position:absolute;inset:8%;z-index:30;pointer-events:none;border-radius:50%;
+        background:radial-gradient(circle,#fff8d6 0 8%,#ffd75a99 10% 22%,transparent 48%);
+        animation:bidArenaHitBurst ${HIT_MS}ms ease-out both!important;
+      }
+      @keyframes bidArenaHitBurst{
+        0%,8%,100%{opacity:0;scale:.55}
+        22%{opacity:1;scale:1.15}
+        55%{opacity:.28;scale:1.5}
+      }
+      @media(max-width:760px){
+        .battleSideSelf .battleSideArt.arena-motion-attack{animation-name:bidArenaAttackFromLeftMobile!important}
+        .battleSideOpponent .battleSideArt.arena-motion-attack{animation-name:bidArenaAttackFromRightMobile!important}
+        @keyframes bidArenaAttackFromLeftMobile{
+          0%{translate:0 0;scale:1}22%{translate:-3% 0;scale:1.02}50%{translate:22% -2%;scale:1.12}75%{translate:9% 0;scale:1.05}100%{translate:0 0;scale:1}
+        }
+        @keyframes bidArenaAttackFromRightMobile{
+          0%{translate:0 0;scale:1}22%{translate:3% 0;scale:1.02}50%{translate:-22% -2%;scale:1.12}75%{translate:-9% 0;scale:1.05}100%{translate:0 0;scale:1}
+        }
+      }
+      @media(prefers-reduced-motion:reduce){
+        .battleSideArt.arena-motion-attack,.battleSideArt.arena-motion-hit,.battleSideArt.arena-motion-hit::after{animation:none!important}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  addArenaActionStyle();
 
   const playable=['zombie','merchant','gunslinger','swordswoman','robot','dog','mage','doctor'];
 
@@ -34,17 +115,17 @@
 
   function ensureMotionScript(){
     if(
-      window.BID_ACTION_MOTION_VERSION===VERSION &&
-      window.BID_IDLE_MOTION_VERSION===VERSION &&
+      window.BID_ACTION_MOTION_VERSION===MOTION_VERSION &&
+      window.BID_IDLE_MOTION_VERSION===MOTION_VERSION &&
       window.bidCharacterMotionMarkup &&
       window.bidActionMotionMarkup
     ) return;
 
-    if(document.querySelector(`script[data-character-motions-${VERSION}]`))return;
+    if(document.querySelector(`script[data-character-motions-${MOTION_VERSION}]`))return;
 
     const script=document.createElement('script');
-    script.src=`/character-motions.js?v=${VERSION}`;
-    script.setAttribute(`data-character-motions-${VERSION}`,'1');
+    script.src=`/character-motions.js?v=${MOTION_VERSION}`;
+    script.setAttribute(`data-character-motions-${MOTION_VERSION}`,'1');
     script.onload=()=>{
       repaintCharacterUI();
       syncBattle();
@@ -71,8 +152,8 @@
 
   function currentMotionReady(){
     return (
-      window.BID_ACTION_MOTION_VERSION===VERSION &&
-      window.BID_IDLE_MOTION_VERSION===VERSION
+      window.BID_ACTION_MOTION_VERSION===MOTION_VERSION &&
+      window.BID_IDLE_MOTION_VERSION===MOTION_VERSION
     );
   }
 
@@ -129,37 +210,16 @@
   try{openingSelectedArt=window.openingSelectedArt}catch(e){}
 
   function clearActionTimers(){
+    clearTimeout(attackTimer);
     clearTimeout(delayedHitTimer);
-    delayedIdleTimers.forEach(clearTimeout);
-    delayedIdleTimers=[0,0];
+    clearTimeout(attackerIdleTimer);
+    clearTimeout(victimIdleTimer);
+    attackTimer=delayedHitTimer=attackerIdleTimer=victimIdleTimer=0;
   }
 
-  function holdAuctionOverlayUntil(deadline){
-    overlayHoldUntil=Math.max(overlayHoldUntil,deadline);
-    const overlay=document.getElementById('auctionOverlay');
-    if(!overlay)return;
-
-    if(!overlayObserver){
-      overlayObserver=new MutationObserver(()=>{
-        if(!overlay.classList.contains('hidden'))return;
-        const remaining=overlayHoldUntil-performance.now();
-        if(remaining<=0)return;
-
-        overlay.classList.remove('hidden');
-        clearTimeout(overlayHoldTimer);
-        overlayHoldTimer=setTimeout(()=>{
-          if(performance.now()+8>=overlayHoldUntil)overlay.classList.add('hidden');
-        },Math.max(0,remaining));
-      });
-      overlayObserver.observe(overlay,{attributes:true,attributeFilter:['class']});
-    }
-  }
-
+  /* The reveal podium still shows both small characters, but they stay idle. */
   window.renderAuctionCharacters=function(){
     ensureMotionScript();
-    clearActionTimers();
-    window.__bidAttackTimeline=null;
-    window.__bidActionEndAt=0;
 
     for(let i=0;i<2;i++){
       const target=document.getElementById('auctionCharacter'+i);
@@ -182,28 +242,44 @@
   };
   try{renderAuctionCharacters=window.renderAuctionCharacters}catch(e){}
 
-  function renderAuctionMotionNow(side,motion){
-    ensureMotionScript();
-    const target=document.getElementById('auctionCharacter'+side);
-    if(!target)return;
-
-    const id=state?.players?.[side]?.character||target.dataset.character||'merchant';
-    const useSprite=
-      (motion==='attack'||motion==='hit') &&
-      currentMotionReady() &&
-      typeof window.bidActionMotionMarkup==='function';
-
-    target.dataset.character=id;
-    target.className=`auctionCharacter motion-${motion}${useSprite?' motion-sprite':''}`;
-    target.innerHTML=useSprite
-      ? actionBody(id,motion,side,'battleCharacterSprite nativeStableSprite')
-      : idleBody(
-          id,
-          'battleCharacterSprite nativeStableSprite motion-idle',
-          motion==='idle'?'idle':'static'
-        );
+  function arenaTarget(playerSide){
+    if(typeof state==='undefined'||!state)return null;
+    const selfIndex=Number(slot)===1?1:0;
+    const isSelf=Number(playerSide)===selfIndex;
+    const panel=document.querySelector(isSelf?'.battleSideSelf':'.battleSideOpponent');
+    if(!panel)return null;
+    let art=panel.querySelector('.battleSideArt');
+    if(!art && typeof renderBattleArenaCharacters==='function'){
+      try{renderBattleArenaCharacters(state.players);art=panel.querySelector('.battleSideArt')}catch(e){}
+    }
+    return {art,panel,visualSide:isSelf?0:1};
   }
 
+  function renderArenaMotionNow(playerSide,motion){
+    ensureMotionScript();
+    const target=arenaTarget(playerSide);
+    if(!target?.art)return;
+
+    const id=state?.players?.[playerSide]?.character||target.art.dataset.character||'merchant';
+    const useSprite=(motion==='attack'||motion==='hit') && currentMotionReady() && typeof window.bidActionMotionMarkup==='function';
+
+    target.art.dataset.character=id;
+    target.art.className=`battleSideArt character-${id} arena-motion-${motion}${useSprite?' motion-sprite':''}`;
+    target.art.innerHTML=useSprite
+      ? actionBody(id,motion,target.visualSide,'battleCharacterSprite nativeStableSprite battleArenaActionSprite')
+      : idleBody(id,'battleCharacterSprite nativeStableSprite motion-idle',motion==='idle'?'idle':'static');
+
+    try{
+      window.preloadBidIdleMotion?.(id);
+      window.preloadBidActionMotion?.(id);
+    }catch(e){}
+  }
+
+  /*
+    Compatibility bridge: the base game still calls setAuctionCharacterMotion().
+    From v3.16 onward that call drives the LARGE left/right arena characters.
+    Podium characters never attack or take damage.
+  */
   window.setAuctionCharacterMotion=function(side,motion){
     ensureMotionScript();
 
@@ -211,18 +287,23 @@
       clearActionTimers();
 
       const seq=++actionSequence;
-      const attackStart=performance.now();
+      const now=performance.now();
+      const attackStart=now+RESULT_HOLD_MS;
       const attackEnd=attackStart+ATTACK_MS;
       const hitEnd=attackEnd+HIT_MS;
       const boardStart=hitEnd+POST_HIT_GAP;
 
       window.__bidAttackTimeline={
-        seq,attackStart,attackEnd,hitEnd,boardStart
+        seq,attacker:side,attackStart,attackEnd,hitEnd,boardStart
       };
       window.__bidActionEndAt=boardStart;
 
-      renderAuctionMotionNow(side,'attack');
-      holdAuctionOverlayUntil(hitEnd);
+      attackTimer=setTimeout(()=>{
+        if(seq!==actionSequence)return;
+        const overlay=document.getElementById('auctionOverlay');
+        if(overlay)overlay.classList.add('hidden');
+        renderArenaMotionNow(side,'attack');
+      },Math.max(0,attackStart-performance.now()));
       return;
     }
 
@@ -230,35 +311,38 @@
 
     if(timeline && timeline.seq===actionSequence){
       if(motion==='hit'){
-        const delay=Math.max(0,timeline.attackEnd-performance.now());
-        clearTimeout(delayedHitTimer);
-
+        const victim=side;
         delayedHitTimer=setTimeout(()=>{
           if(timeline.seq!==actionSequence)return;
-          renderAuctionMotionNow(side,'hit');
-        },delay);
+          renderArenaMotionNow(timeline.attacker,'idle');
+          renderArenaMotionNow(victim,'hit');
+
+          victimIdleTimer=setTimeout(()=>{
+            if(timeline.seq!==actionSequence)return;
+            renderArenaMotionNow(victim,'idle');
+          },HIT_MS);
+        },Math.max(0,timeline.attackEnd-performance.now()));
         return;
       }
 
-      if(motion==='idle' && performance.now()<timeline.boardStart){
-        clearTimeout(delayedIdleTimers[side]);
-
-        delayedIdleTimers[side]=setTimeout(()=>{
+      if(motion==='idle'){
+        const wait=Math.max(0,timeline.boardStart-performance.now());
+        attackerIdleTimer=setTimeout(()=>{
           if(timeline.seq!==actionSequence)return;
-          renderAuctionMotionNow(side,'idle');
-        },Math.max(0,timeline.boardStart-performance.now()));
+          renderArenaMotionNow(side,'idle');
+        },wait);
         return;
       }
     }
 
-    renderAuctionMotionNow(side,motion);
+    renderArenaMotionNow(side,motion);
   };
   try{setAuctionCharacterMotion=window.setAuctionCharacterMotion}catch(e){}
 
-  /* The O/X chip fall is blocked until attack + hit + the short post-hit gap finish. */
+  /* O/X chip fall starts only after big-character attack + hit have finished. */
   function installBoardClaimGate(){
     const original=window.playBoardClaim;
-    if(typeof original!=='function'||original.__bidActionGate)return;
+    if(typeof original!=='function'||original.__bidArenaActionGate)return;
 
     const wrapped=async function(...args){
       const deadline=Number(window.__bidActionEndAt||0);
@@ -272,7 +356,7 @@
       return original.apply(this,args);
     };
 
-    wrapped.__bidActionGate=true;
+    wrapped.__bidArenaActionGate=true;
     window.playBoardClaim=wrapped;
     try{playBoardClaim=wrapped}catch(e){}
   }
