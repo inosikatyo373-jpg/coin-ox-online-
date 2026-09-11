@@ -1,0 +1,1 @@
+Complete opening BGM source is stored at public/audio/shady-full/shady-opening-full.mp3 and mirrored to public/audio/shady-opening-loop.mp3 for the current client path.
