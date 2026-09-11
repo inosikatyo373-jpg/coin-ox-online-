@@ -20,8 +20,52 @@
   let userUnlocked = false;
 
   const tracks = {
-    opening: '/audio/shady-opening.mp3?v=3',
+    opening: '/audio/shady-opening-loop.mp3?v=1',
     game: '/audio/lucky-girl-game.mp3?v=3'
+  };
+
+  let openingBuffer = null;
+  let openingLoading = false;
+  let openingSource = null;
+  let openingOffset = 0;
+  let openingStartedAt = 0;
+  let destroyed = false;
+
+  const isPlaying = () => !!openingSource || !audio.paused;
+  const pauseOpening = (reset = false) => {
+    if (openingSource) {
+      openingOffset = (openingOffset + audioContext.currentTime - openingStartedAt) % openingBuffer.duration;
+      openingSource.stop();
+      openingSource.disconnect();
+      openingSource = null;
+    }
+    if (reset) openingOffset = 0;
+  };
+  const pauseAll = () => { audio.pause(); pauseOpening(); };
+  const prepareOpening = () => {
+    if (!audioContext || openingBuffer || openingLoading) return;
+    openingLoading = true;
+    fetch(tracks.opening).then(response => {
+      if (!response.ok) throw new Error('Opening audio unavailable');
+      return response.arrayBuffer();
+    }).then(bytes => audioContext.decodeAudioData(bytes)).then(buffer => {
+      if (destroyed) return;
+      openingBuffer = buffer;
+      sync();
+    }).catch(() => { /* Keep the media-element fallback available. */ });
+  };
+  const playOpening = () => {
+    if (openingSource) return;
+    // Preserve the playhead when upgrading from the autoplay fallback.
+    if (!audio.paused) openingOffset = audio.currentTime % openingBuffer.duration;
+    audio.pause();
+    const source = audioContext.createBufferSource();
+    source.buffer = openingBuffer;
+    source.loop = true;
+    source.connect(gainNode);
+    openingStartedAt = audioContext.currentTime;
+    source.start(0, openingOffset);
+    openingSource = source;
   };
 
   const cleanup = [];
@@ -47,7 +91,8 @@
       } else if (gainNode) {
         gainNode.gain.value = BGM_VOLUME;
       }
-      if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+      prepareOpening();
+      if (audioContext.state === 'suspended') audioContext.resume().then(() => { if (!destroyed) sync(); }).catch(() => {});
     } catch (_) {
       audio.volume = BGM_VOLUME;
     }
@@ -66,14 +111,15 @@
     : !lobby.classList.contains('hidden') ? 'opening' : null;
 
   const label = () => buttons.forEach(button => {
-    button.textContent = !enabled ? '♪ BGM：OFF' : audio.paused ? '♪ BGMを再生' : '♪ BGM：ON';
-    button.setAttribute('aria-pressed', String(enabled && !audio.paused));
-    button.setAttribute('aria-label', enabled && !audio.paused ? 'BGMを停止' : 'BGMを再生');
+    button.textContent = !enabled ? '♪ BGM：OFF' : !isPlaying() ? '♪ BGMを再生' : '♪ BGM：ON';
+    button.setAttribute('aria-pressed', String(enabled && isPlaying()));
+    button.setAttribute('aria-label', enabled && isPlaying() ? 'BGMを停止' : 'BGMを再生');
   });
 
   const setTrack = nextTrack => {
     if (nextTrack === currentTrack) return;
     audio.pause();
+    pauseOpening(true);
     currentTrack = nextTrack;
     if (!nextTrack) {
       audio.removeAttribute('src');
@@ -86,18 +132,20 @@
 
   const playFromOpeningStart = () => {
     if (currentTrack === 'opening') {
+      pauseOpening(true);
       try { audio.currentTime = 0; } catch (_) {}
     }
   };
 
   const sync = ({resetOpening = false} = {}) => {
+    if (destroyed) return;
     const nextTrack = selectedTrack();
     const wasTrack = currentTrack;
     setTrack(nextTrack);
     if (resetOpening || (nextTrack === 'opening' && wasTrack !== 'opening')) playFromOpeningStart();
 
     if (!enabled || !nextTrack || document.hidden) {
-      audio.pause();
+      pauseAll();
       label();
       return;
     }
@@ -105,8 +153,13 @@
     if (!gainConnected) audio.volume = BGM_VOLUME;
     if (gainNode) gainNode.gain.value = BGM_VOLUME;
 
+    if (nextTrack === 'opening' && openingBuffer && gainConnected && audioContext.state === 'running') {
+      playOpening();
+      label();
+      return;
+    }
     audio.play().then(() => {
-      if (!enabled || !selectedTrack() || document.hidden) audio.pause();
+      if (destroyed || openingSource || !enabled || selectedTrack() !== nextTrack || document.hidden) audio.pause();
       label();
     }).catch(() => {
       label();
@@ -115,7 +168,7 @@
 
   buttons.forEach(button => add(button, 'click', () => {
     unlockVolume();
-    enabled = !enabled || audio.paused;
+    enabled = !enabled || !isPlaying();
     sync();
   }));
 
@@ -131,7 +184,7 @@
   add(document, 'keydown', unlock, {capture:true});
   add(document, 'click', unlock, {capture:true});
   add(document, 'visibilitychange', () => sync());
-  add(window, 'pagehide', () => audio.pause());
+  add(window, 'pagehide', pauseAll);
   add(window, 'pageshow', () => sync({resetOpening: selectedTrack() === 'opening' && !userUnlocked}));
   add(audio, 'playing', label);
   add(audio, 'pause', label);
@@ -144,8 +197,11 @@
     audio,
     sync,
     destroy() {
+      destroyed = true;
+      pauseOpening(true);
       cleanup.splice(0).forEach(fn => { try { fn(); } catch (_) {} });
       audio.pause();
+      if (audioContext) audioContext.close().catch(() => {});
       buttons.forEach(button => button.remove());
       if (window.__BIDGRID_BGM__ === this) delete window.__BIDGRID_BGM__;
     }
