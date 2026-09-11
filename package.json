@@ -3,7 +3,7 @@
   "version": "3.11.10",
   "private": true,
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node scripts/rebuild-opening-bgm.js && node server/server.js"
   },
   "dependencies": {
     "express": "^4.21.2",
