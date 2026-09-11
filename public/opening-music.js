@@ -7,10 +7,10 @@
 
   try { window.__BIDGRID_BGM__?.destroy?.(); } catch (_) {}
 
-  // Play the complete 84.6-second source through our audio proxy. The proxy
-  // resolves BOOTH's download response into a browser-friendly audio stream.
+  // Temporary reliable local opening audio. Replace with the complete local
+  // file as soon as shady-opening-full.mp3 is uploaded to public/audio/.
   const tracks = {
-    opening: 'https://jyxdvtcffpxyxyqvwrhm.supabase.co/functions/v1/opening-bgm?v=2',
+    opening: '/audio/shady-opening-loop.mp3?v=3',
     game: '/audio/lucky-girl-game.mp3?v=3'
   };
 
@@ -89,7 +89,6 @@
       }
       label();
     }).catch(() => {
-      // Browsers may block autoplay until the first user interaction.
       label();
     });
   };
@@ -100,8 +99,6 @@
     sync();
   }));
 
-  // Retry inside the earliest user-activation phase so mobile browsers can
-  // start playback as soon as the player first touches the game.
   const unlock = event => {
     userUnlocked = true;
     if (!buttons.some(button => button.contains(event.target))) sync();
@@ -147,17 +144,10 @@
   setTimeout(() => sync(), 0);
 })();
 
-/*
- * Disconnect-result safety layer.
- * The base game already resolves a disconnect forfeit on the server. This
- * layer keeps that final outcome visible even if Socket.IO subsequently drops
- * the local transport, and gives the player a navigation path that works
- * without a live socket.
- */
+/* Disconnect-result safety layer. */
 (() => {
   if (window.__BIDGRID_DISCONNECT_RESULT_GUARD__) return;
   window.__BIDGRID_DISCONNECT_RESULT_GUARD__ = true;
-
   if (typeof s === 'undefined' || !s || typeof s.on !== 'function') return;
 
   const el = id => document.getElementById(id);
@@ -167,60 +157,43 @@
   const mySlot = () => {
     try { return Number(slot); } catch (_) { return -1; }
   };
-
   const clearLocalLossTimer = () => {
     if (localLossTimer) clearTimeout(localLossTimer);
     localLossTimer = 0;
   };
-
   const ratingHtml = () => {
-    try {
-      return typeof ratingResultHtml === 'function' ? ratingResultHtml() : '';
-    } catch (_) {
-      return '';
-    }
+    try { return typeof ratingResultHtml === 'function' ? ratingResultHtml() : ''; }
+    catch (_) { return ''; }
   };
-
   const hideTransientOverlays = () => {
-    ['disconnectOverlay', 'countdownOverlay', 'auctionOverlay'].forEach(id => {
-      el(id)?.classList.add('hidden');
-    });
+    ['disconnectOverlay', 'countdownOverlay', 'auctionOverlay'].forEach(id => el(id)?.classList.add('hidden'));
   };
-
   const returnToOpening = () => {
     try {
-      if (typeof backToTitle === 'function') {
-        backToTitle();
-        return;
-      }
+      if (typeof backToTitle === 'function') { backToTitle(); return; }
     } catch (_) {}
     location.href = location.origin;
   };
-
   const showDisconnectOutcome = (won, reason = 'disconnect') => {
     const outcome = won ? 'WIN' : 'LOSE';
     lockedOutcome = outcome;
     clearLocalLossTimer();
     hideTransientOverlays();
-
     const resultBig = el('resultBig');
     const resultText = el('resultText');
     const matchActions = el('matchActions');
     const modal = el('modal');
     if (!resultBig || !resultText || !matchActions || !modal) return;
-
     resultBig.textContent = outcome;
     const second = reason === 'secondDisconnect';
     resultText.innerHTML = won
       ? `${second ? '相手が同一マッチ中に2回目の通信切断をしたため、あなたの勝利です。' : '相手の通信切断により、あなたの勝利です。'}${ratingHtml()}`
       : `${second ? '同一マッチ中に2回目の通信切断が発生したため、あなたの敗北です。' : '通信切断により、あなたの敗北です。'}${ratingHtml()}`;
-
     matchActions.innerHTML = '<div class="choiceRow"><button id="disconnectReturnOpening" class="primary">オープニングに戻る</button></div>';
     const button = el('disconnectReturnOpening');
     if (button) button.onclick = returnToOpening;
     modal.classList.remove('hidden');
   };
-
   const renderFromState = nextState => {
     if (!nextState || nextState.phase !== 'matchEnd') return;
     if (nextState.matchEndReason !== 'disconnect' && nextState.matchEndReason !== 'secondDisconnect') return;
@@ -234,39 +207,24 @@
     if (winner !== 0 && winner !== 1) return;
     showDisconnectOutcome(winner === mySlot(), payload?.reason === 'secondDisconnect' ? 'secondDisconnect' : 'disconnect');
   });
-
   s.on('secondDisconnectLoss', payload => {
     const loser = Number(payload?.slot);
     if (loser !== 0 && loser !== 1) return;
     showDisconnectOutcome(loser !== mySlot(), 'secondDisconnect');
   });
-
-  s.on('state', nextState => {
-    renderFromState(nextState);
-  });
-
-  s.on('connect', () => {
-    clearLocalLossTimer();
-  });
-
-  s.on('playerReconnected', () => {
-    clearLocalLossTimer();
-  });
-
+  s.on('state', renderFromState);
+  s.on('connect', clearLocalLossTimer);
+  s.on('playerReconnected', clearLocalLossTimer);
   s.on('disconnect', () => {
     if (lockedOutcome) return;
-
     let currentState = null;
     try { currentState = state; } catch (_) {}
     const me = mySlot();
-
     if (!currentState?.players?.[0] || !currentState?.players?.[1] || currentState.phase === 'waiting') return;
     if (currentState.phase === 'matchEnd' && currentState.matchEndReason !== 'disconnect' && currentState.matchEndReason !== 'secondDisconnect') return;
-
     const priorDisconnects = Number(currentState?.disconnectCounts?.[me] || 0);
     const isSecondDisconnect = priorDisconnects >= 1;
     clearLocalLossTimer();
-
     localLossTimer = setTimeout(() => {
       localLossTimer = 0;
       if (s.connected || lockedOutcome) return;
