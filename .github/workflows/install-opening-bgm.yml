@@ -27,9 +27,29 @@ jobs:
       - name: Download official opening BGM audio
         run: |
           mkdir -p /tmp/bidgrid-opening public/audio
-          yt-dlp --no-playlist -f 'bestaudio/best' \
-            -o '/tmp/bidgrid-opening/source.%(ext)s' \
-            'https://www.youtube.com/watch?v=CJZ2QXoApmg'
+          URL='https://www.youtube.com/watch?v=CJZ2QXoApmg'
+          OUT='/tmp/bidgrid-opening/source.%(ext)s'
+          set +e
+          yt-dlp --no-playlist --js-runtimes node \
+            --extractor-args 'youtube:player_client=web_embedded' \
+            -f 'bestaudio/best' -o "$OUT" "$URL"
+          rc=$?
+          if [ $rc -ne 0 ]; then
+            rm -f /tmp/bidgrid-opening/source.*
+            yt-dlp --no-playlist --js-runtimes node \
+              --extractor-args 'youtube:player_client=tv_embedded' \
+              -f 'bestaudio/best' -o "$OUT" "$URL"
+            rc=$?
+          fi
+          if [ $rc -ne 0 ]; then
+            rm -f /tmp/bidgrid-opening/source.*
+            yt-dlp --no-playlist --js-runtimes node \
+              --extractor-args 'youtube:player_client=android_vr' \
+              -f 'bestaudio/best' -o "$OUT" "$URL"
+            rc=$?
+          fi
+          set -e
+          test $rc -eq 0
           src=$(find /tmp/bidgrid-opening -type f -name 'source.*' | head -n 1)
           test -n "$src"
           ffmpeg -v error -y -i "$src" -vn -ar 48000 -ac 2 -b:a 96k \
@@ -62,9 +82,9 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           p=Path('public/opening-music.js')
           s=p.read_text()
-          import re
           s=re.sub(
               r"opening:\s*['\"][^'\"]+['\"]",
               "opening: '/audio/shady-opening-full.mp3?v=1'",
