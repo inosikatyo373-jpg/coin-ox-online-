@@ -1,0 +1,52 @@
+name: Fetch complete opening BGM
+
+on:
+  push:
+    branches:
+      - bgm-complete-fix
+    paths:
+      - .github/workflows/fetch-opening-bgm.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-audio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bgm-complete-fix
+          fetch-depth: 0
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Download complete opening BGM
+        run: |
+          mkdir -p public/audio
+          curl --fail --location --retry 3 \
+            --user-agent 'Mozilla/5.0' \
+            --referer 'https://booth.pm/ja/items/6433094' \
+            'https://booth.pm/downloadables/5761628?variation_id=10855080' \
+            --output public/audio/shady-opening-full.mp3
+      - name: Verify audio
+        run: |
+          bytes=$(stat -c%s public/audio/shady-opening-full.mp3)
+          duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 public/audio/shady-opening-full.mp3)
+          echo "bytes=$bytes duration=$duration"
+          python - <<'PY'
+          import os, subprocess
+          p='public/audio/shady-opening-full.mp3'
+          size=os.path.getsize(p)
+          duration=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',p], text=True).strip())
+          if size < 2_000_000:
+              raise SystemExit(f'audio too small: {size}')
+          if duration < 84.0:
+              raise SystemExit(f'audio too short: {duration}')
+          PY
+      - name: Commit verified audio
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/audio/shady-opening-full.mp3
+          git commit -m 'Add verified complete opening BGM' || exit 0
+          git push origin HEAD:bgm-complete-fix
