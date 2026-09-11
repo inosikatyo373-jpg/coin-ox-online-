@@ -84,11 +84,7 @@
       if (!res.ok) throw new Error(data?.error || 'ランキングを取得できませんでした。');
       render(data.players);
     } catch (err) {
-      rowsEl.textContent = '';
-      const state = document.createElement('div');
-      state.className = 'leaderboardState';
-      state.textContent = String(err?.message || 'ランキングを取得できませんでした。');
-      rowsEl.appendChild(state);
+      rowsEl.innerHTML = `<div class="leaderboardState">${String(err?.message || 'ランキングを取得できませんでした。')}</div>`;
     }
   };
 })();

@@ -288,6 +288,27 @@ app.patch("/api/account/profile",async(req,res)=>{
   }
 });
 
+app.get("/api/leaderboard",async(req,res)=>{
+  if(!accountConfigured()) return res.status(503).json({error:"ランキング機能がまだ設定されていません。"});
+  try{
+    const rows=await sbFetch("/rest/v1/profiles?select=display_name,rating&order=rating.desc,display_name.asc&limit=100",{
+      key:SUPABASE_SERVICE_ROLE_KEY,
+      headers:{Accept:"application/json"}
+    });
+    res.set("Cache-Control","no-store");
+    res.json({
+      ok:true,
+      players:(Array.isArray(rows)?rows:[]).map(row=>({
+        name:cleanDisplayName(row?.display_name,"PLAYER"),
+        rating:Number.isFinite(Number(row?.rating))?Number(row.rating):1500
+      }))
+    });
+  }catch(err){
+    console.error("leaderboard failed",err.message);
+    res.status(err.status||500).json({error:"ランキングを取得できませんでした。"});
+  }
+});
+
 app.use(express.static(path.join(__dirname,"../public")));
 
 const rooms=new Map();
