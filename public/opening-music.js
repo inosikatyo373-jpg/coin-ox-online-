@@ -7,10 +7,10 @@
 
   try { window.__BIDGRID_BGM__?.destroy?.(); } catch (_) {}
 
-  // Use the creator's complete 103._shady.mp3. Native media looping plays the
-  // entire 84.6-second track before returning to the beginning.
+  // Keep opening audio on the same Render origin. The external BOOTH download
+  // URL does not behave like a directly playable media URL in every browser.
   const tracks = {
-    opening: 'https://booth.pm/downloadables/5761628',
+    opening: '/audio/shady-opening-loop.mp3?v=2',
     game: '/audio/lucky-girl-game.mp3?v=3'
   };
 
@@ -117,8 +117,6 @@
   add(audio, 'playing', label);
   add(audio, 'pause', label);
   add(audio, 'ended', () => {
-    // loop=true normally handles this. This fallback covers browsers that
-    // expose a redirected download as a non-looping media response.
     if (!destroyed && enabled && selectedTrack() === currentTrack && !document.hidden) {
       try { audio.currentTime = 0; } catch (_) {}
       audio.play().catch(() => {});
@@ -262,7 +260,6 @@
     try { currentState = state; } catch (_) {}
     const me = mySlot();
 
-    // No opponent / no active match: do not turn a lobby network error into a loss.
     if (!currentState?.players?.[0] || !currentState?.players?.[1] || currentState.phase === 'waiting') return;
     if (currentState.phase === 'matchEnd' && currentState.matchEndReason !== 'disconnect' && currentState.matchEndReason !== 'secondDisconnect') return;
 
@@ -270,9 +267,6 @@
     const isSecondDisconnect = priorDisconnects >= 1;
     clearLocalLossTimer();
 
-    // The server allows 20 seconds for the first disconnect. If the socket is
-    // still down just after that window, preserve a local LOSE screen. A second
-    // disconnect is an immediate match loss, so show it immediately.
     localLossTimer = setTimeout(() => {
       localLossTimer = 0;
       if (s.connected || lockedOutcome) return;
