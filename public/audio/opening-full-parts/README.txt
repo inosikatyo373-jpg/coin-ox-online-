@@ -1,0 +1,1 @@
+Temporary binary parts used to reconstruct the complete 84.6-second opening BGM at runtime.
