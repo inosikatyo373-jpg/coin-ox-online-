@@ -1,0 +1,87 @@
+name: Install complete opening BGM
+
+on:
+  push:
+    paths:
+      - '.github/workflows/install-opening-bgm.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install-opening-bgm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          python -m pip install --upgrade yt-dlp
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
+      - name: Download official opening BGM audio
+        run: |
+          mkdir -p /tmp/bidgrid-opening public/audio
+          yt-dlp --no-playlist -f 'bestaudio/best' \
+            -o '/tmp/bidgrid-opening/source.%(ext)s' \
+            'https://www.youtube.com/watch?v=CJZ2QXoApmg'
+          src=$(find /tmp/bidgrid-opening -type f -name 'source.*' | head -n 1)
+          test -n "$src"
+          ffmpeg -v error -y -i "$src" -vn -ar 48000 -ac 2 -b:a 96k \
+            public/audio/shady-opening-full.mp3
+
+      - name: Verify complete audio
+        run: |
+          bytes=$(stat -c%s public/audio/shady-opening-full.mp3)
+          duration=$(ffprobe -v error -show_entries format=duration \
+            -of default=noprint_wrappers=1:nokey=1 \
+            public/audio/shady-opening-full.mp3)
+          echo "opening_bgm_bytes=$bytes"
+          echo "opening_bgm_duration=$duration"
+          python - <<'PY'
+          import os, subprocess
+          p='public/audio/shady-opening-full.mp3'
+          size=os.path.getsize(p)
+          duration=float(subprocess.check_output([
+              'ffprobe','-v','error','-show_entries','format=duration',
+              '-of','default=noprint_wrappers=1:nokey=1',p
+          ], text=True).strip())
+          if size < 700_000:
+              raise SystemExit(f'Opening BGM unexpectedly small: {size} bytes')
+          if not (83.0 <= duration <= 87.0):
+              raise SystemExit(f'Opening BGM duration unexpected: {duration:.3f}s')
+          print(f'Verified complete opening BGM: {duration:.3f}s, {size} bytes')
+          PY
+
+      - name: Point game at local complete audio
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/opening-music.js')
+          s=p.read_text()
+          import re
+          s=re.sub(
+              r"opening:\s*['\"][^'\"]+['\"]",
+              "opening: '/audio/shady-opening-full.mp3?v=1'",
+              s,
+              count=1
+          )
+          s=s.replace(
+              "// Play the complete 84.6-second source through our audio proxy. The proxy\n  // resolves BOOTH's download response into a browser-friendly audio stream.",
+              "// Complete opening BGM, served locally from the same Render origin."
+          )
+          p.write_text(s)
+          PY
+
+      - name: Commit verified audio
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/audio/shady-opening-full.mp3 public/opening-music.js
+          git commit -m 'Install complete opening BGM as local audio' || exit 0
+          git push origin HEAD:main
