@@ -7,10 +7,10 @@
 
   try { window.__BIDGRID_BGM__?.destroy?.(); } catch (_) {}
 
-  // Keep opening audio on the same Render origin. The external BOOTH download
-  // URL does not behave like a directly playable media URL in every browser.
+  // Play the complete 84.6-second source through our audio proxy. The proxy
+  // resolves BOOTH's download response into a browser-friendly audio stream.
   const tracks = {
-    opening: '/audio/shady-opening-loop.mp3?v=2',
+    opening: 'https://jyxdvtcffpxyxyqvwrhm.supabase.co/functions/v1/opening-bgm?v=2',
     game: '/audio/lucky-girl-game.mp3?v=3'
   };
 
