@@ -7,10 +7,10 @@
 
   try { window.__BIDGRID_BGM__?.destroy?.(); } catch (_) {}
 
-  // Play the complete 84.6-second source through our audio proxy. The proxy
-  // resolves BOOTH's download response into a browser-friendly audio stream.
+  // The complete 84.6-second opening BGM is rebuilt locally at server start
+  // and served by the same Render origin as the game.
   const tracks = {
-    opening: 'https://jyxdvtcffpxyxyqvwrhm.supabase.co/functions/v1/opening-bgm?v=2',
+    opening: '/audio/shady-opening-full.mp3?v=1',
     game: '/audio/lucky-girl-game.mp3?v=3'
   };
 
