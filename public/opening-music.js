@@ -1,6 +1,8 @@
 /* BID GRID opening/game BGM controller. */
 (() => {
   const BGM_VOLUME = 0.15;
+  const OPENING_CROSSFADE_SEC = 0.18;
+  const OPENING_END_TRIM_SEC = 0.12;
   const lobby = document.getElementById('lobby');
   const game = document.getElementById('game');
   if (!lobby || !game) return;
@@ -20,7 +22,7 @@
   let userUnlocked = false;
 
   const tracks = {
-    opening: '/audio/shady-opening-loop.mp3?v=1',
+    opening: '/audio/shady-opening.mp3?v=4',
     game: '/audio/lucky-girl-game.mp3?v=3'
   };
 
@@ -30,6 +32,41 @@
   let openingOffset = 0;
   let openingStartedAt = 0;
   let destroyed = false;
+
+  const buildOpeningLoopBuffer = buffer => {
+    if (!audioContext?.createBuffer || !buffer?.getChannelData || !buffer?.sampleRate || !buffer?.length) return buffer;
+    const sampleRate = buffer.sampleRate;
+    const crossfadeFrames = Math.min(
+      Math.max(1, Math.round(OPENING_CROSSFADE_SEC * sampleRate)),
+      Math.floor(buffer.length / 8)
+    );
+    const endTrimFrames = Math.min(
+      Math.max(0, Math.round(OPENING_END_TRIM_SEC * sampleRate)),
+      Math.floor(buffer.length / 8)
+    );
+    const startFrame = crossfadeFrames;
+    const endFrame = buffer.length - endTrimFrames;
+    const outputLength = endFrame - startFrame;
+    if (outputLength <= crossfadeFrames * 2) return buffer;
+
+    const output = audioContext.createBuffer(buffer.numberOfChannels, outputLength, sampleRate);
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const source = buffer.getChannelData(channel);
+      const target = output.getChannelData(channel);
+      target.set(source.subarray(startFrame, endFrame));
+
+      // Only the final 180 ms is blended. The previous 800 ms blend was long
+      // enough for two musical phrases to overlap audibly. A raised-cosine
+      // curve removes the click while keeping the phrase boundary crisp.
+      const blendStart = outputLength - crossfadeFrames;
+      for (let i = 0; i < crossfadeFrames; i++) {
+        const t = (i + 1) / crossfadeFrames;
+        const mix = 0.5 - 0.5 * Math.cos(Math.PI * t);
+        target[blendStart + i] = source[endFrame - crossfadeFrames + i] * (1 - mix) + source[i] * mix;
+      }
+    }
+    return output;
+  };
 
   const isPlaying = () => !!openingSource || !audio.paused;
   const pauseOpening = (reset = false) => {
@@ -50,14 +87,21 @@
       return response.arrayBuffer();
     }).then(bytes => audioContext.decodeAudioData(bytes)).then(buffer => {
       if (destroyed) return;
-      openingBuffer = buffer;
+      openingBuffer = buildOpeningLoopBuffer(buffer);
+      openingLoading = false;
       sync();
-    }).catch(() => { /* Keep the media-element fallback available. */ });
+    }).catch(() => {
+      openingLoading = false;
+      // Keep the media-element fallback available.
+    });
   };
   const playOpening = () => {
     if (openingSource) return;
-    // Preserve the playhead when upgrading from the autoplay fallback.
-    if (!audio.paused) openingOffset = audio.currentTime % openingBuffer.duration;
+    // Preserve the playhead when upgrading from the autoplay fallback. The
+    // loop buffer begins just after the short crossfade region.
+    if (!audio.paused) {
+      openingOffset = Math.max(0, audio.currentTime - OPENING_CROSSFADE_SEC) % openingBuffer.duration;
+    }
     audio.pause();
     const source = audioContext.createBufferSource();
     source.buffer = openingBuffer;
